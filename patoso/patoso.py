@@ -20,6 +20,7 @@ from lcbuilder.lcbuilder_class import LcBuilder
 from lcbuilder.objectinfo.MissionFfiIdObjectInfo import MissionFfiIdObjectInfo
 from lcbuilder.objectinfo.MissionObjectInfo import MissionObjectInfo
 from lcbuilder.photometry.aperture_extractor import ApertureExtractor
+from lcbuilder.star.HabitabilityCalculator import HabitabilityCalculator
 from lightkurve import TessLightCurve, TessTargetPixelFile, KeplerTargetPixelFile
 from matplotlib.colorbar import Colorbar
 from matplotlib import patches
@@ -48,8 +49,26 @@ class Patoso:
         self.object_dir = os.getcwd() if object_dir is None else object_dir
         self.data_dir = self.object_dir
 
-    def vetting(self, id, period, t0, rp_rstar, a_rstar, duration, depth, ffi, sectors, cpus, lc_file=None,
-                lc_data_file=None, tpfs_dir=None):
+    def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
+                cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None):
+        """
+
+        :param id: the target star id
+        :param period: the period of the candidate in days
+        :param t0: the epoch in days
+        :param duration: the duration of the transit of the candidate in minutes
+        :param depth: the depth of the transit of the candidate in ppts
+        :param ffi: flag to specify whether the data to be used is FFI or short cadence curve
+        :param sectors: sectors/quarters/campaigns to be used
+        :param rp_rstar: Rp / Rstar
+        :param a_rstar: Semi-major axis / Rstar
+        :param cpus: number of cpus to be used
+        :param cadence: the cadence to be used to download data, in seconds
+        :param lc_file: the file containing the curve
+        :param lc_data_file: the file containing the raw curve and the motion, centroids and quality flags
+        :param tpfs_dir: the directory containing the tpf files
+        :param apertures_file: the file containing the map of sectors->apertures
+        """
         logging.info("------------------")
         logging.info("Candidate info")
         logging.info("------------------")
@@ -63,14 +82,23 @@ class Patoso:
         logging.info("FFI: %s", ffi)
         logging.info("Sectors: %s", sectors)
         lc_builder = LcBuilder()
+        if rp_rstar is None:
+            rp_rstar = np.sqrt(depth / 1000)
+        lc_build = None
         if lc_file is None or lc_data_file is None:
             if not ffi:
-                lc_build = lc_builder.build(MissionObjectInfo(id, sectors, cadence="short"), self.data_dir)
+                lc_build = lc_builder.build(MissionObjectInfo(id, sectors, cadence=cadence), self.data_dir)
             else:
-                lc_build = lc_builder.build(MissionFfiIdObjectInfo(id, sectors, cadence="short"), self.data_dir)
+                lc_build = lc_builder.build(MissionFfiIdObjectInfo(id, sectors, cadence=cadence), self.data_dir)
             lc_build.lc_data.to_csv(self.data_dir + "/lc_data.csv")
+        if a_rstar is None and lc_build is None:
+            raise ValueError("You need to define a_rstar if you are providing the lc_file and lc_data_file")
+        if a_rstar is None:
+            a_rstar = HabitabilityCalculator().calculate_semi_major_axis(period, lc_build.star.mass)
         if tpfs_dir is None:
             tpfs_dir = self.data_dir + "/tpfs/"
+        if apertures_file is None:
+            apertures_file = self.data_dir + "/apertures.yaml"
         index = 0
         vetting_dir = self.data_dir + "/vetting_" + str(index)
         while os.path.exists(vetting_dir) or os.path.isdir(vetting_dir):
@@ -79,15 +107,17 @@ class Patoso:
         os.mkdir(vetting_dir)
         self.data_dir = vetting_dir
         try:
-            self.__process(id, t0, period, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir)
+            self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
+                           apertures_file)
         except Exception as e:
             traceback.print_exc()
 
-    def vetting(self, candidate_df, star, cpus):
+    def vetting_with_data(self, candidate_df, star, cpus):
         """
-        Performs the LATTE vetting procedures
-        @param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
-        @param cpus: the number of cpus to be used. This parameter is of no use yet.
+
+        :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
+        :param star: the star dataframe with the star info.
+        :param cpus: the number of cpus to be used.
         """
         df = candidate_df.iloc[0]
         # TODO get the transit time list
@@ -117,27 +147,34 @@ class Patoso:
         lc_file = self.object_dir + lc_file
         lc_data_file = self.object_dir + "/lc_data.csv"
         tpfs_dir = self.object_dir + "/tpfs"
+        apertures_file = self.object_dir + "/apertures.yaml"
         try:
-            self.vetting(id, t0, period, rp_rstar, a_rstar, duration, depth, ffi, sectors, cpus, lc_file, lc_data_file,
-                         tpfs_dir)
+            self.vetting(id, t0, period, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
+                         lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file)
         except Exception as e:
             traceback.print_exc()
 
-    def __process(self, id, t0, period, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir):
+    def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
+                  apertures_file):
         """
         Performs the analysis to generate PNGs and Data Validation Report.
-        @param id: the tic to be processed
-        @param t0: the candidate signal first epoch
-        @param period: the candidate signal period
-        @param duration: the candidate signal duration
-        @param depth: the candidate signal depth in ppts
-        @param ffi: Whether the candidate came from FFI data
-        @param run: The run where the selected light curve appeared
-        @param curve: The selected light curve in the given run
+        :param id: the target star id
+        :param period: the period of the candidate in days
+        :param t0: the epoch in days
+        :param duration: the duration of the transit of the candidate in minutes
+        :param depth: the depth of the transit of the candidate in ppts
+        :param sectors: sectors/quarters/campaigns to be used
+        :param rp_rstar: Rp / Rstar
+        :param a_rstar: Semi-major axis / Rstar
+        :param cpus: number of cpus to be used
+        :param lc_file: the file containing the curve
+        :param lc_data_file: the file containing the raw curve and the motion, centroids and quality flags
+        :param tpfs_dir: the directory containing the tpf files
+        :param apertures_file: the file containing the apertures
         @return: the given tic
         """
         logging.info("Running Transit Plots")
-        apertures = yaml.load(open(self.object_dir + "/apertures.yaml"), yaml.SafeLoader)
+        apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
         apertures = apertures["sectors"]
         lc, lc_data, tpfs = Patoso.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir)
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
