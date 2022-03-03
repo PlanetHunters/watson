@@ -1,0 +1,158 @@
+ID: TIC25155310_[1, 2]
+Storing properties file user-properties.yaml
+================================================
+USER DEFINITIONS
+================================================
+Detrend method: Bi-Weight
+No of detrend models applied: 2
+Period planet protected: 10.0
+Minimum Period (d): 0.5
+Maximum Period (d): 30.0
+Binning size (min): 10.0
+Mask: no
+Transit Mask: no
+Threshold limit for SNR: 7.0
+Threshold limit for SDE: 5.0
+Sigma threshold for outliers clipping: 3.0
+Fit method: default
+Oversampling: 1.000
+Duration step: 1.100
+T0 Fit Margin: 0.050
+Signal scoring algorithm: quorum
+Quorum algorithm vote strength: 1.20
+Retrieving star catalog info...
+Downloading lightcurve files...
+There is data for Mission: TESS Sector 01, Year 2018, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 01, Year 2018, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 02, Year 2018, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 02, Year 2018, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 03, Year 2018, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 03, Year 2018, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 04, Year 2018, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 04, Year 2018, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 05, Year 2018, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 05, Year 2018, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 06, Year 2018, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 06, Year 2018, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 07, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 07, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 08, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 08, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 09, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 09, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 10, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 10, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 11, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 11, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 12, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 12, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 13, Year 2019, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 13, Year 2019, Author: TESS-SPOC, ExpTime: 1800
+There is data for Mission: TESS Sector 27, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 27, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 27, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 28, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 28, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 28, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 29, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 29, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 29, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 30, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 30, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 30, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 31, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 31, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 31, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 32, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 32, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 32, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 33, Year 2020, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 33, Year 2020, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 33, Year 2020, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 34, Year 2021, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 34, Year 2021, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 34, Year 2021, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 36, Year 2021, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 36, Year 2021, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 36, Year 2021, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 37, Year 2021, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 37, Year 2021, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 37, Year 2021, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 38, Year 2021, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 38, Year 2021, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 38, Year 2021, Author: TESS-SPOC, ExpTime: 600
+There is data for Mission: TESS Sector 39, Year 2021, Author: SPOC, ExpTime: 20
+There is data for Mission: TESS Sector 39, Year 2021, Author: SPOC, ExpTime: 120
+There is data for Mission: TESS Sector 39, Year 2021, Author: TESS-SPOC, ExpTime: 600
+5% (982/19261) of the cadences will be ignored due to the quality mask (quality_bitmask=175).
+2% (399/18699) of the cadences will be ignored due to the quality mask (quality_bitmask=175).
+9% (1797/20076) of the cadences will be ignored due to the quality mask (quality_bitmask=175).
+7% (1437/19737) of the cadences will be ignored due to the quality mask (quality_bitmask=175).
+Star info prepared.
+================================================
+STELLAR PROPERTIES
+================================================
+limb-darkening estimates using quadratic LD (a,b)= (0.371, 0.2094)
+mass = 1.010000
+mass_min = 0.886645
+mass_max = 1.133355
+radius = 1.241750
+radius_min = 1.180670
+radius_max = 1.302830
+teff = 5675.540000
+lum = 1.441418
+logg = 4.254320
+================================================
+INITIAL FLUX CLEANING
+================================================
+Applying Smooth phase (savgol)
+Minimum number of transits: 2
+================================================
+SECTORS/QUARTERS/CAMPAIGNS INFO
+================================================
+Sectors/Quarters/Campaigns : [1, 2]
+================================================
+Detrend Window length / Kernel size
+================================================
+Using transit duration based WL or fixed KS
+wl/ks_min: 0.60
+wl/ks_max: 4.03
+================================================
+======================================
+Field Of View Plots
+======================================
+Preparing target pixel files for field of view plots
+9% (1797/20076) of the cadences will be ignored due to the quality mask (quality_bitmask=175).
+Plotting FOV curves for sector 1
+    --> Using SHERLOCK aperture for sector 1...
+7% (1437/19737) of the cadences will be ignored due to the quality mask (quality_bitmask=175).
+Plotting FOV curves for sector 2
+    --> Using SHERLOCK aperture for sector 2...
+================================================
+SEARCH RUNS with period grid: [0.83 - 28.11] and length 1328
+================================================
+=================================
+MODELS IN THE DETRENDING
+=================================
+light_curve              Detrend_method   win/ker_size   RMS (ppm)  RMS_10min (ppm)
+PDCSAP_FLUX              ---              ---            1425.20    1379.84        
+flatten_lc & trend_lc 0  biweight         0.6048         1415.13    1369.61        
+flatten_lc & trend_lc 1  biweight         2.3186         1423.72    1378.26        
+________________________________ run 1________________________________
+=================================
+SEARCH OF SIGNALS - Run 1
+=================================
+win_size    Period      Per_err   N.Tran  Mean Depth (ppt)  T. dur (min)  T0            SNR         SDE         FAP           Border_score    Matching OI   Harmonic    Planet radius (R_Earth)  Rp/Rs     Semi-major axis   Habitability Zone   
+PDCSAP_FLUX 3.28987     0.008145  16      6.011             199.1         1327.5140     263.148     32.261      8.0032e-05    1.00            TOI 114.01    -           10.51309                 0.07527   0.04352           I                   
+0.6048      3.28987     0.008145  16      6.082             199.1         1327.5140     270.817     32.757      8.0032e-05    1.00            TOI 114.01    -           10.57440                 0.07571   0.04352           I                   
+2.3186      3.28987     0.008145  16      6.109             199.1         1327.5140     269.417     32.679      8.0032e-05    1.00            TOI 114.01    -           10.59842                 0.07590   0.04352           I                   
+Elected signal with QUORUM algorithm from 3 VOTES --> NAME: 0	Period:3.2898730482577587	CORR_SNR: 487.4702598834169	SNR: 270.8168110463427	SDE: 32.757291857832776	FAP: 8.0032e-05	BORDER_SCORE: 1.0
+Proposed selection with BASIC algorithm was --> NAME: 0	Period:3.2898730482577587	SNR: 270.8168110463427
+New best signal is good enough to keep searching. Going to the next run.
+________________________________ run 2________________________________
+=================================
+SEARCH OF SIGNALS - Run 2
+=================================
+win_size    Period      Per_err   N.Tran  Mean Depth (ppt)  T. dur (min)  T0            SNR         SDE         FAP           Border_score    Matching OI   Harmonic    Planet radius (R_Earth)  Rp/Rs     Semi-major axis   Habitability Zone   
+PDCSAP_FLUX nan         -13.640217nan     nan               nan           0.0000        nan         0.000       nan           0.00            nan           -           nan                      nan       nan               -                   
+0.6048      16.65309    0.106492  4       0.252             283.9         1325.3736     9.378       5.354       nan           0.75            nan           -           2.15265                  0.01596   0.12829           I                   
