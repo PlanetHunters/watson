@@ -561,41 +561,35 @@ class Patoso:
                 pixel_list.append(lc)
 
     @staticmethod
-    def vetting_field_of_view(indir, mission, tic, cadence, ra, dec, sectors, source, apertures):
+    def vetting_field_of_view(fovProcessInput):
         """
         Runs TPFPlotter to get field of view data.
-        @param indir: the data source directory
-        @param mission: the mission of the target
-        @param tic: the target id
-        @param cadence: the exposure time between measurements in seconds
-        @param ra: the right ascension of the target
-        @param dec: the declination of the target
-        @param sectors: the sectors where the target was observed
-        @param source: the source where the aperture was generated [tpf, tesscut, eleanor]
-        @param apertures: a dict mapping sectors to boolean apertures
+        @param fovProcessInput: with all parameters for the computation
         @return: the directory where resulting data is stored
         """
         try:
             maglim = 6
-            sectors = [sectors] if isinstance(sectors, int) else sectors
+            sectors = [fovProcessInput.sectors] if isinstance(fovProcessInput.sectors, int) else fovProcessInput.sectors
             sectors_search = None if sectors is not None and len(sectors) == 0 else sectors
             logging.info("Preparing target pixel files for field of view plots")
-            ra_str = str(ra)
-            dec_str = "+" + str(dec) if dec >= 0 else str(dec)
+            ra_str = str(fovProcessInput.ra)
+            dec_str = "+" + str(fovProcessInput.dec) if fovProcessInput.dec >= 0 else str(fovProcessInput.dec)
             coords_str = ra_str + " " + dec_str
-            if mission != "TESS":
+            if fovProcessInput.mission != "TESS":
                 return
-            target_title = "TIC " + str(tic)
+            target_title = "TIC " + str(fovProcessInput.tic)
             #TODO use retrieval method depending on source parameter
-            if cadence > 120:
+            if fovProcessInput.cadence > 120:
                 tpf_source = lightkurve.search_tesscut(target_title, sector=sectors_search)
                 if tpf_source is None or len(tpf_source) == 0:
                     tpf_source = lightkurve.search_tesscut(coords_str, sector=sectors_search)
-                    target_title = "RA={:.4f},DEC={:.4f}".format(ra, dec)
+                    target_title = "RA={:.4f},DEC={:.4f}".format(fovProcessInput.ra, fovProcessInput.dec)
             else:
                 tpf_source = lightkurve.search_targetpixelfile(target_title, sector=sectors_search, author="SPOC",
-                                                               cadence=cadence)
-            save_dir = indir
+                                                               cadence=fovProcessInput.cadence)
+            save_dir = fovProcessInput.indir
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
             for i in range(0, len(tpf_source)):
                 tpf = tpf_source[i].download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
                 row = tpf.row
@@ -612,11 +606,11 @@ class Patoso:
                 division = np.int(np.log10(np.nanmax(tpf.flux.value)))
                 splot = plt.imshow(np.nanmean(tpf.flux, axis=0) / 10 ** division, norm=norm, cmap="viridis",\
                                    extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
-                aperture = apertures[tpf.sector]
+                aperture = fovProcessInput.apertures[tpf.sector]
                 aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
                 aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, CUTOUT_SIZE,
                                                                                  CUTOUT_SIZE)
-                Patoso.plot_tpf(tpf, tpf.sector, aperture_boolean, indir)
+                Patoso.plot_tpf(tpf, tpf.sector, aperture_boolean, save_dir)
                 maskcolor = 'salmon'
                 logging.info("    --> Using SHERLOCK aperture for sector %s...", tpf.sector)
                 if aperture is not None:
@@ -626,7 +620,7 @@ class Patoso:
                         ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
                                                         1, 1, color=maskcolor, fill=False, alpha=1, lw=2))
                 # Gaia sources
-                gaia_id, mag = tpfplotter.get_gaia_data(ra, dec)
+                gaia_id, mag = tpfplotter.get_gaia_data(fovProcessInput.ra, fovProcessInput.dec)
                 r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + np.float(maglim), targ_mag=mag)
                 x, y, gaiamags = r
                 x, y, gaiamags = np.array(x) + 0.5, np.array(y) + 0.5, np.array(gaiamags)
@@ -671,9 +665,6 @@ class Patoso:
                 plt.xticks(fontsize=14)
                 exponent = r'$\times 10^' + str(division) + '$'
                 cb.set_label(r'Flux ' + exponent + r' (e$^-$)', labelpad=10, fontsize=16)
-                save_dir = indir
-                if not os.path.exists(save_dir):
-                    os.makedirs(save_dir)
                 plt.savefig(save_dir + '/TPF_Gaia_' + target_title + '_S' + str(tpf.sector) + '.pdf')
                 # Save Gaia sources info
                 dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
@@ -711,3 +702,15 @@ class SingleTransitProcessInput:
         self.period = period
         self.rp_rstar = rp_rstar
         self.a_rstar = a_rstar
+
+class FovProcessInput:
+    def __init__(self, indir, mission, tic, cadence, ra, dec, sectors, source, apertures):
+        self.indir = indir
+        self.mission = mission
+        self.tic = tic
+        self.cadence = cadence
+        self.ra = ra
+        self.dec = dec
+        self.sectors = sectors
+        self.source = source
+        self.apertures = apertures
