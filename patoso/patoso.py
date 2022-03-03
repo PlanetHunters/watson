@@ -1,7 +1,6 @@
 # from __future__ import print_function, absolute_import, division
 import logging
 import multiprocessing
-from pathlib import Path
 import traceback
 
 import PIL
@@ -28,11 +27,12 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 from astropy.table import Table
 from astropy.io import ascii
 import astropy.visualization as stretching
-from argparse import ArgumentParser
 from scipy import stats, ndimage
-from sherlockpipe import tpfplotter, constants
 import six
 import sys
+
+from patoso import constants
+
 sys.modules['astropy.extern.six'] = six
 matplotlib.use('Agg')
 import pandas as pd
@@ -91,10 +91,12 @@ class Patoso:
             else:
                 lc_build = lc_builder.build(MissionFfiIdObjectInfo(id, sectors, cadence=cadence), self.data_dir)
             lc_build.lc_data.to_csv(self.data_dir + "/lc_data.csv")
+            lc_file = self.data_dir + "/lc.csv"
+            lc_data_file = self.data_dir + "/lc_data.csv"
         if a_rstar is None and lc_build is None:
             raise ValueError("You need to define a_rstar if you are providing the lc_file and lc_data_file")
         if a_rstar is None:
-            a_rstar = HabitabilityCalculator().calculate_semi_major_axis(period, lc_build.star.mass)
+            a_rstar = HabitabilityCalculator().calculate_semi_major_axis(period, lc_build.star_info.mass)
         if tpfs_dir is None:
             tpfs_dir = self.data_dir + "/tpfs/"
         if apertures_file is None:
@@ -180,7 +182,7 @@ class Patoso:
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         last_time = lc.time.value[len(lc.time.value) - 1]
         num_of_transits = int(ceil(((last_time - t0) / period)))
-        transit_lists = t0 + period * range(0, num_of_transits)
+        transit_lists = t0 + period * np.arange(0, num_of_transits)
         time_as_array = lc.time.value
         transits_in_data = [time_as_array[(transit > time_as_array - 0.5) & (transit < time_as_array + 0.5)] for transit in transit_lists]
         transit_lists = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
