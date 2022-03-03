@@ -31,7 +31,7 @@ from scipy import stats, ndimage
 import six
 import sys
 
-from patoso import constants
+from patoso import constants, tpfplotter
 
 sys.modules['astropy.extern.six'] = six
 matplotlib.use('Agg')
