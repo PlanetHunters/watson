@@ -577,6 +577,7 @@ class Patoso:
         """
         try:
             maglim = 6
+            sectors = [sectors] if isinstance(sectors, int) else sectors
             sectors_search = None if sectors is not None and len(sectors) == 0 else sectors
             logging.info("Preparing target pixel files for field of view plots")
             ra_str = str(ra)
