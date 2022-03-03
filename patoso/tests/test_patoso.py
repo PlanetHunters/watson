@@ -1,3 +1,4 @@
+import multiprocessing
 import os
 import shutil
 import unittest
@@ -13,7 +14,7 @@ class TestsPatoso(unittest.TestCase):
         vetting_dir = object_dir + "/vetting_0"
         try:
             Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, 1, 0.07571,
-                                       cadence=120)
+                                       cadence=120, cpus=multiprocessing.cpu_count() // 2)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 9
         finally:
@@ -28,7 +29,8 @@ class TestsPatoso(unittest.TestCase):
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
-                                       apertures_file=object_dir + "/apertures.yaml")
+                                       apertures_file=object_dir + "/apertures.yaml",
+                                       cpus=multiprocessing.cpu_count() // 2)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 9
         finally:
