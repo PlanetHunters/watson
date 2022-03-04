@@ -561,126 +561,155 @@ class Patoso:
                 pixel_list.append(lc)
 
     @staticmethod
-    def vetting_field_of_view(fovProcessInput):
+    def vetting_field_of_view_single(fov_process_input):
+        """
+        Plots FOV for one sector data. To be called by a multiprocessing queue.
+        :param fov_process_input: wrapper for the sector data
+        """
+        maglim = 6
+        try:
+            tpf = fov_process_input.tpf_source.download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
+            row = tpf.row
+            column = tpf.column
+            plt.close()
+            fig = plt.figure(figsize=(6.93, 5.5))
+            gs = gridspec.GridSpec(1, 3, height_ratios=[1], width_ratios=[1, 0.05, 0.01])
+            gs.update(left=0.05, right=0.95, bottom=0.12, top=0.95, wspace=0.01, hspace=0.03)
+            ax1 = plt.subplot(gs[0, 0])
+            # TPF plot
+            mean_tpf = np.mean(tpf.flux.value, axis=0)
+            nx, ny = np.shape(mean_tpf)
+            norm = ImageNormalize(stretch=stretching.LogStretch())
+            division = np.int(np.log10(np.nanmax(tpf.flux.value)))
+            splot = plt.imshow(np.nanmean(tpf.flux, axis=0) / 10 ** division, norm=norm, cmap="viridis", \
+                               extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
+            aperture = fov_process_input.apertures[tpf.sector]
+            aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
+            aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, CUTOUT_SIZE,
+                                                                             CUTOUT_SIZE)
+            Patoso.plot_tpf(tpf, tpf.sector, aperture_boolean, fov_process_input.save_dir)
+            maskcolor = 'salmon'
+            logging.info("    --> Using SHERLOCK aperture for sector %s...", tpf.sector)
+            if aperture is not None:
+                for pixels in aperture:
+                    ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
+                                                    1, 1, color=maskcolor, fill=True, alpha=0.4))
+                    ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
+                                                    1, 1, color=maskcolor, fill=False, alpha=1, lw=2))
+            # Gaia sources
+            gaia_id, mag = tpfplotter.get_gaia_data(fov_process_input.ra, fov_process_input.dec)
+            r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + np.float(maglim), targ_mag=mag)
+            x, y, gaiamags = r
+            x, y, gaiamags = np.array(x) + 0.5, np.array(y) + 0.5, np.array(gaiamags)
+            size = 128.0 / 2 ** ((gaiamags - mag))
+            plt.scatter(x, y, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10)
+            # Gaia source for the target
+            this = np.where(np.array(res['Source']) == int(gaia_id))[0]
+            plt.scatter(x[this], y[this], marker='x', c='white', s=32, zorder=11)
+            # Legend
+            add = 0
+            if np.int(maglim) % 2 != 0:
+                add = 1
+            maxmag = np.int(maglim) + add
+            legend_mags = np.linspace(-2, maxmag, np.int((maxmag + 2) / 2 + 1))
+            fake_sizes = mag + legend_mags  # np.array([mag-2,mag,mag+2,mag+5, mag+8])
+            for f in fake_sizes:
+                size = 128.0 / 2 ** ((f - mag))
+                plt.scatter(0, 0, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10,
+                            label=r'$\Delta m=$ ' + str(np.int(f - mag)))
+            ax1.legend(fancybox=True, framealpha=0.7)
+            # Source labels
+            dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
+            dsort = np.argsort(dist)
+            for d, elem in enumerate(dsort):
+                if dist[elem] < 6:
+                    plt.text(x[elem] + 0.1, y[elem] + 0.1, str(d + 1), color='white', zorder=100)
+            # Orientation arrows
+            tpfplotter.plot_orientation(tpf)
+            # Labels and titles
+            plt.xlim(column, column + ny)
+            plt.ylim(row, row + nx)
+            plt.xlabel('Pixel Column Number', fontsize=16)
+            plt.ylabel('Pixel Row Number', fontsize=16)
+            plt.title('Coordinates ' + fov_process_input.target_title + ' - Sector ' + str(tpf.sector),
+                      fontsize=16)  # + ' - Camera '+str(tpf.camera))  #
+            # Colorbar
+            cbax = plt.subplot(gs[0, 1])  # Place it where it should be.
+            pos1 = cbax.get_position()  # get the original position
+            pos2 = [pos1.x0 - 0.05, pos1.y0, pos1.width, pos1.height]
+            cbax.set_position(pos2)  # set a new position
+            cb = Colorbar(ax=cbax, cmap="viridis", mappable=splot, orientation='vertical', ticklocation='right')
+            plt.xticks(fontsize=14)
+            exponent = r'$\times 10^' + str(division) + '$'
+            cb.set_label(r'Flux ' + exponent + r' (e$^-$)', labelpad=10, fontsize=16)
+            plt.savefig(fov_process_input.save_dir + '/TPF_Gaia_' + fov_process_input.target_title + '_S' +
+                        str(tpf.sector) + '.pdf')
+            # Save Gaia sources info
+            dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
+            GaiaID = np.array(res['Source'])
+            srt = np.argsort(dist)
+            x, y, gaiamags, dist, GaiaID = x[srt], y[srt], gaiamags[srt], dist[srt], GaiaID[srt]
+            IDs = np.arange(len(x)) + 1
+            inside = np.zeros(len(x))
+            for pixels in aperture:
+                xtpf, ytpf = pixels[0], pixels[1]
+                _inside = np.where((x > xtpf) & (x < xtpf + 1) &
+                                   (y > ytpf) & (y < ytpf + 1))[0]
+                inside[_inside] = 1
+            data = Table([IDs, GaiaID, x, y, dist, dist * 21., gaiamags, inside.astype('int')],
+                         names=['# ID', 'GaiaID', 'x', 'y', 'Dist_pix', 'Dist_arcsec', 'Gmag', 'InAper'])
+            ascii.write(data, fov_process_input.save_dir + '/Gaia_' + fov_process_input.target_title + '_S' +
+                        str(tpf.sector) + '.dat', overwrite=True)
+        except SystemExit:
+            logging.exception("Field Of View generation tried to exit.")
+        except Exception as e:
+            logging.exception("Exception found when generating Field Of View plots")
+
+    @staticmethod
+    def vetting_field_of_view(indir, mission, tic, cadence, ra, dec, sectors, source, apertures,
+                              cpus=multiprocessing.cpu_count() - 1):
         """
         Runs TPFPlotter to get field of view data.
-        @param fovProcessInput: with all parameters for the computation
-        @return: the directory where resulting data is stored
+        :param indir: the data source directory
+        :param mission: the mission of the target
+        :param tic: the target id
+        :param cadence: the exposure time between measurements in seconds
+        :param ra: the right ascension of the target
+        :param dec: the declination of the target
+        :param sectors: the sectors where the target was observed
+        :param source: the source where the aperture was generated [tpf, tesscut, eleanor]
+        :param apertures: a dict mapping sectors to boolean apertures
+        :param cpus: cores to be used
+        :return: the directory where resulting data is stored
         """
         try:
-            maglim = 6
-            sectors = [fovProcessInput.sectors] if isinstance(fovProcessInput.sectors, int) else fovProcessInput.sectors
+            sectors = [sectors] if isinstance(sectors, int) else sectors
             sectors_search = None if sectors is not None and len(sectors) == 0 else sectors
             logging.info("Preparing target pixel files for field of view plots")
-            ra_str = str(fovProcessInput.ra)
-            dec_str = "+" + str(fovProcessInput.dec) if fovProcessInput.dec >= 0 else str(fovProcessInput.dec)
-            coords_str = ra_str + " " + dec_str
-            if fovProcessInput.mission != "TESS":
+            if mission != "TESS":
                 return
-            target_title = "TIC " + str(fovProcessInput.tic)
+            target_title = "TIC " + str(tic)
             #TODO use retrieval method depending on source parameter
-            if fovProcessInput.cadence > 120:
+            if cadence > 120:
                 tpf_source = lightkurve.search_tesscut(target_title, sector=sectors_search)
                 if tpf_source is None or len(tpf_source) == 0:
+                    ra_str = str(ra)
+                    dec_str = "+" + str(dec) if dec >= 0 else str(dec)
+                    coords_str = ra_str + " " + dec_str
                     tpf_source = lightkurve.search_tesscut(coords_str, sector=sectors_search)
-                    target_title = "RA={:.4f},DEC={:.4f}".format(fovProcessInput.ra, fovProcessInput.dec)
+                    target_title = "RA={:.4f},DEC={:.4f}".format(ra, dec)
             else:
                 tpf_source = lightkurve.search_targetpixelfile(target_title, sector=sectors_search, author="SPOC",
-                                                               cadence=fovProcessInput.cadence)
-            save_dir = fovProcessInput.indir
+                                                               cadence=cadence)
+            save_dir = indir
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
+            fov_process_inputs = []
             for i in range(0, len(tpf_source)):
-                tpf = tpf_source[i].download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
-                row = tpf.row
-                column = tpf.column
-                plt.close()
-                fig = plt.figure(figsize=(6.93, 5.5))
-                gs = gridspec.GridSpec(1, 3, height_ratios=[1], width_ratios=[1, 0.05, 0.01])
-                gs.update(left=0.05, right=0.95, bottom=0.12, top=0.95, wspace=0.01, hspace=0.03)
-                ax1 = plt.subplot(gs[0, 0])
-                # TPF plot
-                mean_tpf = np.mean(tpf.flux.value, axis=0)
-                nx, ny = np.shape(mean_tpf)
-                norm = ImageNormalize(stretch=stretching.LogStretch())
-                division = np.int(np.log10(np.nanmax(tpf.flux.value)))
-                splot = plt.imshow(np.nanmean(tpf.flux, axis=0) / 10 ** division, norm=norm, cmap="viridis",\
-                                   extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
-                aperture = fovProcessInput.apertures[tpf.sector]
-                aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
-                aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, CUTOUT_SIZE,
-                                                                                 CUTOUT_SIZE)
-                Patoso.plot_tpf(tpf, tpf.sector, aperture_boolean, save_dir)
-                maskcolor = 'salmon'
-                logging.info("    --> Using SHERLOCK aperture for sector %s...", tpf.sector)
-                if aperture is not None:
-                    for pixels in aperture:
-                        ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
-                                                        1, 1, color=maskcolor, fill=True, alpha=0.4))
-                        ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
-                                                        1, 1, color=maskcolor, fill=False, alpha=1, lw=2))
-                # Gaia sources
-                gaia_id, mag = tpfplotter.get_gaia_data(fovProcessInput.ra, fovProcessInput.dec)
-                r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + np.float(maglim), targ_mag=mag)
-                x, y, gaiamags = r
-                x, y, gaiamags = np.array(x) + 0.5, np.array(y) + 0.5, np.array(gaiamags)
-                size = 128.0 / 2 ** ((gaiamags - mag))
-                plt.scatter(x, y, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10)
-                # Gaia source for the target
-                this = np.where(np.array(res['Source']) == int(gaia_id))[0]
-                plt.scatter(x[this], y[this], marker='x', c='white', s=32, zorder=11)
-                # Legend
-                add = 0
-                if np.int(maglim) % 2 != 0:
-                    add = 1
-                maxmag = np.int(maglim) + add
-                legend_mags = np.linspace(-2, maxmag, np.int((maxmag + 2) / 2 + 1))
-                fake_sizes = mag + legend_mags  # np.array([mag-2,mag,mag+2,mag+5, mag+8])
-                for f in fake_sizes:
-                    size = 128.0 / 2 ** ((f - mag))
-                    plt.scatter(0, 0, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10,
-                                label=r'$\Delta m=$ ' + str(np.int(f - mag)))
-                ax1.legend(fancybox=True, framealpha=0.7)
-                # Source labels
-                dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
-                dsort = np.argsort(dist)
-                for d, elem in enumerate(dsort):
-                    if dist[elem] < 6:
-                        plt.text(x[elem] + 0.1, y[elem] + 0.1, str(d + 1), color='white', zorder=100)
-                # Orientation arrows
-                tpfplotter.plot_orientation(tpf)
-                # Labels and titles
-                plt.xlim(column, column + ny)
-                plt.ylim(row, row + nx)
-                plt.xlabel('Pixel Column Number', fontsize=16)
-                plt.ylabel('Pixel Row Number', fontsize=16)
-                plt.title('Coordinates ' + target_title + ' - Sector ' + str(tpf.sector),
-                          fontsize=16)  # + ' - Camera '+str(tpf.camera))  #
-                # Colorbar
-                cbax = plt.subplot(gs[0, 1])  # Place it where it should be.
-                pos1 = cbax.get_position()  # get the original position
-                pos2 = [pos1.x0 - 0.05, pos1.y0, pos1.width, pos1.height]
-                cbax.set_position(pos2)  # set a new position
-                cb = Colorbar(ax=cbax, cmap="viridis", mappable=splot, orientation='vertical', ticklocation='right')
-                plt.xticks(fontsize=14)
-                exponent = r'$\times 10^' + str(division) + '$'
-                cb.set_label(r'Flux ' + exponent + r' (e$^-$)', labelpad=10, fontsize=16)
-                plt.savefig(save_dir + '/TPF_Gaia_' + target_title + '_S' + str(tpf.sector) + '.pdf')
-                # Save Gaia sources info
-                dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
-                GaiaID = np.array(res['Source'])
-                srt = np.argsort(dist)
-                x, y, gaiamags, dist, GaiaID = x[srt], y[srt], gaiamags[srt], dist[srt], GaiaID[srt]
-                IDs = np.arange(len(x)) + 1
-                inside = np.zeros(len(x))
-                for pixels in aperture:
-                    xtpf, ytpf = pixels[0], pixels[1]
-                    _inside = np.where((x > xtpf) & (x < xtpf + 1) &
-                                       (y > ytpf) & (y < ytpf + 1))[0]
-                    inside[_inside] = 1
-                data = Table([IDs, GaiaID, x, y, dist, dist * 21., gaiamags, inside.astype('int')],
-                             names=['# ID', 'GaiaID', 'x', 'y', 'Dist_pix', 'Dist_arcsec', 'Gmag', 'InAper'])
-                ascii.write(data, save_dir + '/Gaia_' + target_title + '_S' + str(tpf.sector) + '.dat', overwrite=True)
+                fov_process_inputs.append(FovProcessInput(save_dir, mission, tic, cadence, ra, dec, sectors, source,
+                                                          apertures, tpf_source[i], target_title))
+            with multiprocessing.Pool(processes=cpus) as pool:
+                pool.map(Patoso.vetting_field_of_view_single, fov_process_inputs)
             return save_dir
         except SystemExit:
             logging.exception("Field Of View generation tried to exit.")
@@ -704,8 +733,8 @@ class SingleTransitProcessInput:
         self.a_rstar = a_rstar
 
 class FovProcessInput:
-    def __init__(self, indir, mission, tic, cadence, ra, dec, sectors, source, apertures):
-        self.indir = indir
+    def __init__(self, save_dir, mission, tic, cadence, ra, dec, sectors, source, apertures, tpf_source, target_title):
+        self.save_dir = save_dir
         self.mission = mission
         self.tic = tic
         self.cadence = cadence
@@ -714,3 +743,5 @@ class FovProcessInput:
         self.sectors = sectors
         self.source = source
         self.apertures = apertures
+        self.tpf_source = tpf_source
+        self.target_title = target_title
