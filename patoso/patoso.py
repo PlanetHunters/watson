@@ -116,7 +116,7 @@ class Patoso:
 
     def vetting_with_data(self, candidate_df, star, cpus):
         """
-
+        Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
         :param star: the star dataframe with the star info.
         :param cpus: the number of cpus to be used.
