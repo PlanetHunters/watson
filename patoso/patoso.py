@@ -151,7 +151,7 @@ class Patoso:
         tpfs_dir = self.object_dir + "/tpfs"
         apertures_file = self.object_dir + "/apertures.yaml"
         try:
-            self.vetting(id, t0, period, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
+            self.vetting(id, period, t0, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file)
         except Exception as e:
             traceback.print_exc()
