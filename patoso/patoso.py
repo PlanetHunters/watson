@@ -567,6 +567,7 @@ class Patoso:
         :param fov_process_input: wrapper for the sector data
         """
         maglim = 6
+        search_radius = 40
         try:
             tpf = fov_process_input.tpf_source.download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
             row = tpf.row
@@ -597,7 +598,8 @@ class Patoso:
                     ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
                                                     1, 1, color=maskcolor, fill=False, alpha=1, lw=2))
             # Gaia sources
-            gaia_id, mag = tpfplotter.get_gaia_data(fov_process_input.ra, fov_process_input.dec)
+            gaia_id, mag = tpfplotter.get_gaia_data(fov_process_input.ra, fov_process_input.dec,
+                                                    search_radius=search_radius)
             r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + np.float(maglim), targ_mag=mag)
             x, y, gaiamags = r
             x, y, gaiamags = np.array(x) + 0.5, np.array(y) + 0.5, np.array(gaiamags)
