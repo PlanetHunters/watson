@@ -51,7 +51,7 @@ class Patoso:
 
     def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
-                create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None):
+                create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None, transits_list=None):
         """
 
         :param id: the target star id
@@ -73,6 +73,7 @@ class Patoso:
         :param cadence_fov: the cadence to use to download fov_plots
         :param ra_fov: the RA to use to download fov_plots
         :param dec_fov: the DEC to use to download fov_plots
+        :param transits_list: a list of dictionaries with shape: {'t0': value, 'depth': value, 'depth_err': value}
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -115,15 +116,16 @@ class Patoso:
         self.data_dir = vetting_dir
         try:
             self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
-                           apertures_file, create_fov_plots, cadence_fov, ra_fov, dec_fov)
+                           apertures_file, create_fov_plots, cadence_fov, ra_fov, dec_fov, transits_list)
         except Exception as e:
             traceback.print_exc()
 
-    def vetting_with_data(self, candidate_df, star, cpus, create_fov_plots=False, cadence_fov=None):
+    def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
         :param star: the star dataframe with the star info.
+        :param transits_df: a dataframe containing the transits information with columns 't0', 'depth' and 'depth_err'
         :param cpus: the number of cpus to be used.
         :param create_fov_plots: whether to generate Field Of View plots.
         :param cadence_fov: the cadence to use to download fov_plots
@@ -154,12 +156,13 @@ class Patoso:
             self.vetting(id, period, t0, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra_fov=star["ra"],
-                         dec_fov=star["dec"])
+                         dec_fov=star["dec"], transits_list=transits_df.to_dict("list"))
         except Exception as e:
             traceback.print_exc()
 
     def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
-                  apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None):
+                  apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
+                  transits_list=None):
         """
         Performs the analysis to generate PNGs and Data Validation Report.
         :param id: the target star id
@@ -179,6 +182,7 @@ class Patoso:
         :param cadence_fov: the cadence to use to download fov_plots
         :param ra_fov: the RA to use to download fov_plots
         :param dec_fov: the DEC to use to download fov_plots
+        :param transits_list: a list of dictionaries with shape: {'t0': value, 'depth': value, 'depth_err': value}
         """
         logging.info("Running Transit Plots")
         apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
@@ -188,6 +192,8 @@ class Patoso:
         if create_fov_plots:
             Patoso.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
                                          list(apertures.keys()), "tpf", apertures, cpus)
+        if transits_list is not None:
+            Patoso.plot_transits_statistics(self.data_dir, id, transits_list)
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         last_time = lc.time.value[len(lc.time.value) - 1]
         num_of_transits = int(ceil(((last_time - t0) / period)))
