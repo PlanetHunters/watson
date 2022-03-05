@@ -50,7 +50,8 @@ class Patoso:
         self.data_dir = self.object_dir
 
     def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
-                cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None):
+                cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
+                create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None):
         """
 
         :param id: the target star id
@@ -68,6 +69,10 @@ class Patoso:
         :param lc_data_file: the file containing the raw curve and the motion, centroids and quality flags
         :param tpfs_dir: the directory containing the tpf files
         :param apertures_file: the file containing the map of sectors->apertures
+        :param create_fov_plots: whether to generate Field Of View plots.
+        :param cadence_fov: the cadence to use to download fov_plots
+        :param ra_fov: the RA to use to download fov_plots
+        :param dec_fov: the DEC to use to download fov_plots
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -110,16 +115,18 @@ class Patoso:
         self.data_dir = vetting_dir
         try:
             self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
-                           apertures_file)
+                           apertures_file, create_fov_plots, cadence_fov, ra_fov, dec_fov)
         except Exception as e:
             traceback.print_exc()
 
-    def vetting_with_data(self, candidate_df, star, cpus):
+    def vetting_with_data(self, candidate_df, star, cpus, create_fov_plots=False, cadence_fov=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
         :param star: the star dataframe with the star info.
         :param cpus: the number of cpus to be used.
+        :param create_fov_plots: whether to generate Field Of View plots.
+        :param cadence_fov: the cadence to use to download fov_plots
         """
         df = candidate_df.iloc[0]
         # TODO get the transit time list
@@ -138,13 +145,6 @@ class Patoso:
             sectors = [sectors]
         else:
             sectors = sectors.split(',')
-        index = 0
-        vetting_dir = self.data_dir + "/vetting_" + str(index)
-        while os.path.exists(vetting_dir) or os.path.isdir(vetting_dir):
-            vetting_dir = self.data_dir + "/vetting_" + str(index)
-            index = index + 1
-        os.mkdir(vetting_dir)
-        self.data_dir = vetting_dir
         lc_file = "/" + str(run) + "/lc_" + str(curve) + ".csv"
         lc_file = self.object_dir + lc_file
         lc_data_file = self.object_dir + "/lc_data.csv"
@@ -152,12 +152,14 @@ class Patoso:
         apertures_file = self.object_dir + "/apertures.yaml"
         try:
             self.vetting(id, period, t0, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
-                         lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file)
+                         lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
+                         create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra_fov=star["ra"],
+                         dec_fov=star["dec"])
         except Exception as e:
             traceback.print_exc()
 
     def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
-                  apertures_file):
+                  apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None):
         """
         Performs the analysis to generate PNGs and Data Validation Report.
         :param id: the target star id
@@ -173,12 +175,19 @@ class Patoso:
         :param lc_data_file: the file containing the raw curve and the motion, centroids and quality flags
         :param tpfs_dir: the directory containing the tpf files
         :param apertures_file: the file containing the apertures
-        @return: the given tic
+        :param create_fov_plots: whether to create FOV plots
+        :param cadence_fov: the cadence to use to download fov_plots
+        :param ra_fov: the RA to use to download fov_plots
+        :param dec_fov: the DEC to use to download fov_plots
         """
         logging.info("Running Transit Plots")
         apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
         apertures = apertures["sectors"]
+        mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         lc, lc_data, tpfs = Patoso.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir)
+        if create_fov_plots:
+            Patoso.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
+                                         list(apertures.keys()), "tpf", apertures, cpus)
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         last_time = lc.time.value[len(lc.time.value) - 1]
         num_of_transits = int(ceil(((last_time - t0) / period)))
@@ -196,6 +205,7 @@ class Patoso:
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir):
+        mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         lc = pd.read_csv(lc_file, header=0)
         lc_data = pd.read_csv(lc_data_file, header=0)
         lc_data = Patoso.normalize_lc_data(lc_data)
@@ -205,7 +215,6 @@ class Patoso:
         lc = TessLightCurve(time=time, flux=flux, flux_err=flux_err, quality=zeros_lc)
         lc.extra_columns = []
         tpfs = []
-        mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         for tpf_file in os.listdir(tpfs_dir):
             tpf = TessTargetPixelFile(tpfs_dir + "/" + tpf_file) if mission == lcbuilder.constants.MISSION_TESS else \
                 KeplerTargetPixelFile(tpfs_dir + "/" + tpf_file)
@@ -540,7 +549,7 @@ class Patoso:
         if not os.path.exists(dir):
             os.mkdir(dir)
         tpf.plot_pixels(aperture_mask=aperture)
-        plt.savefig(dir + "/Flux_pixels[" + str(sector) + "].png")
+        plt.savefig(dir + "/fov_Flux_pixels[" + str(sector) + "].png")
         plt.close()
 
     @staticmethod
@@ -644,8 +653,8 @@ class Patoso:
             plt.xticks(fontsize=14)
             exponent = r'$\times 10^' + str(division) + '$'
             cb.set_label(r'Flux ' + exponent + r' (e$^-$)', labelpad=10, fontsize=16)
-            plt.savefig(fov_process_input.save_dir + '/TPF_Gaia_' + fov_process_input.target_title + '_S' +
-                        str(tpf.sector) + '.pdf')
+            plt.savefig(fov_process_input.save_dir + '/fov_TPF_Gaia_' + fov_process_input.target_title + '_S' +
+                        str(tpf.sector) + '.png')
             # Save Gaia sources info
             dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
             GaiaID = np.array(res['Source'])
@@ -660,7 +669,7 @@ class Patoso:
                 inside[_inside] = 1
             data = Table([IDs, GaiaID, x, y, dist, dist * 21., gaiamags, inside.astype('int')],
                          names=['# ID', 'GaiaID', 'x', 'y', 'Dist_pix', 'Dist_arcsec', 'Gmag', 'InAper'])
-            ascii.write(data, fov_process_input.save_dir + '/Gaia_' + fov_process_input.target_title + '_S' +
+            ascii.write(data, fov_process_input.save_dir + '/fov_Gaia_' + fov_process_input.target_title + '_S' +
                         str(tpf.sector) + '.dat', overwrite=True)
         except SystemExit:
             logging.exception("Field Of View generation tried to exit.")

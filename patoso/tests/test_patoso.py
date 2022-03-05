@@ -53,6 +53,36 @@ class TestsPatoso(unittest.TestCase):
             if os.path.exists(fov_dir):
                 shutil.rmtree(fov_dir, ignore_errors=False)
 
+    def test_vetting_by_params_with_fov(self):
+        object_dir = self.get_path("TIC25155310_[1,_2]")
+        vetting_dir = object_dir + "/vetting_0"
+        try:
+            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, 1, 0.07571,
+                                       cadence=120, cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
+                                       cadence_fov=1800, ra_fov=63.3739396231274, dec_fov=-69.226822697583)
+            files_in_dir = os.listdir(vetting_dir)
+            assert len(files_in_dir) == 12
+        finally:
+            if os.path.exists(vetting_dir):
+                shutil.rmtree(vetting_dir, ignore_errors=False)
+
+    def test_vetting_by_files_with_fov(self):
+        object_dir = self.get_path("TIC25155310_[1,_2]")
+        vetting_dir = object_dir + "/vetting_0"
+        try:
+            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, 1, 0.07571,
+                                       a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
+                                       lc_data_file=object_dir + "/lc_data.csv",
+                                       tpfs_dir=object_dir + "/tpfs",
+                                       apertures_file=object_dir + "/apertures.yaml",
+                                       cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
+                                       cadence_fov=120, ra_fov=63.3739396231274, dec_fov=-69.226822697583)
+            files_in_dir = os.listdir(vetting_dir)
+            assert len(files_in_dir) == 12
+        finally:
+            if os.path.exists(vetting_dir):
+                shutil.rmtree(vetting_dir, ignore_errors=False)
+
     def get_path(self, path):
         return pkg_resources.resource_filename(__name__, path)
 
