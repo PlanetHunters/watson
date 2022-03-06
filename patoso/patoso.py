@@ -193,17 +193,21 @@ class Patoso:
             Patoso.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
                                          list(apertures.keys()), "tpf", apertures, cpus)
         if transits_list is not None:
-            Patoso.plot_transits_statistics(self.data_dir, id, t0, period, transits_list)
+            transits_list_not_nan_indexes = \
+                Patoso.plot_transits_statistics(self.data_dir, id, t0, period, transits_list)
+            transit_t0s_list = np.array(transits_list["t0"])[transits_list_not_nan_indexes]
+        else:
+            last_time = lc.time.value[len(lc.time.value) - 1]
+            num_of_transits = int(ceil(((last_time - t0) / period)))
+            transit_lists = t0 + period * np.arange(0, num_of_transits)
+            time_as_array = lc.time.value
+            transits_in_data = [time_as_array[(transit > time_as_array - 0.5) & (transit < time_as_array + 0.5)] for
+                                transit in transit_lists]
+            transit_t0s_list = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
-        last_time = lc.time.value[len(lc.time.value) - 1]
-        num_of_transits = int(ceil(((last_time - t0) / period)))
-        transit_lists = t0 + period * np.arange(0, num_of_transits)
-        time_as_array = lc.time.value
-        transits_in_data = [time_as_array[(transit > time_as_array - 0.5) & (transit < time_as_array + 0.5)] for transit in transit_lists]
-        transit_lists = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
         plot_transits_inputs = []
-        for index, transit_times in enumerate(transit_lists):
-            plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), lc_file, lc_data_file,
+        for index, transit_times in enumerate(transit_t0s_list):
+            plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,
                                                                   tpfs_dir, apertures, transit_times, depth / 1000,
                                                                   duration, period, rp_rstar, a_rstar))
         with multiprocessing.Pool(processes=cpus) as pool:
@@ -282,6 +286,7 @@ class Patoso:
         plt.savefig(data_dir + "/transit_depths.png")
         plt.clf()
         plt.close()
+        return transits_list_not_nan_indexes
 
     @staticmethod
     def plot_single_transit(single_transit_process_input):
@@ -297,7 +302,7 @@ class Patoso:
         transit_time = single_transit_process_input.transit_times
         duration = single_transit_process_input.duration / 60 / 24
         fig = plt.figure(figsize=(24, 6), constrained_layout=True)
-        fig.suptitle('Vetting of ' + str(single_transit_process_input.id) + ' single transit at T=' +
+        fig.suptitle('Vetting of ' + str(single_transit_process_input.id) + ' single transit at T0=' +
                      str(round(transit_time, 2)) + 'd', size=26)
         gs = gridspec.GridSpec(2, 3, hspace=0.4, wspace=0.1)  # 2 rows, 3 columns
         ax1 = fig.add_subplot(gs[0, 0])  # First row, first column
@@ -344,8 +349,10 @@ class Patoso:
                     if True in eroded_aperture_mask:
                         smaller_aperture_lc = tpf.to_lightcurve(aperture_mask=eroded_aperture_mask)
                     break
-            single_transit_file = single_transit_process_input.data_dir + "/single_transit_" + str(transit_time) + ".png"
-            tpf_single_transit_file = single_transit_process_input.data_dir + "/tpf_single_transit_" + str(transit_time) + ".png"
+            single_transit_file = single_transit_process_input.data_dir + "/single_transit_" + \
+                                  str(single_transit_process_input.index) + "_T0_" + str(transit_time) + ".png"
+            tpf_single_transit_file = single_transit_process_input.data_dir + "/tpf_single_transit_" + \
+                                      str(single_transit_process_input.index) + "_T0_" + str(transit_time) + ".png"
             t1 = transit_time - duration / 2
             t4 = transit_time + duration / 2
             model_time, model_flux = Patoso.get_transit_model(duration, transit_time,
@@ -770,10 +777,11 @@ class Patoso:
             logging.exception("Exception found when generating Field Of View plots")
 
 class SingleTransitProcessInput:
-    def __init__(self, data_dir, id, lc_file, lc_data_file, tpfs_dir, apertures,
+    def __init__(self, data_dir, id, index, lc_file, lc_data_file, tpfs_dir, apertures,
                                          transit_times, depth, duration, period, rp_rstar, a_rstar):
         self.data_dir = data_dir
         self.id = id
+        self.index = index
         self.lc_file = lc_file
         self.lc_data_file = lc_data_file
         self.tpfs_dir = tpfs_dir

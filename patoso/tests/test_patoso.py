@@ -89,7 +89,7 @@ class TestsPatoso(unittest.TestCase):
         try:
             transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
             transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
-            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, 1, 0.07571,
+            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
