@@ -193,7 +193,7 @@ class Patoso:
             Patoso.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
                                          list(apertures.keys()), "tpf", apertures, cpus)
         if transits_list is not None:
-            Patoso.plot_transits_statistics(self.data_dir, id, transits_list)
+            Patoso.plot_transits_statistics(self.data_dir, id, t0, period, transits_list)
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         last_time = lc.time.value[len(lc.time.value) - 1]
         num_of_transits = int(ceil(((last_time - t0) / period)))
@@ -249,30 +249,36 @@ class Patoso:
 
     @staticmethod
     def plot_transits_statistics(data_dir, id, epoch, period, transits_list):
-        fig, axs = plt.subplots(1, 1, figsize=(6, 12), constrained_layout=True)
-        fig.suptitle(str(id) + 'Transits depth analysis', size=26)
-        transits_list_not_nan_t0s_indexes = np.argwhere(~np.isnan(transits_list["t0"]))
-        transits_list_not_nan_depths_indexes = np.argwhere(~np.isnan(transits_list["depth"]))
+        fig, axs = plt.subplots(1, 1, figsize=(12, 6), constrained_layout=True)
+        fig.suptitle(str(id) + ' Transits depth analysis T0=' + str(round(epoch, 2)) + ' P=' + str(round(period, 2)) + 'd', size=18)
+        transits_list_not_nan_t0s_indexes = np.argwhere(~np.isnan(transits_list["t0"])).flatten()
+        transits_list_not_nan_depths_indexes = np.argwhere(~np.isnan(transits_list["depth"])).flatten()
         transits_list_not_nan_indexes = np.intersect1d(transits_list_not_nan_t0s_indexes, transits_list_not_nan_depths_indexes)
-        transits_list_t0s = transits_list["t0"][transits_list_not_nan_indexes]
-        transits_list_depths = transits_list["depth"][transits_list_not_nan_indexes]
-        transits_list_depths_err = transits_list["depth_err"][transits_list_not_nan_indexes]
-        even_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) < 0.1) &
-                                            (np.abs((transits_list_t0s - epoch) % period) >= 0.1))
-        odd_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) >= 0.1) &
-                                           (np.abs((transits_list_t0s - epoch) % period) < 0.1))
-        axs.errorbar(even_transits_indexes, transits_list_depths[even_transits_indexes],
-                        y_err=transits_list_depths_err[even_transits_indexes],
-                        color="blue", ecolor="cyan", label="Even transits")
-        axs.errorbar(odd_transits_indexes, transits_list_depths[odd_transits_indexes],
-                        y_err=transits_list_depths_err[odd_transits_indexes],
-                        color="red", ecolor="darkorange", label="Odd transits")
+        transits_list_t0s = np.array(transits_list["t0"])[transits_list_not_nan_indexes]
+        transits_list_depths = np.array(transits_list["depth"])[transits_list_not_nan_indexes]
+        transits_list_depths_err = np.array(transits_list["depth_err"])[transits_list_not_nan_indexes]
+        even_transits_indexes = np.argwhere(np.abs((transits_list_t0s - epoch) % (2 * period)) < 0.1).flatten()
+        odd_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) > period - 0.05) &
+                                           (np.abs((transits_list_t0s - epoch) % (2 * period)) < period + 0.05)).flatten()
+        axs.axhline(y=np.mean(transits_list_depths), color='purple', alpha=0.3,
+                    ls='-', lw=2, label='Depth Mean')
+        axs.axhline(y=np.percentile(transits_list_depths, 84), color='purple', alpha=0.3,
+                    ls='--', lw=2, label='Depth 1-sigma confidence')
+        axs.axhline(y=np.percentile(transits_list_depths, 18), color='purple', alpha=0.3,
+                    ls='--', lw=2)
+        axs.axhline(y=np.mean(transits_list_depths[even_transits_indexes]), color='blue', alpha=0.3,
+                    ls='-', lw=2, label='Depth Mean Even')
+        axs.axhline(y=np.mean(transits_list_depths[odd_transits_indexes]), color='red', alpha=0.3,
+                    ls='-', lw=2, label='Depth Mean Odd')
+        axs.errorbar(x=even_transits_indexes, y=transits_list_depths[even_transits_indexes],
+                     yerr=transits_list_depths_err[even_transits_indexes],
+                     fmt="o", color="blue", ecolor="cyan", label="Even transits")
+        axs.errorbar(x=odd_transits_indexes, y=transits_list_depths[odd_transits_indexes],
+                     yerr=transits_list_depths_err[odd_transits_indexes],
+                     fmt="o", color="red", ecolor="darkorange", label="Odd transits")
+        axs.legend(loc='center left', bbox_to_anchor=(1, 0.5))
         axs.set_xlabel("Transit number")
         axs.set_ylabel("Depth (ppt)")
-        axs.axhline(y=np.percentile(transits_list_depths), color='purple', alpha=0.3,
-                    ls='--', lw=2, label='Depth 1-sigma confidence')
-        axs.axhline(y=np.percentile(transits_list_depths), color='black', alpha=0.3,
-                    ls='--', lw=2, label='Depth 2-sigma confidence')
         plt.savefig(data_dir + "/transit_depths.png")
         plt.clf()
         plt.close()
