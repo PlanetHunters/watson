@@ -248,6 +248,36 @@ class Patoso:
         return lc_data
 
     @staticmethod
+    def plot_transits_statistics(data_dir, id, epoch, period, transits_list):
+        fig, axs = plt.subplots(1, 1, figsize=(6, 12), constrained_layout=True)
+        fig.suptitle(str(id) + 'Transits depth analysis', size=26)
+        transits_list_not_nan_t0s_indexes = np.argwhere(~np.isnan(transits_list["t0"]))
+        transits_list_not_nan_depths_indexes = np.argwhere(~np.isnan(transits_list["depth"]))
+        transits_list_not_nan_indexes = np.intersect1d(transits_list_not_nan_t0s_indexes, transits_list_not_nan_depths_indexes)
+        transits_list_t0s = transits_list["t0"][transits_list_not_nan_indexes]
+        transits_list_depths = transits_list["depth"][transits_list_not_nan_indexes]
+        transits_list_depths_err = transits_list["depth_err"][transits_list_not_nan_indexes]
+        even_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) < 0.1) &
+                                            (np.abs((transits_list_t0s - epoch) % period) >= 0.1))
+        odd_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) >= 0.1) &
+                                           (np.abs((transits_list_t0s - epoch) % period) < 0.1))
+        axs.errorbar(even_transits_indexes, transits_list_depths[even_transits_indexes],
+                        y_err=transits_list_depths_err[even_transits_indexes],
+                        color="blue", ecolor="cyan", label="Even transits")
+        axs.errorbar(odd_transits_indexes, transits_list_depths[odd_transits_indexes],
+                        y_err=transits_list_depths_err[odd_transits_indexes],
+                        color="red", ecolor="darkorange", label="Odd transits")
+        axs.set_xlabel("Transit number")
+        axs.set_ylabel("Depth (ppt)")
+        axs.axhline(y=np.percentile(transits_list_depths), color='purple', alpha=0.3,
+                    ls='--', lw=2, label='Depth 1-sigma confidence')
+        axs.axhline(y=np.percentile(transits_list_depths), color='black', alpha=0.3,
+                    ls='--', lw=2, label='Depth 2-sigma confidence')
+        plt.savefig(data_dir + "/transit_depths.png")
+        plt.clf()
+        plt.close()
+
+    @staticmethod
     def plot_single_transit(single_transit_process_input):
         """
         Plots the single transit info: single transit focused curve, drift and background plots, small vs used aperture
