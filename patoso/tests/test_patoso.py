@@ -59,7 +59,7 @@ class TestsPatoso(unittest.TestCase):
         try:
             Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
-                                       cadence_fov=1800, ra_fov=63.3739396231274, dec_fov=-69.226822697583)
+                                       cadence_fov=1800, ra=63.3739396231274, dec=-69.226822697583)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 23
         finally:
@@ -76,7 +76,7 @@ class TestsPatoso(unittest.TestCase):
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
                                        cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
-                                       cadence_fov=120, ra_fov=63.3739396231274, dec_fov=-69.226822697583)
+                                       cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 23
         finally:
@@ -95,7 +95,8 @@ class TestsPatoso(unittest.TestCase):
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
                                        cpus=multiprocessing.cpu_count() // 2,
-                                       transits_list=transits_list_df.to_dict("list"))
+                                       transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
+                                       dec=-69.226822697583)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 18
         finally:

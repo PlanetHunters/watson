@@ -32,12 +32,11 @@ import six
 import sys
 
 from patoso import constants, tpfplotter
-
-sys.modules['astropy.extern.six'] = six
-matplotlib.use('Agg')
 import pandas as pd
 import os
 from math import ceil
+
+from patoso.report import Report
 
 
 class Patoso:
@@ -51,9 +50,10 @@ class Patoso:
 
     def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
-                create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None, transits_list=None):
+                create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
+                v=None, j=None, h=None, k=None):
         """
-
+        Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
         :param period: the period of the candidate in days
         :param t0: the epoch in days
@@ -71,9 +71,13 @@ class Patoso:
         :param apertures_file: the file containing the map of sectors->apertures
         :param create_fov_plots: whether to generate Field Of View plots.
         :param cadence_fov: the cadence to use to download fov_plots
-        :param ra_fov: the RA to use to download fov_plots
-        :param dec_fov: the DEC to use to download fov_plots
+        :param ra: the RA to use to download fov_plots
+        :param dec: the DEC to use to download fov_plots
         :param transits_list: a list of dictionaries with shape: {'t0': value, 'depth': value, 'depth_err': value}
+        :param v: star V magnitude
+        :param j: star J magnitude
+        :param h: star H magnitude
+        :param k: star K magnitude
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -115,10 +119,15 @@ class Patoso:
         os.mkdir(vetting_dir)
         self.data_dir = vetting_dir
         try:
-            self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
-                           apertures_file, create_fov_plots, cadence_fov, ra_fov, dec_fov, transits_list)
+            transits_list_t0s = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
+                           apertures_file, create_fov_plots, cadence_fov, ra, dec, transits_list)
+            self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, v, j, h, k)
         except Exception as e:
             traceback.print_exc()
+
+    def report(self, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k):
+        report = Report(self.data_dir, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k)
+        report.create_report()
 
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None):
         """
@@ -155,8 +164,8 @@ class Patoso:
         try:
             self.vetting(id, period, t0, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
-                         create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra_fov=star["ra"],
-                         dec_fov=star["dec"], transits_list=transits_df.to_dict("list"))
+                         create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
+                         dec=star["dec"], transits_list=transits_df.to_dict("list"))
         except Exception as e:
             traceback.print_exc()
 
@@ -212,6 +221,7 @@ class Patoso:
                                                                   duration, period, rp_rstar, a_rstar))
         with multiprocessing.Pool(processes=cpus) as pool:
             pool.map(Patoso.plot_single_transit, plot_transits_inputs)
+        return transit_t0s_list
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir):
@@ -302,8 +312,9 @@ class Patoso:
         transit_time = single_transit_process_input.transit_times
         duration = single_transit_process_input.duration / 60 / 24
         fig = plt.figure(figsize=(24, 6), constrained_layout=True)
-        fig.suptitle('Vetting of ' + str(single_transit_process_input.id) + ' single transit at T0=' +
-                     str(round(transit_time, 2)) + 'd', size=26)
+        fig.suptitle('Vetting of ' + str(single_transit_process_input.id) + ' single transit no. ' +
+                     str(single_transit_process_input.index) +
+                     ' at T0=' + str(round(transit_time, 2)) + 'd', size=26)
         gs = gridspec.GridSpec(2, 3, hspace=0.4, wspace=0.1)  # 2 rows, 3 columns
         ax1 = fig.add_subplot(gs[0, 0])  # First row, first column
         ax2 = fig.add_subplot(gs[0, 1])  # First row, second column
