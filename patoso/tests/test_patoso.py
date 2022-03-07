@@ -2,6 +2,8 @@ import multiprocessing
 import os
 import shutil
 import unittest
+
+import numpy
 import pandas as pd
 import pkg_resources
 import yaml
@@ -102,6 +104,20 @@ class TestsPatoso(unittest.TestCase):
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
+
+    def test_create_report(self):
+        object_dir = self.get_path("TIC25155310_[1,_2]")
+        vetting_dir = self.get_path("vetting_test")
+        transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
+        transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
+        transits_list_df = transits_list_df[transits_list_df["depth"].notnull()]
+        transits_list_df = transits_list_df[transits_list_df["t0"].notnull()]
+        transits_list = numpy.array(transits_list_df.to_dict("list")["t0"])
+        transits_list = transits_list[~numpy.isnan(transits_list)]
+        Patoso(vetting_dir).report("TIC 25155310", 63.3739396231274, -69.226822697583, 1327.51, 3.2899, 199, 6.082,
+                                   transits_list, None, None, None, None)
+        files_in_dir = os.listdir(vetting_dir)
+        assert len(files_in_dir) == 18
 
     def get_path(self, path):
         return pkg_resources.resource_filename(__name__, path)

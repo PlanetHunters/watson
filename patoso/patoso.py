@@ -119,15 +119,22 @@ class Patoso:
         os.mkdir(vetting_dir)
         self.data_dir = vetting_dir
         try:
-            transits_list_t0s = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
-                           apertures_file, create_fov_plots, cadence_fov, ra, dec, transits_list)
+            transits_list_t0s, summary_list_t0s = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
+                                                                 cpus, lc_file, lc_data_file, tpfs_dir,
+                                                                 apertures_file, create_fov_plots, cadence_fov, ra,
+                                                                 dec, transits_list)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, v, j, h, k)
         except Exception as e:
             traceback.print_exc()
 
     def report(self, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k):
-        report = Report(self.data_dir, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k)
+        file_name = "data_validation_report.pdf"
+        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k)
         report.create_report()
+        file_name = "data_validation_report_summary.pdf"
+        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k)
+        report.create_report()
+
 
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None):
         """
@@ -205,6 +212,12 @@ class Patoso:
             transits_list_not_nan_indexes = \
                 Patoso.plot_transits_statistics(self.data_dir, id, t0, period, transits_list)
             transit_t0s_list = np.array(transits_list["t0"])[transits_list_not_nan_indexes]
+            transit_depths = np.array(transits_list["depth"])[transits_list_not_nan_indexes]
+            summary_t0s_indexes = np.argwhere((transit_depths == np.max(transits_list["depth"])) |
+                                              (transit_depths == np.min(transits_list["depth"]))).flatten()
+            if len(transit_depths) > 2:
+                summary_t0s_indexes = np.append(summary_t0s_indexes, np.argwhere((transit_depths < np.percentile(transits_list["depth"], 84)) |
+                            (transit_depths > np.percentile(transits_list["depth"], 16))).flatten()[0])
         else:
             last_time = lc.time.value[len(lc.time.value) - 1]
             num_of_transits = int(ceil(((last_time - t0) / period)))
@@ -221,7 +234,7 @@ class Patoso:
                                                                   duration, period, rp_rstar, a_rstar))
         with multiprocessing.Pool(processes=cpus) as pool:
             pool.map(Patoso.plot_single_transit, plot_transits_inputs)
-        return transit_t0s_list
+        return transit_t0s_list, summary_t0s_indexes
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir):
