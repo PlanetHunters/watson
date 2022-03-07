@@ -47,7 +47,7 @@ class Patoso:
     """
     def __init__(self, object_dir):
         self.object_dir = os.getcwd() if object_dir is None else object_dir
-        self.data_dir = self.object_dir
+        self.data_dir = self.object_dir + "/"
 
     def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
