@@ -1,5 +1,7 @@
 # import os
 import datetime
+import os
+
 from astropy.coordinates import Angle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -19,8 +21,10 @@ resources_dir = path.join(path.dirname(__file__))
 class Report:
     LOGO_IMAGE = resources_dir + "/resources/images/patoso.png"
 
-    def __init__(self, data_dir, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list, v, j, h, k):
+    def __init__(self, data_dir, file_name, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list,
+                 summary_list_t0s_indexes, v, j, h, k):
         self.data_dir = data_dir
+        self.file_name = file_name
         self.object_id = object_id
         self.ra = ra
         self.dec = dec
@@ -29,6 +33,7 @@ class Report:
         self.duration = duration
         self.depth = depth
         self.transit_t0s_list = transit_t0s_list
+        self.summary_list_t0s_indexes = summary_list_t0s_indexes
         self.v = v
         self.j = j
         self.h = h
@@ -127,8 +132,8 @@ class Report:
 
         # Generamos la tabla 1 con los parámetros:
         tabla1_data = [['RA (deg)', 'Dec (deg)', 'V (mag)', 'J (mag)', 'H (mag)', 'K (mag)'],
-                       [Angle(self.ra, u.deg).to_string(unit=u.hourangle, sep=':', precision=2),
-                        Angle(self.dec, u.deg).to_string(unit=u.deg, sep=':', precision=2),
+                       [Angle(self.ra, u.deg).to_string(unit=u.hourangle, sep=':', precision=2) if self.ra is not None else '-',
+                        Angle(self.dec, u.deg).to_string(unit=u.deg, sep=':', precision=2) if self.dec is not None else '-',
                         round(self.v, 2) if self.v is not None else '-',
                         round(self.j, 2) if self.j is not None else '-',
                         round(self.h, 2) if self.h is not None else '-',
@@ -164,13 +169,14 @@ class Report:
                              'The candidate parameters.</font>'
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
-        story.append(Image(self.data_dir + "/transit_depths.png", width=16 * cm, height=9 * cm))
-        table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure 1: </strong>' \
-                             'The candidate single-transits depths plot.</font>'
-        story.append(Spacer(1, 5))
-        story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
-
-        story.append(Spacer(1, 15))
+        transit_depths_file = self.data_dir + "/transit_depths.png"
+        if os.path.exists(transit_depths_file):
+            story.append(Image(transit_depths_file, width=16 * cm, height=9 * cm))
+            table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure 1: </strong>' \
+                                 'The candidate single-transits depths plot.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
         story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=16 * cm))
         table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure 2: </strong>' \
                              'The candidate folded curve at T0 and its opposite for the selected ' \
@@ -196,21 +202,25 @@ class Report:
         ))
         # Pasamos a la siguiente página:
         story.append(PageBreak())
+        figure = 3
         for index, transit_time in enumerate(self.transit_t0s_list):
-            image = Image(self.data_dir + "/single_transit_" + str(index) + "_T0_" + str(transit_time) + ".png",
-                          width=17*cm, height=24*cm)
-            story.append(image)
-            table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure %s: </strong>' \
-                                 'The single transit no. %s vetting plots</font>' % (str(index + 3), str(index))
-            story.append(Spacer(1, 5))
-            story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
-            story.append(PageBreak())
+            if self.summary_list_t0s_indexes is None or (self.summary_list_t0s_indexes is not None and
+                                                         index in self.summary_list_t0s_indexes):
+                image = Image(self.data_dir + "/single_transit_" + str(index) + "_T0_" + str(transit_time) + ".png",
+                              width=17*cm, height=24*cm)
+                story.append(image)
+                table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure %s: </strong>' \
+                                     'The single transit no. %s vetting plots</font>' % (str(figure), str(index))
+                story.append(Spacer(1, 5))
+                story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
+                story.append(PageBreak())
+                figure = figure + 1
 
         # Construimos el documento:
         global_frame = Frame(1.5 * cm, 1.1 * cm, 18 * cm, 25.4 * cm, id='normal', showBoundary=0)
         global_template = PageTemplate(id='UnaColumna', frames=global_frame,
                                        onPage=self.create_header, onPageEnd=self.create_footer)
-        doc = BaseDocTemplate(self.data_dir + "/" + self.object_id + "_data_validation_report.pdf", pagesize=A4,
+        doc = BaseDocTemplate(self.data_dir + "/" + self.object_id + "_" + self.file_name, pagesize=A4,
                               rightMargin=40, leftMargin=40,
                               topMargin=95, bottomMargin=15,
                               pageTemplates=global_template)

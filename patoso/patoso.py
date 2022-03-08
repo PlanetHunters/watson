@@ -51,7 +51,7 @@ class Patoso:
     def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
-                v=None, j=None, h=None, k=None):
+                v=None, j=None, h=None, k=None, clean=True):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -78,6 +78,7 @@ class Patoso:
         :param j: star J magnitude
         :param h: star H magnitude
         :param k: star K magnitude
+        :param clean: whether to clean all the pngs created for the final pdfs
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -119,20 +120,27 @@ class Patoso:
         os.mkdir(vetting_dir)
         self.data_dir = vetting_dir
         try:
-            transits_list_t0s, summary_list_t0s = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
+            transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
                                                                  dec, transits_list)
-            self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, v, j, h, k)
+            self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes, v, j, h, k)
+            if clean:
+                for filename in os.listdir(self.data_dir):
+                    if not filename.endswith(".pdf"):
+                        os.remove(filename)
+
         except Exception as e:
             traceback.print_exc()
 
-    def report(self, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k):
+    def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k):
         file_name = "data_validation_report.pdf"
-        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k)
+        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, None,
+                        v, j, h, k)
         report.create_report()
         file_name = "data_validation_report_summary.pdf"
-        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k)
+        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list,
+                        summary_list_t0s_indexes, v, j, h, k)
         report.create_report()
 
 
@@ -208,6 +216,7 @@ class Patoso:
         if create_fov_plots:
             Patoso.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
                                          list(apertures.keys()), "tpf", apertures, cpus)
+        summary_t0s_indexes = None
         if transits_list is not None:
             transits_list_not_nan_indexes = \
                 Patoso.plot_transits_statistics(self.data_dir, id, t0, period, transits_list)
@@ -216,14 +225,15 @@ class Patoso:
             summary_t0s_indexes = np.argwhere((transit_depths == np.max(transits_list["depth"])) |
                                               (transit_depths == np.min(transits_list["depth"]))).flatten()
             if len(transit_depths) > 2:
-                summary_t0s_indexes = np.append(summary_t0s_indexes, np.argwhere((transit_depths < np.percentile(transits_list["depth"], 84)) |
-                            (transit_depths > np.percentile(transits_list["depth"], 16))).flatten()[0])
+                closest_depths_to_mean = np.abs(transit_depths - depth)
+                summary_t0s_indexes = np.append(summary_t0s_indexes, np.argmin(closest_depths_to_mean))
         else:
             last_time = lc.time.value[len(lc.time.value) - 1]
             num_of_transits = int(ceil(((last_time - t0) / period)))
             transit_lists = t0 + period * np.arange(0, num_of_transits)
             time_as_array = lc.time.value
-            transits_in_data = [time_as_array[(transit > time_as_array - 0.5) & (transit < time_as_array + 0.5)] for
+            plot_range = duration / 3600 * 2
+            transits_in_data = [time_as_array[(transit > time_as_array - plot_range) & (transit < time_as_array + plot_range)] for
                                 transit in transit_lists]
             transit_t0s_list = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)

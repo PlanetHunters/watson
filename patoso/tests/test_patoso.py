@@ -13,19 +13,19 @@ from patoso.patoso import Patoso
 
 class TestsPatoso(unittest.TestCase):
     def test_vetting_by_params(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
             Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
-                                       cadence=120, cpus=multiprocessing.cpu_count() // 2)
+                                       cadence=120, cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 17
+            assert len(files_in_dir) == 19
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
     def test_vetting_by_files(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
             Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
@@ -33,15 +33,15 @@ class TestsPatoso(unittest.TestCase):
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
-                                       cpus=multiprocessing.cpu_count() // 2)
+                                       cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 17
+            assert len(files_in_dir) == 19
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
     def test_fov_plots(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
         fov_dir = object_dir + "/fov"
         os.mkdir(fov_dir)
         try:
@@ -56,20 +56,20 @@ class TestsPatoso(unittest.TestCase):
                 shutil.rmtree(fov_dir, ignore_errors=False)
 
     def test_vetting_by_params_with_fov(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
             Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
-                                       cadence_fov=1800, ra=63.3739396231274, dec=-69.226822697583)
+                                       cadence_fov=1800, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 23
+            assert len(files_in_dir) == 25
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
     def test_vetting_by_files_with_fov(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
             Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
@@ -78,15 +78,15 @@ class TestsPatoso(unittest.TestCase):
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
                                        cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
-                                       cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583)
+                                       cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 23
+            assert len(files_in_dir) == 25
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
     def test_vetting_by_files_with_transits_list(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
             transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
@@ -98,16 +98,16 @@ class TestsPatoso(unittest.TestCase):
                                        apertures_file=object_dir + "/apertures.yaml",
                                        cpus=multiprocessing.cpu_count() // 2,
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
-                                       dec=-69.226822697583)
+                                       dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 18
+            assert len(files_in_dir) == 20
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
     def test_create_report(self):
-        object_dir = self.get_path("TIC25155310_[1,_2]")
-        vetting_dir = self.get_path("vetting_test")
+        object_dir = TestsPatoso.get_path("TIC25155310_[1,_2]")
+        vetting_dir = TestsPatoso.get_path("vetting_test")
         transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
         transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
         transits_list_df = transits_list_df[transits_list_df["depth"].notnull()]
@@ -115,11 +115,17 @@ class TestsPatoso(unittest.TestCase):
         transits_list = numpy.array(transits_list_df.to_dict("list")["t0"])
         transits_list = transits_list[~numpy.isnan(transits_list)]
         Patoso(vetting_dir).report("TIC 25155310", 63.3739396231274, -69.226822697583, 1327.51, 3.2899, 199, 6.082,
-                                   transits_list, None, None, None, None)
+                                   transits_list, [2, 5, 7], None, None, None, None)
         files_in_dir = os.listdir(vetting_dir)
-        assert len(files_in_dir) == 18
+        assert len(files_in_dir) == 20
 
-    def get_path(self, path):
+    @staticmethod
+    def get_path(path):
+        """
+        Gets right path for tests environment
+        :param path:
+        :return: the real path of the test resource
+        """
         return pkg_resources.resource_filename(__name__, path)
 
 
