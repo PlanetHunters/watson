@@ -19,7 +19,7 @@ width, height = A4
 resources_dir = path.join(path.dirname(__file__))
 
 class Report:
-    LOGO_IMAGE = resources_dir + "/resources/images/watson.png"
+    LOGO_IMAGE = resources_dir + "/resources/images/sherlock3.png"
 
     def __init__(self, data_dir, file_name, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list,
                  summary_list_t0s_indexes, v, j, h, k):
