@@ -126,7 +126,7 @@ class Watson:
             if clean:
                 for filename in os.listdir(self.data_dir):
                     if not filename.endswith(".pdf"):
-                        os.remove(filename)
+                        os.remove(self.data_dir + "/" + filename)
 
         except Exception as e:
             traceback.print_exc()
