@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 version = "0.1.1"
 setuptools.setup(
-    name="watson", # Replace with your own username
+    name="dearwatson", # Replace with your own username
     version=version,
     author="M. Dévora-Pajares",
     author_email="mdevorapajares@protonmail.com",
