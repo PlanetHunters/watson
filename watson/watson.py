@@ -292,7 +292,9 @@ class Watson:
         transits_list_t0s = np.array(transits_list["t0"])[transits_list_not_nan_indexes]
         transits_list_depths = np.array(transits_list["depth"])[transits_list_not_nan_indexes]
         transits_list_depths_err = np.array(transits_list["depth_err"])[transits_list_not_nan_indexes]
-        even_transits_indexes = np.argwhere(np.abs((transits_list_t0s - epoch) % (2 * period)) < 0.1).flatten()
+        even_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) < 0.1) |
+                                            (np.abs((transits_list_t0s - epoch) % (2 * period)) > (
+                                                        2 * period) - 0.1)).flatten()
         odd_transits_indexes = np.argwhere((np.abs((transits_list_t0s - epoch) % (2 * period)) > period - 0.05) &
                                            (np.abs((transits_list_t0s - epoch) % (2 * period)) < period + 0.05)).flatten()
         axs.axhline(y=np.mean(transits_list_depths), color='purple', alpha=0.3,
