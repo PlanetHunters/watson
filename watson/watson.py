@@ -165,7 +165,7 @@ class Watson:
         run = int(df['number'])
         curve = int(df['curve'])
         sectors = df['sectors']
-        if isinstance(sectors, int):
+        if isinstance(sectors, (int, np.integer)):
             sectors = [sectors]
         else:
             sectors = sectors.split(',')
