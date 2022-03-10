@@ -5,11 +5,11 @@ with open("README.md", "r") as fh:
 
 version = "0.1.1"
 setuptools.setup(
-    name="patoso", # Replace with your own username
+    name="watson", # Replace with your own username
     version=version,
     author="M. Dévora-Pajares",
     author_email="mdevorapajares@protonmail.com",
-    description="Photometry Analysis of Transiting Objects from Space Observations",
+    description="Visual Vetting and Analysis of Transits from Space ObservatioNs",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/PlanetHunters/patoso",
