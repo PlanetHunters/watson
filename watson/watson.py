@@ -132,11 +132,11 @@ class Watson:
             traceback.print_exc()
 
     def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k):
-        file_name = "data_validation_report.pdf"
+        file_name = "transits_validation_report.pdf"
         report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, None,
                         v, j, h, k)
         report.create_report()
-        file_name = "data_validation_report_summary.pdf"
+        file_name = "transits_validation_report_summary.pdf"
         report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list,
                         summary_list_t0s_indexes, v, j, h, k)
         report.create_report()
