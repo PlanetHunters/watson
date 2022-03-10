@@ -12,7 +12,7 @@ setuptools.setup(
     description="Visual Vetting and Analysis of Transits from Space ObservatioNs",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/PlanetHunters/patoso",
+    url="https://github.com/PlanetHunters/watson",
     packages=setuptools.find_packages(),
     include_package_data=True,
     classifiers=[

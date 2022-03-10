@@ -8,7 +8,7 @@ import pandas as pd
 import pkg_resources
 import yaml
 
-from patoso.patoso import Patoso
+from watson.watson import Watson
 
 
 class TestsWatson(unittest.TestCase):
@@ -16,7 +16,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 19
@@ -28,7 +28,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
@@ -47,7 +47,7 @@ class TestsWatson(unittest.TestCase):
         try:
             apertures = yaml.load(open(object_dir + "/apertures.yaml"), yaml.SafeLoader)
             apertures = apertures["sectors"]
-            Patoso(object_dir).vetting_field_of_view(fov_dir, "TESS", "25155310", 120, 63.374706, -69.226593, [1, 2],
+            Watson(object_dir).vetting_field_of_view(fov_dir, "TESS", "25155310", 120, 63.374706, -69.226593, [1, 2],
                                                      "tpf", apertures, multiprocessing.cpu_count() // 2)
             files_in_dir = os.listdir(fov_dir)
             assert len(files_in_dir) == 6
@@ -59,7 +59,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
                                        cadence_fov=1800, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
@@ -72,7 +72,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
@@ -91,7 +91,7 @@ class TestsWatson(unittest.TestCase):
         try:
             transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
             transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
-            Patoso(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
@@ -114,7 +114,7 @@ class TestsWatson(unittest.TestCase):
         transits_list_df = transits_list_df[transits_list_df["t0"].notnull()]
         transits_list = numpy.array(transits_list_df.to_dict("list")["t0"])
         transits_list = transits_list[~numpy.isnan(transits_list)]
-        Patoso(vetting_dir).report("TIC 25155310", 63.3739396231274, -69.226822697583, 1327.51, 3.2899, 199, 6.082,
+        Watson(vetting_dir).report("TIC 25155310", 63.3739396231274, -69.226822697583, 1327.51, 3.2899, 199, 6.082,
                                    transits_list, [2, 5, 7], None, None, None, None)
         files_in_dir = os.listdir(vetting_dir)
         assert len(files_in_dir) == 20
