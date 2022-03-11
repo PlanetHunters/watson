@@ -186,7 +186,7 @@ class Watson:
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
                   transits_list=None):
         """
-        Performs the analysis to generate PNGs and Data Validation Report.
+        Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
         :param period: the period of the candidate in days
         :param t0: the epoch in days

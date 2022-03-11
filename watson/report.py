@@ -57,12 +57,12 @@ class Report:
         canvas.drawImage(self.LOGO_IMAGE, x=2 * cm, y=26.8 * cm, height=2 * cm, width=2 * cm, preserveAspectRatio=True)
 
         # Title:
-        object_id_text = 'WATSON Data Validation Report: %s' % self.object_id
+        object_id_text = 'WATSON Transits Validation Report: %s' % self.object_id
         canvas.setFont(psfontname="Helvetica", size=12)
         canvas.drawRightString(x=13.5 * cm, y=27.5 * cm, text=object_id_text)
         if doc.page == 1:
-            object_id_text = '%s DATA VALIDATION REPORT' % self.object_id
-            canvas.setFont(psfontname="Helvetica-Bold", size=25)
+            object_id_text = '%s TRANSITS VALIDATION REPORT' % self.object_id
+            canvas.setFont(psfontname="Helvetica-Bold", size=23)
             canvas.drawCentredString(x=10 * cm, y=25.5 * cm, text=object_id_text)
 
         # Report date:
