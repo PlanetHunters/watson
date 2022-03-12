@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = "0.1.10"
+version = "0.1.11"
 setuptools.setup(
     name="dearwatson", # Replace with your own username
     version=version,
@@ -22,7 +22,6 @@ setuptools.setup(
     ],
     python_requires='>=3.6.8',
     install_requires=[
-                        'beautifulsoup4==4.9.3',
                         "bokeh==2.2.3", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "cython==0.29.21",
