@@ -22,7 +22,6 @@ setuptools.setup(
     ],
     python_requires='>=3.6.8',
     install_requires=[
-                        'argparse==1.4.0',
                         'beautifulsoup4==4.9.3',
                         "bokeh==2.2.3", # TPFPlotter dependency
                         'configparser==5.0.1',
