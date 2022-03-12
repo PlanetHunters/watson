@@ -5,21 +5,19 @@ import os
 from astropy.coordinates import Angle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-# from reportlab.lib.pagesizes import landscape
-from reportlab.lib.units import inch, cm
+from reportlab.lib.units import cm
 from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, PageBreak, \
     Image, Table, TableStyle, ListFlowable
 from os import path
-from uncertainties import ufloat
 from astropy import units as u
 
 width, height = A4
 resources_dir = path.join(path.dirname(__file__))
 
 class Report:
-    LOGO_IMAGE = resources_dir + "/resources/images/sherlock3.png"
+    LOGO_IMAGE = resources_dir + "/resources/images/watson.png"
 
     def __init__(self, data_dir, file_name, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list,
                  summary_list_t0s_indexes, v, j, h, k):
