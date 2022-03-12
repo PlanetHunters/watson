@@ -52,7 +52,7 @@ class Report:
         canvas.saveState()
 
         # Logo:
-        canvas.drawImage(self.LOGO_IMAGE, x=2 * cm, y=26.8 * cm, height=2 * cm, width=2 * cm, preserveAspectRatio=True)
+        canvas.drawImage(self.LOGO_IMAGE, x=1.5 * cm, y=26.8 * cm, height=2 * cm, width=2 * cm, preserveAspectRatio=True)
 
         # Title:
         object_id_text = 'WATSON Transits Validation Report: %s' % self.object_id
