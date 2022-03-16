@@ -678,8 +678,8 @@ class Watson:
                                extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
             aperture = fov_process_input.apertures[tpf.sector]
             aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
-            aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, CUTOUT_SIZE,
-                                                                             CUTOUT_SIZE)
+            aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, tpf.shape[2],
+                                                                             tpf.shape[1])
             Watson.plot_tpf(tpf, tpf.sector, aperture_boolean, fov_process_input.save_dir)
             maskcolor = 'salmon'
             logging.info("    --> Using SHERLOCK aperture for sector %s...", tpf.sector)
