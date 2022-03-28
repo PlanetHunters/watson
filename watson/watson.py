@@ -377,7 +377,7 @@ class Watson:
                     if len(tpf_short_framed) == 0:
                         break
                     aperture_mask = ApertureExtractor.from_pixels_to_boolean_mask(
-                        single_transit_process_input.apertures[sector], tpf.column, tpf.row, tpf.shape[1], tpf.shape[2])
+                        single_transit_process_input.apertures[sector], tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
                     eroded_aperture_mask = ndimage.binary_erosion(aperture_mask)
                     chosen_aperture_lc = tpf.to_lightcurve(aperture_mask=aperture_mask)
                     if True in eroded_aperture_mask:
