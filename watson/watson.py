@@ -575,7 +575,7 @@ class Watson:
         folded_y_err = flux_err[folded_phase_zoom_mask]
         axs.set_xlim([0.5 - folded_plot_range, 0.5 + folded_plot_range])
         # TODO if FFI no binning
-        if bins is not None:
+        if bins is not None and len(folded_y) > bins:
             bin_means, bin_edges, binnumber = stats.binned_statistic(folded_phase, folded_y,
                                                                      statistic='mean', bins=bins)
             bin_width = (bin_edges[1] - bin_edges[0])
