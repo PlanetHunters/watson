@@ -3,3 +3,5 @@
 /.pytest_cache/
 /venv/
 /build/
+/dearwatson.egg-info/
+/dearwatson-0.1.4/
