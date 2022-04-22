@@ -27,7 +27,7 @@ setuptools.setup(
                         "cython==0.29.21",
                         "extension-helpers==0.1",
                         "imageio==2.9.0",
-                        "lcbuilder==0.7.22",
+                        "lcbuilder==0.7.23",
                         "matplotlib==3.3.4",
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==5.4.1",
