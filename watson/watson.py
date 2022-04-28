@@ -15,6 +15,7 @@ import matplotlib.gridspec as gridspec
 import wotan
 import yaml
 from lcbuilder.constants import CUTOUT_SIZE
+from lcbuilder.helper import LcbuilderHelper
 from lcbuilder.lcbuilder_class import LcBuilder
 from lcbuilder.objectinfo.MissionFfiIdObjectInfo import MissionFfiIdObjectInfo
 from lcbuilder.objectinfo.MissionObjectInfo import MissionObjectInfo
@@ -212,6 +213,8 @@ class Watson:
         mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         lc, lc_data, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir)
         if create_fov_plots:
+            if cadence_fov is None:
+                cadence_fov = LcbuilderHelper.compute_cadence(lc.time.value)
             Watson.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
                                          list(apertures.keys()), "tpf", apertures, cpus)
         summary_t0s_indexes = None
@@ -581,7 +584,9 @@ class Watson:
             bin_width = (bin_edges[1] - bin_edges[0])
             bin_centers = bin_edges[1:] - bin_width / 2
             bin_stds, _, _ = stats.binned_statistic(folded_phase, folded_y, statistic='std', bins=bins)
-            axs.errorbar(bin_centers, bin_means, yerr=bin_stds / 2, xerr=bin_width / 2, marker='o', markersize=4,
+            bin_nan_args = np.argwhere(np.isnan(bin_stds))
+            axs.errorbar(bin_centers[~bin_nan_args], bin_means[~bin_nan_args],
+                         yerr=bin_stds[~bin_nan_args] / 2, xerr=bin_width / 2, marker='o', markersize=4,
                          color='darkorange', alpha=1, linestyle='none')
         else:
             bin_centers = folded_phase
