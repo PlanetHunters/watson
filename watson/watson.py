@@ -584,7 +584,7 @@ class Watson:
             bin_width = (bin_edges[1] - bin_edges[0])
             bin_centers = bin_edges[1:] - bin_width / 2
             bin_stds, _, _ = stats.binned_statistic(folded_phase, folded_y, statistic='std', bins=bins)
-            bin_nan_args = np.argwhere(np.isnan(bin_stds))
+            bin_nan_args = np.isnan(bin_stds)
             axs.errorbar(bin_centers[~bin_nan_args], bin_means[~bin_nan_args],
                          yerr=bin_stds[~bin_nan_args] / 2, xerr=bin_width / 2, marker='o', markersize=4,
                          color='darkorange', alpha=1, linestyle='none')
