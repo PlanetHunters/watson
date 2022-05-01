@@ -50,7 +50,7 @@ class Watson:
     def vetting(self, id, period, t0, duration, depth, ffi, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
-                v=None, j=None, h=None, k=None, clean=True):
+                v=None, j=None, h=None, k=None, clean=True, transits_mask=None):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -78,6 +78,7 @@ class Watson:
         :param h: star H magnitude
         :param k: star K magnitude
         :param clean: whether to clean all the pngs created for the final pdfs
+        :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -92,14 +93,18 @@ class Watson:
         logging.info("FFI: %s", ffi)
         logging.info("Sectors: %s", sectors)
         lc_builder = LcBuilder()
+        if transits_mask is None:
+            transits_mask = []
         if rp_rstar is None:
             rp_rstar = np.sqrt(depth / 1000)
         lc_build = None
         if lc_file is None or lc_data_file is None:
             if not ffi:
-                lc_build = lc_builder.build(MissionObjectInfo(id, sectors, cadence=cadence), self.data_dir)
+                lc_build = lc_builder.build(MissionObjectInfo(id, sectors, cadence=cadence,
+                                                              initial_transit_mask=transits_mask), self.data_dir)
             else:
-                lc_build = lc_builder.build(MissionFfiIdObjectInfo(id, sectors, cadence=cadence), self.data_dir)
+                lc_build = lc_builder.build(MissionFfiIdObjectInfo(id, sectors, cadence=cadence,
+                                                              initial_transit_mask=transits_mask), self.data_dir)
             lc_build.lc_data.to_csv(self.data_dir + "/lc_data.csv")
             lc_file = self.data_dir + "/lc.csv"
             lc_data_file = self.data_dir + "/lc_data.csv"
@@ -122,7 +127,7 @@ class Watson:
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
-                                                                 dec, transits_list)
+                                                                 dec, transits_list, transits_mask)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes, v, j, h, k)
             if clean:
                 for filename in os.listdir(self.data_dir):
@@ -143,7 +148,8 @@ class Watson:
         report.create_report()
 
 
-    def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None):
+    def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None,
+                          transits_mask=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -152,7 +158,10 @@ class Watson:
         :param cpus: the number of cpus to be used.
         :param create_fov_plots: whether to generate Field Of View plots.
         :param cadence_fov: the cadence to use to download fov_plots
+        :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
         """
+        if transits_mask is None:
+            transits_mask = []
         df = candidate_df.iloc[0]
         # TODO get the transit time list
         id = df['id']
@@ -179,13 +188,13 @@ class Watson:
             self.vetting(id, period, t0, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
-                         dec=star["dec"], transits_list=transits_df.to_dict("list"))
+                         dec=star["dec"], transits_list=transits_df.to_dict("list"), transits_mask=transits_mask)
         except Exception as e:
             traceback.print_exc()
 
     def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
-                  transits_list=None):
+                  transits_list=None, transits_mask=None):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -206,12 +215,14 @@ class Watson:
         :param ra_fov: the RA to use to download fov_plots
         :param dec_fov: the DEC to use to download fov_plots
         :param transits_list: a list of dictionaries with shape: {'t0': value, 'depth': value, 'depth_err': value}
+        :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
         """
         logging.info("Running Transit Plots")
         apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
         apertures = apertures["sectors"]
         mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
-        lc, lc_data, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir)
+        lc, lc_data, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
+                                                          transits_mask=transits_mask)
         if create_fov_plots:
             if cadence_fov is None:
                 cadence_fov = LcbuilderHelper.compute_cadence(lc.time.value)
@@ -248,15 +259,23 @@ class Watson:
         return transit_t0s_list, summary_t0s_indexes
 
     @staticmethod
-    def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir):
+    def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir, transits_mask=None):
+        if transits_mask is None:
+            transits_mask = []
         mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         lc = pd.read_csv(lc_file, header=0)
         lc_data = pd.read_csv(lc_data_file, header=0)
         lc_data = Watson.normalize_lc_data(lc_data)
         time, flux, flux_err = lc["#time"].values, lc["flux"].values, lc["flux_err"].values
-        lc_len = len(time)
-        zeros_lc = np.zeros(lc_len)
-        lc = TessLightCurve(time=time, flux=flux, flux_err=flux_err, quality=zeros_lc)
+        for transit_mask in transits_mask:
+            logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
+                         transit_mask["T0"], transit_mask["D"])
+            mask = foldedleastsquares.transit_mask(time, transit_mask["P"], transit_mask["D"] / 60 / 24,
+                                                   transit_mask["T0"])
+            time = time[~mask]
+            flux = flux[~mask]
+            flux_err = flux_err[~mask]
+        lc = TessLightCurve(time=time, flux=flux, flux_err=flux_err, quality=np.zeros(len(time)))
         lc.extra_columns = []
         tpfs = []
         for tpf_file in os.listdir(tpfs_dir):
