@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = "0.1.19"
+version = "0.2.0"
 setuptools.setup(
     name="dearwatson", # Replace with your own username
     version=version,
@@ -27,7 +27,7 @@ setuptools.setup(
                         "cython==0.29.21",
                         "extension-helpers==0.1",
                         "imageio==2.9.0",
-                        "lcbuilder==0.7.24",
+                        "lcbuilder==0.7.25",
                         "matplotlib==3.3.4",
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==5.4.1",
