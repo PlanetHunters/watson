@@ -128,7 +128,8 @@ class Watson:
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
                                                                  dec, transits_list, transits_mask)
-            self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes, v, j, h, k)
+            self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
+                        v, j, h, k, os.path.exists(tpfs_dir))
             if clean:
                 for filename in os.listdir(self.data_dir):
                     if not filename.endswith(".pdf"):
@@ -137,14 +138,15 @@ class Watson:
         except Exception as e:
             traceback.print_exc()
 
-    def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k):
+    def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k,
+               with_tpfs=True):
         file_name = "transits_validation_report.pdf"
         report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, None,
-                        v, j, h, k)
+                        v, j, h, k, with_tpfs)
         report.create_report()
         file_name = "transits_validation_report_summary.pdf"
         report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list,
-                        summary_list_t0s_indexes, v, j, h, k)
+                        summary_list_t0s_indexes, v, j, h, k, with_tpfs)
         report.create_report()
 
 
@@ -177,9 +179,9 @@ class Watson:
         sectors = df['sectors']
         if isinstance(sectors, (int, np.integer)):
             sectors = [sectors]
-        else:
+        elif not np.isnan(sectors):
             sectors = sectors.split(',')
-        lc_file = "/" + str(run) + "/lc_" + str(curve) + ".csv"
+        lc_file = "/lc_" + str(curve) + ".csv"
         lc_file = self.object_dir + lc_file
         lc_data_file = self.object_dir + "/lc_data.csv"
         tpfs_dir = self.object_dir + "/tpfs"
@@ -218,16 +220,18 @@ class Watson:
         :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
         """
         logging.info("Running Transit Plots")
-        apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
-        apertures = apertures["sectors"]
-        mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         lc, lc_data, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
                                                           transits_mask=transits_mask)
-        if create_fov_plots:
-            if cadence_fov is None:
-                cadence_fov = LcbuilderHelper.compute_cadence(lc.time.value)
-            Watson.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
-                                         list(apertures.keys()), "tpf", apertures, cpus)
+        apertures = None
+        if os.path.exists(apertures_file):
+            apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
+            apertures = apertures["sectors"]
+            mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
+            if create_fov_plots:
+                if cadence_fov is None:
+                    cadence_fov = LcbuilderHelper.compute_cadence(lc.time.value)
+                Watson.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
+                                             list(apertures.keys()), "tpf", apertures, cpus)
         summary_t0s_indexes = None
         if transits_list is not None:
             transits_list_not_nan_indexes = \
@@ -264,8 +268,10 @@ class Watson:
             transits_mask = []
         mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
         lc = pd.read_csv(lc_file, header=0)
-        lc_data = pd.read_csv(lc_data_file, header=0)
-        lc_data = Watson.normalize_lc_data(lc_data)
+        lc_data = None
+        if os.path.exists(lc_data_file):
+            lc_data = pd.read_csv(lc_data_file, header=0)
+            lc_data = Watson.normalize_lc_data(lc_data)
         time, flux, flux_err = lc["#time"].values, lc["flux"].values, lc["flux_err"].values
         for transit_mask in transits_mask:
             logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
@@ -278,10 +284,11 @@ class Watson:
         lc = TessLightCurve(time=time, flux=flux, flux_err=flux_err, quality=np.zeros(len(time)))
         lc.extra_columns = []
         tpfs = []
-        for tpf_file in os.listdir(tpfs_dir):
-            tpf = TessTargetPixelFile(tpfs_dir + "/" + tpf_file) if mission == lcbuilder.constants.MISSION_TESS else \
-                KeplerTargetPixelFile(tpfs_dir + "/" + tpf_file)
-            tpfs.append(tpf)
+        if os.path.exists(tpfs_dir):
+            for tpf_file in os.listdir(tpfs_dir):
+                tpf = TessTargetPixelFile(tpfs_dir + "/" + tpf_file) if mission == lcbuilder.constants.MISSION_TESS else \
+                    KeplerTargetPixelFile(tpfs_dir + "/" + tpf_file)
+                tpfs.append(tpf)
         return lc, lc_data, tpfs
 
     @staticmethod
@@ -376,7 +383,9 @@ class Watson:
         zoom_mask = np.where((time > transit_time - plot_range) & (time < transit_time + plot_range))
         plot_time = time[zoom_mask]
         plot_flux = flux[zoom_mask]
-        zoom_lc_data = lc_data[(lc_data["time"] > transit_time - plot_range) & (lc_data["time"] < transit_time +
+        zoom_lc_data = None
+        if lc_data is not None:
+            zoom_lc_data = lc_data[(lc_data["time"] > transit_time - plot_range) & (lc_data["time"] < transit_time +
                                                                                 plot_range)]
         aperture_mask = None
         chosen_aperture_lc = None
@@ -398,10 +407,15 @@ class Watson:
                                            (tpf.time.value < transit_time + plot_range)]
                     if len(tpf_short_framed) == 0:
                         break
-                    aperture_mask = ApertureExtractor.from_pixels_to_boolean_mask(
-                        single_transit_process_input.apertures[sector], tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
-                    eroded_aperture_mask = ndimage.binary_erosion(aperture_mask)
-                    chosen_aperture_lc = tpf.to_lightcurve(aperture_mask=aperture_mask)
+                    if np.isnan(single_transit_process_input.apertures):
+                        chosen_aperture_lc = lc
+                        smaller_aperture_lc = lc
+                        aperture_mask = [[]]
+                    else:
+                        aperture_mask = ApertureExtractor.from_pixels_to_boolean_mask(
+                            single_transit_process_input.apertures[sector], tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
+                        eroded_aperture_mask = ndimage.binary_erosion(aperture_mask)
+                        chosen_aperture_lc = tpf.to_lightcurve(aperture_mask=aperture_mask)
                     if True in eroded_aperture_mask:
                         smaller_aperture_lc = tpf.to_lightcurve(aperture_mask=eroded_aperture_mask)
                     break
@@ -419,7 +433,7 @@ class Watson:
                                                               single_transit_process_input.rp_rstar,
                                                               single_transit_process_input.a_rstar)
             momentum_dumps_lc_data = None
-            if not zoom_lc_data["quality"].isnull().all():
+            if zoom_lc_data is not None and not zoom_lc_data["quality"].isnull().all():
                 momentum_dumps_lc_data = zoom_lc_data[np.bitwise_and(zoom_lc_data["quality"].to_numpy(),
                                                                      constants.MOMENTUM_DUMP_QUALITY_FLAG) >= 1]
 
@@ -441,24 +455,26 @@ class Watson:
             axs[0].set_xlim([transit_time - plot_range, transit_time + plot_range])
             axs[0].set_xlabel("Time (d)")
             axs[0].set_ylabel("Flux norm.")
-            axs[1].scatter(zoom_lc_data["time"], zoom_lc_data["motion_x"], color="red",
-                           label="X-axis motion")
-            axs[1].scatter(zoom_lc_data["time"], zoom_lc_data["centroids_x"],
-                           color="black", label="X-axis centroids")
-            axs[1].axvline(x=transit_time - duration / 2, color='r', label='T1')
-            axs[1].axvline(x=transit_time + duration / 2, color='r', label='T4')
-            axs[1].legend(loc='upper left')
+            if zoom_lc_data is not None:
+                axs[1].scatter(zoom_lc_data["time"], zoom_lc_data["motion_x"], color="red",
+                               label="X-axis motion")
+                axs[1].scatter(zoom_lc_data["time"], zoom_lc_data["centroids_x"],
+                               color="black", label="X-axis centroids")
+                axs[1].axvline(x=transit_time - duration / 2, color='r', label='T1')
+                axs[1].axvline(x=transit_time + duration / 2, color='r', label='T4')
+                axs[1].legend(loc='upper left')
             axs[1].set_xlim([transit_time - plot_range, transit_time + plot_range])
             axs[1].set_title("X-axis drift")
             axs[1].set_xlabel("Time (d)")
             axs[1].set_ylabel("Normalized Y-axis data")
-            axs[2].scatter(zoom_lc_data["time"], zoom_lc_data["motion_y"], color="red",
-                           label="Y-axis motion")
-            axs[2].scatter(zoom_lc_data["time"], zoom_lc_data["centroids_y"],
-                           color="black", label="Y-axis centroids")
-            axs[2].axvline(x=t1, color='r', label='T1')
-            axs[2].axvline(x=t4, color='r', label='T4')
-            axs[2].legend(loc='upper left')
+            if zoom_lc_data is not None:
+                axs[2].scatter(zoom_lc_data["time"], zoom_lc_data["motion_y"], color="red",
+                               label="Y-axis motion")
+                axs[2].scatter(zoom_lc_data["time"], zoom_lc_data["centroids_y"],
+                               color="black", label="Y-axis centroids")
+                axs[2].axvline(x=t1, color='r', label='T1')
+                axs[2].axvline(x=t4, color='r', label='T4')
+                axs[2].legend(loc='upper left')
             axs[2].set_xlim([transit_time - plot_range, transit_time + plot_range])
             axs[2].set_title("Y-axis drift")
             axs[2].set_xlabel("Time (d)")
@@ -487,27 +503,29 @@ class Watson:
                 axs[3].scatter(smaller_aperture_lc.time.value, smaller_aperture_lc.flux.value,
                                color="c", label="Photometry smaller aperture")
             axs[3].legend(loc='upper left')
-            axs[4] = tpf_short_framed.plot(axs[4], aperture_mask=aperture_mask)
-            axs[4].set_title("TPF apertures comparison")
-            if smaller_aperture_lc is not None:
-                parsed_aperture = tpf_short_framed._parse_aperture_mask(eroded_aperture_mask)
-                for i in range(tpf_short_framed.shape[1]):
-                    for j in range(tpf_short_framed.shape[2]):
-                        if parsed_aperture[i, j]:
-                            rect = patches.Rectangle(
-                                xy=(j + tpf_short_framed.column - 0.5, i + tpf_short_framed.row - 0.5),
-                                width=1,
-                                height=1,
-                                color='black',
-                                fill=False,
-                                hatch="\\\\",
-                            )
-                            axs[4].add_patch(rect)
-            axs[5].scatter(zoom_lc_data["time"], zoom_lc_data["background_flux"],
-                           color="blue", label="Background Flux")
-            axs[5].axvline(x=t1, color='r', label='T1')
-            axs[5].axvline(x=t4, color='r', label='T4')
-            axs[5].legend(loc='upper left')
+            if tpf_short_framed is not None:
+                axs[4] = tpf_short_framed.plot(axs[4], aperture_mask=aperture_mask)
+                axs[4].set_title("TPF apertures comparison")
+                if smaller_aperture_lc is not None:
+                    parsed_aperture = tpf_short_framed._parse_aperture_mask(eroded_aperture_mask)
+                    for i in range(tpf_short_framed.shape[1]):
+                        for j in range(tpf_short_framed.shape[2]):
+                            if parsed_aperture[i, j]:
+                                rect = patches.Rectangle(
+                                    xy=(j + tpf_short_framed.column - 0.5, i + tpf_short_framed.row - 0.5),
+                                    width=1,
+                                    height=1,
+                                    color='black',
+                                    fill=False,
+                                    hatch="\\\\",
+                                )
+                                axs[4].add_patch(rect)
+            if zoom_lc_data is not None:
+                axs[5].scatter(zoom_lc_data["time"], zoom_lc_data["background_flux"],
+                               color="blue", label="Background Flux")
+                axs[5].axvline(x=t1, color='r', label='T1')
+                axs[5].axvline(x=t4, color='r', label='T4')
+                axs[5].legend(loc='upper left')
             axs[5].set_xlim([transit_time - plot_range, transit_time + plot_range])
             axs[5].set_title("Background flux")
             axs[5].set_xlabel("Time (d)")
@@ -515,19 +533,20 @@ class Watson:
             plt.savefig(single_transit_file, dpi=100, bbox_inches='tight')
             plt.clf()
             plt.close()
-            tpf_short_framed.plot_pixels(aperture_mask=aperture_mask)
-            plt.savefig(tpf_single_transit_file, dpi=100)
-            plt.clf()
-            plt.close()
-            images_list = [single_transit_file, tpf_single_transit_file]
-            imgs = [PIL.Image.open(i) for i in images_list]
-            imgs[0] = imgs[0].resize((imgs[1].size[0],
-                                      int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
-                                      PIL.Image.ANTIALIAS)
-            img_merge = np.vstack((np.asarray(i) for i in imgs))
-            img_merge = PIL.Image.fromarray(img_merge)
-            img_merge.save(single_transit_file, quality=95, optimize=True)
-            os.remove(tpf_single_transit_file)
+            if tpf_short_framed is not None:
+                tpf_short_framed.plot_pixels(aperture_mask=aperture_mask)
+                plt.savefig(tpf_single_transit_file, dpi=100)
+                plt.clf()
+                plt.close()
+                images_list = [single_transit_file, tpf_single_transit_file]
+                imgs = [PIL.Image.open(i) for i in images_list]
+                imgs[0] = imgs[0].resize((imgs[1].size[0],
+                                          int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
+                                          PIL.Image.ANTIALIAS)
+                img_merge = np.vstack((np.asarray(i) for i in imgs))
+                img_merge = PIL.Image.fromarray(img_merge)
+                img_merge.save(single_transit_file, quality=95, optimize=True)
+                os.remove(tpf_single_transit_file)
             logging.info("Processed single transit plot for T0=%.2f", transit_time)
         else:
             logging.info("Not plotting single transit for T0=%.2f as the data is empty", transit_time)

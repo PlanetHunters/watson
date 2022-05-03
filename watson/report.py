@@ -20,7 +20,7 @@ class Report:
     LOGO_IMAGE = resources_dir + "/resources/images/watson.png"
 
     def __init__(self, data_dir, file_name, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list,
-                 summary_list_t0s_indexes, v, j, h, k):
+                 summary_list_t0s_indexes, v, j, h, k, with_tpfs=True):
         self.data_dir = data_dir
         self.file_name = file_name
         self.object_id = object_id
@@ -36,6 +36,7 @@ class Report:
         self.j = j
         self.h = h
         self.k = k
+        self.with_tpfs = with_tpfs
 
     @staticmethod
     def row_colors(df, table_object):
@@ -201,17 +202,19 @@ class Report:
         # Pasamos a la siguiente página:
         story.append(PageBreak())
         figure = 3
+        width = 17 * cm
+        height = 24 * cm if self.with_tpfs else 10 * cm
         for index, transit_time in enumerate(self.transit_t0s_list):
             if self.summary_list_t0s_indexes is None or (self.summary_list_t0s_indexes is not None and
                                                          index in self.summary_list_t0s_indexes):
                 image = Image(self.data_dir + "/single_transit_" + str(index) + "_T0_" + str(transit_time) + ".png",
-                              width=17*cm, height=24*cm)
+                              width=width, height=height)
                 story.append(image)
                 table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure %s: </strong>' \
                                      'The single transit no. %s vetting plots</font>' % (str(figure), str(index))
                 story.append(Spacer(1, 5))
                 story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
-                story.append(PageBreak())
+                story.append(PageBreak() if self.with_tpfs or figure % 2 == 0 else Spacer(1, 5))
                 figure = figure + 1
 
         # Construimos el documento:
