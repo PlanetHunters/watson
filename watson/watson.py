@@ -179,7 +179,7 @@ class Watson:
         sectors = df['sectors']
         if isinstance(sectors, (int, np.integer)):
             sectors = [sectors]
-        elif not np.isnan(sectors):
+        elif isinstance(sectors, (str)):
             sectors = sectors.split(',')
         lc_file = "/lc_" + str(curve) + ".csv"
         lc_file = self.object_dir + lc_file
@@ -407,7 +407,8 @@ class Watson:
                                            (tpf.time.value < transit_time + plot_range)]
                     if len(tpf_short_framed) == 0:
                         break
-                    if np.isnan(single_transit_process_input.apertures):
+                    if not isinstance(single_transit_process_input.apertures, (dict)) and \
+                            np.isnan(single_transit_process_input.apertures):
                         chosen_aperture_lc = lc
                         smaller_aperture_lc = lc
                         aperture_mask = [[]]
