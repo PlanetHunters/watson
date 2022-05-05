@@ -16,8 +16,8 @@ jobs:
         python-version: [3.8]
     steps:
       - name: Setup Python
-          uses: actions/setup-python@v2
-          with:
-            python-version: ${{ matrix.python }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
       - name: Install tox
         run: pip install tox
