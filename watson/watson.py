@@ -9,7 +9,6 @@ import foldedleastsquares
 import lcbuilder
 import lightkurve
 import numpy as np
-import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import wotan
@@ -30,7 +29,8 @@ from astropy.io import ascii
 import astropy.visualization as stretching
 from scipy import stats, ndimage
 
-from watson import constants, tpfplotter
+from watson import constants
+import watson.tpfplotterSub.tpfplotter as tpfplotter
 import pandas as pd
 import os
 from math import ceil
