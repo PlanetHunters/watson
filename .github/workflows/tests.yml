@@ -3,9 +3,6 @@ name: WATSON tests
 on:
   push:
     branches: [ main ]
-    tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
-      - '[0-9]+.[0-9]+.[0-9]+rc[0-9]+'
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ main ]
