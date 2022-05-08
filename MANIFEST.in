@@ -1,2 +1,2 @@
 include tox.ini
-recursive-include resources *.png *.jpg
+graft resources
