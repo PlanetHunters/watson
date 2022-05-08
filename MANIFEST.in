@@ -1,2 +1,2 @@
 include tox.ini
-graft resources
+graft watson/esources
