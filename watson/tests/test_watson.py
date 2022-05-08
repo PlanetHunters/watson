@@ -55,19 +55,6 @@ class TestsWatson(unittest.TestCase):
             if os.path.exists(fov_dir):
                 shutil.rmtree(fov_dir, ignore_errors=False)
 
-    def test_vetting_by_params_with_fov(self):
-        object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = object_dir + "/vetting_0"
-        try:
-            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
-                                       cadence=120, cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
-                                       cadence_fov=1800, ra=63.3739396231274, dec=-69.226822697583, clean=False)
-            files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 25
-        finally:
-            if os.path.exists(vetting_dir):
-                shutil.rmtree(vetting_dir, ignore_errors=False)
-
     def test_vetting_by_files_with_fov(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
