@@ -1,2 +1,2 @@
-tox.ini
-recursive-include resources/static *.png *.jpg
+include tox.ini
+recursive-include resources *.png *.jpg
