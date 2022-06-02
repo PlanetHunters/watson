@@ -571,23 +571,27 @@ class Watson:
         logging.info("Preparing folded light curves for target")
         #TODO bins = None for FFI
         bins = 100
-        Watson.compute_phased_values_and_fill_plot(id, axs[0][0], lc, period, epoch + period / 2, depth, duration,
+        Watson.compute_phased_values_and_fill_plot(id, axs[0][0], lc, period, epoch, depth, duration, rp_rstar, a_rstar,
+                                                   bins=bins)
+        Watson.compute_phased_values_and_fill_plot(id, axs[0][1], lc, period, epoch + period / 2, depth, duration,
                                                    rp_rstar, a_rstar, bins=bins)
-        Watson.compute_phased_values_and_fill_plot(id, axs[0][1], lc, period, epoch, depth, duration, rp_rstar, a_rstar, bins=bins)
         period = 2 * period
-        Watson.compute_phased_values_and_fill_plot(id, axs[1][0], lc, period, epoch + period / 2, depth, duration,
+        Watson.compute_phased_values_and_fill_plot(id, axs[1][0], lc, period, epoch, depth, duration, rp_rstar, a_rstar,
+                                                   bins=bins)
+        Watson.compute_phased_values_and_fill_plot(id, axs[1][1], lc, period, epoch + period / 2, depth, duration,
                                                    rp_rstar, a_rstar, bins=bins)
-        Watson.compute_phased_values_and_fill_plot(id, axs[1][1], lc, period, epoch, depth, duration, rp_rstar, a_rstar, bins=bins)
         period = period / 4
-        Watson.compute_phased_values_and_fill_plot(id, axs[2][0], lc, period, epoch + period / 2, depth, duration,
+        Watson.compute_phased_values_and_fill_plot(id, axs[2][0], lc, period, epoch, depth, duration, rp_rstar, a_rstar,
+                                                   bins=bins)
+        Watson.compute_phased_values_and_fill_plot(id, axs[2][1], lc, period, epoch + period / 2, depth, duration,
                                                    rp_rstar, a_rstar, bins=bins)
-        Watson.compute_phased_values_and_fill_plot(id, axs[2][1], lc, period, epoch, depth, duration, rp_rstar, a_rstar, bins=bins)
         plt.savefig(file_dir + "/odd_even_folded_curves.png", dpi=200)
         fig.clf()
         plt.close(fig)
 
     @staticmethod
-    def compute_phased_values_and_fill_plot(id, axs, lc, period, epoch, depth, duration, rp_rstar, a_rstar, range=5, bins=None):
+    def compute_phased_values_and_fill_plot(id, axs, lc, period, epoch, depth, duration, rp_rstar, a_rstar, range=5,
+                                            bins=None):
         """
         Phase-folds the input light curve and plots it centered in the given epoch
         @param id: the candidate name
@@ -601,7 +605,7 @@ class Watson:
         @param bins: the number of bins
         @return: the drawn axis and the computed bins
         """
-        time = foldedleastsquares.core.fold(lc.time.value, period, epoch)
+        time = foldedleastsquares.core.fold(lc.time.value, period, epoch + period / 2)
         axs.scatter(time, lc.flux.value, 2, color="blue", alpha=0.1)
         sort_args = np.argsort(time)
         time = time[sort_args]
