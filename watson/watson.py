@@ -257,7 +257,7 @@ class Watson:
         for index, transit_times in enumerate(transit_t0s_list):
             plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,
                                                                   tpfs_dir, apertures, transit_times, depth / 1000,
-                                                                  duration, period, rp_rstar, a_rstar))
+                                                                  duration, period, rp_rstar, a_rstar, transits_mask))
         with multiprocessing.Pool(processes=cpus) as pool:
             pool.map(Watson.plot_single_transit, plot_transits_inputs)
         return transit_t0s_list, summary_t0s_indexes
@@ -360,7 +360,8 @@ class Watson:
         lc, lc_data, tpfs = Watson.initialize_lc_and_tpfs(single_transit_process_input.id,
                                                           single_transit_process_input.lc_file,
                                                           single_transit_process_input.lc_data_file,
-                                                          single_transit_process_input.tpfs_dir)
+                                                          single_transit_process_input.tpfs_dir,
+                                                          transits_mask=single_transit_process_input.transits_mask)
         transit_time = single_transit_process_input.transit_times
         duration = single_transit_process_input.duration / 60 / 24
         fig = plt.figure(figsize=(24, 6), constrained_layout=True)
@@ -642,6 +643,7 @@ class Watson:
         axs.set_title(str(id) + " Folded Curve with P={:.2f}d and T0={:.2f}".format(period, epoch))
         axs.set_xlabel("Time (d)")
         axs.set_ylabel("Flux norm.")
+        axs.set_ylim(np.min(folded_y), np.max(folded_y))
         #axs.set_ylim([1 - 3 * depth, 1 + 3 * depth])
         logging.info("Processed phase-folded plot for P=%.2f and T0=%.2f", period, epoch)
         return axs, bin_centers, bin_means, bin_stds / 2
@@ -860,7 +862,7 @@ class Watson:
 
 class SingleTransitProcessInput:
     def __init__(self, data_dir, id, index, lc_file, lc_data_file, tpfs_dir, apertures,
-                                         transit_times, depth, duration, period, rp_rstar, a_rstar):
+                                         transit_times, depth, duration, period, rp_rstar, a_rstar, transits_mask):
         self.data_dir = data_dir
         self.id = id
         self.index = index
@@ -874,6 +876,7 @@ class SingleTransitProcessInput:
         self.period = period
         self.rp_rstar = rp_rstar
         self.a_rstar = a_rstar
+        self.transits_mask = transits_mask
 
 class FovProcessInput:
     def __init__(self, save_dir, mission, tic, cadence, ra, dec, sectors, source, apertures, tpf_source, target_title):
