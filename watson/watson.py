@@ -190,7 +190,8 @@ class Watson:
             self.vetting(id, period, t0, duration, depth, ffi, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
-                         dec=star["dec"], transits_list=transits_df.to_dict("list"), transits_mask=transits_mask)
+                         dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
+                         transits_mask=transits_mask)
         except Exception as e:
             traceback.print_exc()
 
@@ -238,8 +239,8 @@ class Watson:
                 Watson.plot_transits_statistics(self.data_dir, id, t0, period, transits_list)
             transit_t0s_list = np.array(transits_list["t0"])[transits_list_not_nan_indexes]
             transit_depths = np.array(transits_list["depth"])[transits_list_not_nan_indexes]
-            summary_t0s_indexes = np.argwhere((transit_depths == np.max(transits_list["depth"])) |
-                                              (transit_depths == np.min(transits_list["depth"]))).flatten()
+            summary_t0s_indexes = np.argwhere((transit_depths == np.max(transit_depths)) |
+                                              (transit_depths == np.min(transit_depths))).flatten()
             if len(transit_depths) > 2:
                 closest_depths_to_mean = np.abs(transit_depths - depth)
                 summary_t0s_indexes = np.append(summary_t0s_indexes, np.argmin(closest_depths_to_mean))
@@ -643,7 +644,8 @@ class Watson:
         axs.set_title(str(id) + " Folded Curve with P={:.2f}d and T0={:.2f}".format(period, epoch))
         axs.set_xlabel("Time (d)")
         axs.set_ylabel("Flux norm.")
-        axs.set_ylim(np.min(folded_y), np.max(folded_y))
+        if len(folded_y) > 0:
+            axs.set_ylim(np.min(folded_y), np.max(folded_y))
         #axs.set_ylim([1 - 3 * depth, 1 + 3 * depth])
         logging.info("Processed phase-folded plot for P=%.2f and T0=%.2f", period, epoch)
         return axs, bin_centers, bin_means, bin_stds / 2
