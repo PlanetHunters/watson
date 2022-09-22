@@ -33,7 +33,7 @@ from watson import constants
 import watson.tpfplotterSub.tpfplotter as tpfplotter
 import pandas as pd
 import os
-from math import ceil
+from math import ceil, floor
 
 from watson.report import Report
 
@@ -246,8 +246,12 @@ class Watson:
                 summary_t0s_indexes = np.append(summary_t0s_indexes, np.argmin(closest_depths_to_mean))
         else:
             last_time = lc.time.value[len(lc.time.value) - 1]
+            first_time = lc.time.value[0]
+            num_of_transits_back = int(floor(((t0 - first_time) / period)))
+            transits_lists_back = t0 - period * np.arange(num_of_transits_back, 0, -1) if num_of_transits_back > 0 else np.array([])
             num_of_transits = int(ceil(((last_time - t0) / period)))
             transit_lists = t0 + period * np.arange(0, num_of_transits)
+            transit_lists = np.append(transits_lists_back, transit_lists)
             time_as_array = lc.time.value
             plot_range = duration / 3600 * 2
             transits_in_data = [time_as_array[(transit > time_as_array - plot_range) & (transit < time_as_array + plot_range)] for
