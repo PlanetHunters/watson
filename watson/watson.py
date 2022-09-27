@@ -16,7 +16,6 @@ import yaml
 from lcbuilder.constants import CUTOUT_SIZE
 from lcbuilder.helper import LcbuilderHelper
 from lcbuilder.lcbuilder_class import LcBuilder
-from lcbuilder.objectinfo.MissionFfiIdObjectInfo import MissionFfiIdObjectInfo
 from lcbuilder.objectinfo.MissionObjectInfo import MissionObjectInfo
 from lcbuilder.photometry.aperture_extractor import ApertureExtractor
 from lcbuilder.star.HabitabilityCalculator import HabitabilityCalculator
@@ -99,12 +98,8 @@ class Watson:
             rp_rstar = np.sqrt(depth / 1000)
         lc_build = None
         if lc_file is None or lc_data_file is None:
-            if not ffi:
-                lc_build = lc_builder.build(MissionObjectInfo(id, sectors, cadence=cadence,
-                                                              initial_transit_mask=transits_mask), self.data_dir)
-            else:
-                lc_build = lc_builder.build(MissionFfiIdObjectInfo(id, sectors, cadence=cadence,
-                                                              initial_transit_mask=transits_mask), self.data_dir)
+            lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence,
+                                                          initial_transit_mask=transits_mask), self.data_dir)
             lc_build.lc_data.to_csv(self.data_dir + "/lc_data.csv")
             lc_file = self.data_dir + "/lc.csv"
             lc_data_file = self.data_dir + "/lc_data.csv"
@@ -597,7 +592,7 @@ class Watson:
 
     @staticmethod
     def compute_phased_values_and_fill_plot(id, axs, lc, period, epoch, depth, duration, rp_rstar, a_rstar, range=5,
-                                            bins=None):
+                                            bins=None, bin_err_mode="flux_err"):
         """
         Phase-folds the input light curve and plots it centered in the given epoch
         @param id: the candidate name
@@ -609,6 +604,7 @@ class Watson:
         @param duration: the transit duration
         @param range: the range to be used from the midtransit time in half-duration units.
         @param bins: the number of bins
+        @params bin_err_mode: either 'bin' or 'flux_err' for flux_err std.
         @return: the drawn axis and the computed bins
         """
         time = foldedleastsquares.core.fold(lc.time.value, period, epoch + period / 2)
@@ -632,15 +628,18 @@ class Watson:
                                                                      statistic='mean', bins=bins)
             bin_width = (bin_edges[1] - bin_edges[0])
             bin_centers = bin_edges[1:] - bin_width / 2
-            bin_stds, _, _ = stats.binned_statistic(folded_phase, folded_y, statistic='std', bins=bins)
+            if bin_err_mode == 'flux_err':
+                bin_stds, _, _ = stats.binned_statistic(folded_phase, folded_y_err, statistic='mean', bins=bins)
+            else:
+                bin_stds, _, _ = stats.binned_statistic(folded_phase, folded_y, statistic='std', bins=bins)
             bin_nan_args = np.isnan(bin_stds)
             axs.errorbar(bin_centers[~bin_nan_args], bin_means[~bin_nan_args],
-                         yerr=bin_stds[~bin_nan_args] / 2, xerr=bin_width / 2, marker='o', markersize=4,
+                         yerr=bin_stds[~bin_nan_args] / 2, xerr=bin_width / 2, marker='o', markersize=2,
                          color='darkorange', alpha=1, linestyle='none')
         else:
             bin_centers = folded_phase
             bin_means = folded_y
-            bin_stds = folded_y_err * 2
+            bin_stds = folded_y_err
         model_time, model_flux = Watson.get_transit_model(half_duration_phase * 2, 0.5,
                                                           (0.5 - half_duration_phase * range, 0.5 + half_duration_phase * range),
                                                           depth, period, rp_rstar, a_rstar, 2 * len(time))
@@ -652,7 +651,7 @@ class Watson:
             axs.set_ylim(np.min(folded_y), np.max(folded_y))
         #axs.set_ylim([1 - 3 * depth, 1 + 3 * depth])
         logging.info("Processed phase-folded plot for P=%.2f and T0=%.2f", period, epoch)
-        return axs, bin_centers, bin_means, bin_stds / 2
+        return axs, bin_centers, bin_means, bin_stds
 
     @staticmethod
     #TODO build model from selected transit_template
@@ -849,7 +848,8 @@ class Watson:
                     tpf_source = lightkurve.search_tesscut(coords_str, sector=sectors_search)
                     target_title = "RA={:.4f},DEC={:.4f}".format(ra, dec)
             else:
-                tpf_source = lightkurve.search_targetpixelfile(target_title, sector=sectors_search, author="SPOC",
+                tpf_source = lightkurve.search_targetpixelfile(target_title, sector=sectors_search,
+                                                               author=lcbuilder.constants.SPOC_AUTHOR,
                                                                cadence=cadence)
             save_dir = indir
             if not os.path.exists(save_dir):
