@@ -176,13 +176,44 @@ class Report:
             story.append(Spacer(1, 5))
             story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
+        cadences_file = self.data_dir + "/folded_cadences.png"
+        figure = 1
+        if os.path.exists(cadences_file):
+            story.append(Image(cadences_file, width=16 * cm, height=16 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+                          'Folded curve for all available cadences.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+        # neighbours_file_index = 0
+        # neighbours_file = self.data_dir + "/star_nb_" + (neighbours_file_index) + ".png"
+        # figure = 1
+        # while os.path.exists(neighbours_file):
+        #     story.append(Image(neighbours_file, width=16 * cm, height=16 * cm))
+        #     descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+        #                          'Nearby stars folded plot with the same period than the candidate.</font>'
+        #     story.append(Spacer(1, 5))
+        #     story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+        #     story.append(Spacer(1, 15))
+        #     neighbours_file_index = neighbours_file_index + 1
+        #     neighbours_file = self.data_dir + "/star_nb_" + str(neighbours_file_index) + ".png"
+        #     figure = figure + 1
+        if os.path.exists(transit_depths_file):
+            story.append(Image(transit_depths_file, width=16 * cm, height=9 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+                                 'The candidate single-transits depths plot.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
         story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=16 * cm))
-        table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure 2: </strong>' \
+        descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
                              'The candidate folded curve at T0 and its opposite for the selected ' \
                              'period and its first harmonic and subharmonic.</font>'
         story.append(Spacer(1, 5))
-        story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
-
+        story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+        figure = figure + 1
         story.append(Spacer(1, 15))
         introduction = '<font name="HELVETICA" size="9">The next pages will contain each of the single-transits ' \
                        'vetting sheets with the next information: </font>'
@@ -201,7 +232,6 @@ class Report:
         ))
         # Pasamos a la siguiente página:
         story.append(PageBreak())
-        figure = 3
         width = 17 * cm
         height = 24 * cm if self.with_tpfs else 10 * cm
         for index, transit_time in enumerate(self.transit_t0s_list):
