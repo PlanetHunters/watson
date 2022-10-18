@@ -611,8 +611,7 @@ class Watson:
     @staticmethod
     def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth,
                                  cpus=os.cpu_count() - 1):
-        if mission == "TESS":
-            EleanorManager.update()
+        updated_eleanor = False
         bins = 100
         fig, axs = plt.subplots(3, 1, figsize=(15, 10))
         duration = duration / 60 / 60
@@ -640,6 +639,9 @@ class Watson:
                     cadence=cadence
                 ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
                 if lcs is None:
+                    if not updated_eleanor:
+                        EleanorManager.update()
+                        eleanor_updated = True
                     star = eleanor.multi_sectors(tic=round(id), sectors='all',
                                                  post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
                                                  metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
