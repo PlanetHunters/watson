@@ -1,8 +1,15 @@
 # from __future__ import print_function, absolute_import, division
+
 import logging
 import multiprocessing
 import traceback
+import lcbuilder.eleanor
+import sys
 
+sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
+import eleanor
+from lcbuilder.eleanor.targetdata import TargetData
+from lcbuilder.eleanor_manager import EleanorManager
 import PIL
 import batman
 import foldedleastsquares
@@ -13,12 +20,16 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import wotan
 import yaml
-from lcbuilder.constants import CUTOUT_SIZE
+from lcbuilder.constants import CUTOUT_SIZE, LIGHTKURVE_CACHE_DIR, ELEANOR_CACHE_DIR
 from lcbuilder.helper import LcbuilderHelper
 from lcbuilder.lcbuilder_class import LcBuilder
 from lcbuilder.objectinfo.MissionObjectInfo import MissionObjectInfo
+from lcbuilder.objectinfo.preparer.MissionLightcurveBuilder import MissionLightcurveBuilder
 from lcbuilder.photometry.aperture_extractor import ApertureExtractor
+from lcbuilder.star.EpicStarCatalog import EpicStarCatalog
 from lcbuilder.star.HabitabilityCalculator import HabitabilityCalculator
+from lcbuilder.star.KicStarCatalog import KicStarCatalog
+from lcbuilder.star.TicStarCatalog import TicStarCatalog
 from lightkurve import TessLightCurve, TessTargetPixelFile, KeplerTargetPixelFile
 from matplotlib.colorbar import Colorbar
 from matplotlib import patches
@@ -34,6 +45,7 @@ import pandas as pd
 import os
 from math import ceil, floor
 
+from watson.neighbours import CreateStarCsvInput, create_star_csv, NeighbourInput, get_neighbour_lc
 from watson.report import Report
 
 
@@ -219,9 +231,11 @@ class Watson:
         lc, lc_data, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
                                                           transits_mask=transits_mask)
         apertures = None
+        sectors = None
         if os.path.exists(apertures_file):
             apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
             apertures = apertures["sectors"]
+            sectors = [sector for sector in apertures.keys()]
             mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
             if create_fov_plots:
                 if cadence_fov is None:
@@ -253,6 +267,10 @@ class Watson:
                                 transit in transit_lists]
             transit_t0s_list = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
+        mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
+        Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period, t0,
+                                        duration, depth / 1000, cpus)
+        #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
         plot_transits_inputs = []
         for index, transit_times in enumerate(transit_t0s_list):
             plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,
@@ -589,6 +607,195 @@ class Watson:
         plt.savefig(file_dir + "/odd_even_folded_curves.png", dpi=200)
         fig.clf()
         plt.close(fig)
+
+    @staticmethod
+    def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth,
+                                 cpus=os.cpu_count() - 1):
+        if mission == "TESS":
+            EleanorManager.update()
+        bins = 100
+        fig, axs = plt.subplots(3, 1, figsize=(15, 10))
+        duration = duration / 60 / 60
+        cadences = ['fast', 'short', 'long']
+        for index, cadence in enumerate(cadences):
+            lc = None
+            found_sectors = []
+            axs[index].set_title(mission_prefix + " " + str(id) + " " + str(found_sectors) + ": " + cadence)
+            if mission == lcbuilder.constants.MISSION_TESS and cadence == 'long':
+                author = "TESS-SPOC"
+            elif mission == lcbuilder.constants.MISSION_TESS and cadence != 'long':
+                author = "SPOC"
+            elif mission == lcbuilder.constants.MISSION_KEPLER:
+                author = "Kepler"
+            elif mission == lcbuilder.constants.MISSION_K2:
+                author = "K2"
+            if mission == "TESS" and cadence == 'long':
+                lcs = lightkurve.search_lightcurve(
+                    mission_prefix + " " + str(id),
+                    mission=mission,
+                    sector=sectors,
+                    campaign=sectors,
+                    quarter=sectors,
+                    author=author,
+                    cadence=cadence
+                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
+                if lcs is None:
+                    star = eleanor.multi_sectors(tic=round(id), sectors='all',
+                                                 post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
+                                                 metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
+                    data = []
+                    for s in star:
+                        datum = TargetData(s, height=CUTOUT_SIZE, width=CUTOUT_SIZE, do_pca=True)
+                        data.append(datum)
+                    lc = data[0].to_lightkurve(data[0].pca_flux).remove_nans().flatten()
+                    if len(data) > 1:
+                        for datum in data[1:]:
+                            lc = lc.append(datum.to_lightkurve(datum.pca_flux).remove_nans().flatten())
+                    lc = lc.remove_nans()
+                else:
+                    matching_objects = []
+                    for i in range(0, len(lcs.data)):
+                        if lcs.data[i].label == "TIC " + str(id):
+                            if lc is None:
+                                lc = lcs.data[i].normalize()
+                            else:
+                                lc = lc.append(lcs.data[i].normalize())
+                        else:
+                            matching_objects.append(lcs.data[i].label)
+                    if lc is None:
+                        continue
+                    else:
+                        if mission == lcbuilder.constants.MISSION_TESS:
+                            found_sectors = lcs.sector
+                        elif mission == lcbuilder.constants.MISSION_KEPLER:
+                            found_sectors = lcs.quarter
+                        elif mission == lcbuilder.constants.MISSION_K2:
+                            found_sectors = lcs.campaign
+                    lc = lc.remove_nans()
+                    if mission == lcbuilder.constants.MISSION_K2:
+                        lc = lc.to_corrector("sff").correct(windows=20)
+            else:
+                lcs = lightkurve.search_lightcurve(
+                    mission_prefix + " " + str(id),
+                    mission=mission,
+                    sector=sectors,
+                    campaign=sectors,
+                    quarter=sectors,
+                    author=author,
+                    cadence=cadence
+                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
+                if lcs is None:
+                    continue
+                matching_objects = []
+                for i in range(0, len(lcs.data)):
+                    if lcs.data[i].label == mission_prefix + " " + str(id):
+                        if lc is None:
+                            lc = lcs.data[i].normalize()
+                        else:
+                            lc = lc.append(lcs.data[i].normalize())
+                    else:
+                        matching_objects.append(lcs.data[i].label)
+                if lc is None:
+                    continue
+                else:
+                    if mission == lcbuilder.constants.MISSION_TESS:
+                        found_sectors = lcs.sector
+                    elif mission == lcbuilder.constants.MISSION_KEPLER:
+                        found_sectors = lcs.quarter
+                    elif mission == lcbuilder.constants.MISSION_K2:
+                        found_sectors = lcs.campaign
+                lc = lc.remove_nans()
+                if mission == lcbuilder.constants.MISSION_K2:
+                    lc = lc.to_corrector("sff").correct(windows=20)
+            lc_df = pd.DataFrame(columns=["folded_time", "flux"])
+            fold_times = foldedleastsquares.fold(lc.time.value, period, epoch + period / 2)
+            lc_df['folded_time'] = fold_times
+            lc_df['flux'] = lc.flux.value
+            lc_df = lc_df.sort_values(by=['folded_time'])
+            lc_df = lc_df[(lc_df['folded_time'] > 0.5 - 3 * duration) &
+                          (lc_df['folded_time'] < 0.5 + 3 * duration)]
+            axs[index].set_title(mission_prefix + " " + str(id) + " " + str(found_sectors) + ": " + cadence)
+            axs[index].scatter(lc_df['folded_time'], lc_df['flux'], color='black', alpha=0.2)
+            if len(lc_df) > bins:
+                bin_means, bin_edges, binnumber = stats.binned_statistic(lc_df['folded_time'], lc_df['flux'],
+                                                                         statistic='mean', bins=bins)
+                bin_width = (bin_edges[1] - bin_edges[0])
+                bin_centers = bin_edges[1:] - bin_width / 2
+                bin_stds, _, _ = stats.binned_statistic(lc_df['folded_time'], lc_df['flux'], statistic='std', bins=bins)
+                bin_nan_args = np.isnan(bin_stds)
+                axs[index].errorbar(bin_centers[~bin_nan_args], bin_means[~bin_nan_args],
+                             yerr=bin_stds[~bin_nan_args] / 2, xerr=bin_width / 2, marker='o', markersize=2,
+                             color='darkorange', alpha=1, linestyle='none')
+                #axs[index].scatter(bin_centers, bin_means, color='orange')
+            # axs[index].axhline(1 - depth, color="red")
+        file = file_dir + '/folded_cadences.png'
+        plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
+        plt.savefig(file, dpi=200, bbox_inches='tight')
+        plt.close(fig)
+        plt.clf()
+
+    @staticmethod
+    def plot_nb_stars(file_dir, mission, id, lc, period, epoch, duration, depth, cores=os.cpu_count()):
+        if mission == lcbuilder.constants.MISSION_TESS:
+            pixel_size = 20.25
+            star_catalog = TicStarCatalog()
+            author = "TESS-SPOC"
+        elif mission == lcbuilder.constants.MISSION_KEPLER:
+            star_catalog = KicStarCatalog()
+            pixel_size = 4
+            author = "Kepler"
+        elif mission == lcbuilder.constants.MISSION_K2:
+            star_catalog = EpicStarCatalog()
+            pixel_size = 4
+            author = "K2"
+        search_radius = lcbuilder.constants.CUTOUT_SIZE / 2
+        star_csv_file = \
+            create_star_csv(CreateStarCsvInput(None, mission, id, pixel_size, search_radius, None, star_catalog,
+                                               file_dir))
+        plot_grid_size = 4
+        fig, axs = plt.subplots(plot_grid_size, plot_grid_size, figsize=(16, 16))
+        stars_df = pd.read_csv(star_csv_file)
+        stars_df = stars_df.loc[~np.isnan(stars_df['id'])]
+        stars_df = stars_df.sort_values(by=['dist_arcsec'], ascending=True)
+        page = 0
+        file = file_dir + '/star_nb_' + str(page) + '.png'
+        duration = duration / 60 / 60
+        if mission == "TESS":
+            EleanorManager.update()
+        neighbour_inputs = []
+        for index, star_row in stars_df.iterrows():
+            neighbour_inputs.append(
+                NeighbourInput(index, mission, author, round(star_row['id']), period, epoch, duration))
+        with multiprocessing.Pool(processes=1) as pool:
+            lc_dfs = pool.map(get_neighbour_lc, neighbour_inputs)
+        for index, neighbour_input in enumerate(neighbour_inputs):
+            star_dist = stars_df.loc[neighbour_input.index, 'dist_arcsec']
+            lc_df = lc_dfs[index]
+            if len(lc_df) == 0:
+                continue
+            axs[index // 4 % 4][index % 4].set_title(str(id) + " - " + str(np.round(star_dist, 2)))
+            axs[index // 4 % 4][index % 4].scatter(lc_df['folded_time'], lc_df['flux'], color='black', alpha=0.5)
+            bins = 20
+            if len(lc_df) > bins:
+                bin_means, bin_edges, binnumber = stats.binned_statistic(lc_df['folded_time'], lc_df['flux'],
+                                                                         statistic='mean', bins=bins)
+                bin_width = (bin_edges[1] - bin_edges[0])
+                bin_centers = bin_edges[1:] - bin_width / 2
+                axs[index // 4 % 4][index % 4].scatter(bin_centers, bin_means, color='orange')
+            #axs[index // 4][index % 4].axhline(1 - depth, color="red")
+            if index % (plot_grid_size * plot_grid_size) == 0 and index > 0:
+                plt.savefig(file, dpi=200)
+                plt.close(fig)
+                plt.clf()
+                file = file_dir + '/star_nb_' + str(page) + '.png'
+                if index + 1 < len(stars_df):
+                    fig, axs = plt.subplots(plot_grid_size, plot_grid_size, figsize=(16, 16))
+            page = index // (plot_grid_size * plot_grid_size)
+        if index % (plot_grid_size * plot_grid_size) != 0:
+            plt.savefig(file, dpi=200)
+            plt.close(fig)
+            plt.clf()
+        return
 
     @staticmethod
     def compute_phased_values_and_fill_plot(id, axs, lc, period, epoch, depth, duration, rp_rstar, a_rstar, range=5,
