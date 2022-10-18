@@ -641,7 +641,7 @@ class Watson:
                 if lcs is None:
                     if not updated_eleanor:
                         EleanorManager.update()
-                        eleanor_updated = True
+                        updated_eleanor = True
                     star = eleanor.multi_sectors(tic=round(id), sectors='all',
                                                  post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
                                                  metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
