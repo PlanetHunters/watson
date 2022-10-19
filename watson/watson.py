@@ -314,11 +314,11 @@ class Watson:
         logging.info("Normalizing lc_data")
         time = lc_data["time"].to_numpy()
         dif = time[1:] - time[:-1]
-        jumps = np.where(np.abs(dif) > 1)[0]
+        jumps = np.where(np.abs(dif) > 0.2)[0]
         jumps = np.append(jumps, len(lc_data))
         previous_jump_index = 0
         for jumpIndex in jumps:
-            token = lc_data["centroids_x"][previous_jump_index+1:jumpIndex-1]
+            token = lc_data["centroids_x"][previous_jump_index:jumpIndex]
             lc_data["centroids_x"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
             token = lc_data["centroids_y"][previous_jump_index:jumpIndex]
             lc_data["centroids_y"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)

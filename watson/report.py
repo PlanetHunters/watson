@@ -191,6 +191,7 @@ class Report:
         #     neighbours_file_index = neighbours_file_index + 1
         #     neighbours_file = self.data_dir + "/star_nb_" + str(neighbours_file_index) + ".png"
         #     figure = figure + 1
+        transit_depths_file = self.data_dir + "/transit_depths.png"
         if os.path.exists(transit_depths_file):
             story.append(Image(transit_depths_file, width=16 * cm, height=9 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
