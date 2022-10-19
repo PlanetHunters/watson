@@ -269,7 +269,7 @@ class Watson:
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
         Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period, t0,
-                                        duration, depth / 1000, cpus)
+                                        duration, depth / 1000, rp_rstar, a_rstar, cpus)
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
         plot_transits_inputs = []
         for index, transit_times in enumerate(transit_t0s_list):
@@ -318,7 +318,7 @@ class Watson:
         jumps = np.append(jumps, len(lc_data))
         previous_jump_index = 0
         for jumpIndex in jumps:
-            token = lc_data["centroids_x"][previous_jump_index:jumpIndex]
+            token = lc_data["centroids_x"][previous_jump_index+1:jumpIndex-1]
             lc_data["centroids_x"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
             token = lc_data["centroids_y"][previous_jump_index:jumpIndex]
             lc_data["centroids_y"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
@@ -609,12 +609,13 @@ class Watson:
         plt.close(fig)
 
     @staticmethod
-    def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth,
-                                 cpus=os.cpu_count() - 1):
+    def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth, rp_rstar,
+                                 a_rstar, cpus=os.cpu_count() - 1):
         updated_eleanor = False
         bins = 100
         fig, axs = plt.subplots(3, 1, figsize=(15, 10))
-        duration = duration / 60 / 60
+        duration = duration / 60 / 24
+        duration_to_period = duration / period
         cadences = ['fast', 'short', 'long']
         for index, cadence in enumerate(cadences):
             lc = None
@@ -707,29 +708,12 @@ class Watson:
                     elif mission == lcbuilder.constants.MISSION_K2:
                         found_sectors = lcs.campaign
                 lc = lc.remove_nans()
+                lc = lc.remove_outliers(sigma_lower=float('inf'), sigma_upper=3)
                 if mission == lcbuilder.constants.MISSION_K2:
                     lc = lc.to_corrector("sff").correct(windows=20)
-            lc_df = pd.DataFrame(columns=["folded_time", "flux"])
-            fold_times = foldedleastsquares.fold(lc.time.value, period, epoch + period / 2)
-            lc_df['folded_time'] = fold_times
-            lc_df['flux'] = lc.flux.value
-            lc_df = lc_df.sort_values(by=['folded_time'])
-            lc_df = lc_df[(lc_df['folded_time'] > 0.5 - 3 * duration) &
-                          (lc_df['folded_time'] < 0.5 + 3 * duration)]
+            Watson.compute_phased_values_and_fill_plot(id, axs[index], lc, period, epoch, depth, duration,
+                                                       rp_rstar, a_rstar, bins=bins)
             axs[index].set_title(mission_prefix + " " + str(id) + " " + str(found_sectors) + ": " + cadence)
-            axs[index].scatter(lc_df['folded_time'], lc_df['flux'], color='black', alpha=0.2)
-            if len(lc_df) > bins:
-                bin_means, bin_edges, binnumber = stats.binned_statistic(lc_df['folded_time'], lc_df['flux'],
-                                                                         statistic='mean', bins=bins)
-                bin_width = (bin_edges[1] - bin_edges[0])
-                bin_centers = bin_edges[1:] - bin_width / 2
-                bin_stds, _, _ = stats.binned_statistic(lc_df['folded_time'], lc_df['flux'], statistic='std', bins=bins)
-                bin_nan_args = np.isnan(bin_stds)
-                axs[index].errorbar(bin_centers[~bin_nan_args], bin_means[~bin_nan_args],
-                             yerr=bin_stds[~bin_nan_args] / 2, xerr=bin_width / 2, marker='o', markersize=2,
-                             color='darkorange', alpha=1, linestyle='none')
-                #axs[index].scatter(bin_centers, bin_means, color='orange')
-            # axs[index].axhline(1 - depth, color="red")
         file = file_dir + '/folded_cadences.png'
         plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
         plt.savefig(file, dpi=200, bbox_inches='tight')

@@ -168,14 +168,6 @@ class Report:
                              'The candidate parameters.</font>'
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
-        transit_depths_file = self.data_dir + "/transit_depths.png"
-        if os.path.exists(transit_depths_file):
-            story.append(Image(transit_depths_file, width=16 * cm, height=9 * cm))
-            table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure 1: </strong>' \
-                                 'The candidate single-transits depths plot.</font>'
-            story.append(Spacer(1, 5))
-            story.append(Paragraph(table3_descripcion, styles["ParagraphAlignCenter"]))
-            story.append(Spacer(1, 15))
         cadences_file = self.data_dir + "/folded_cadences.png"
         figure = 1
         if os.path.exists(cadences_file):
