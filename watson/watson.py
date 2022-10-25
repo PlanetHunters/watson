@@ -279,9 +279,10 @@ class Watson:
                                 transit in transit_lists]
             transit_t0s_list = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
         mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
-        Watson.plot_folded_tpfs(self.data_dir, mission_prefix, mission, target_id, ra_fov, dec_fov, lc, lc_data,
-                                tpfs, lc_file, lc_data_file, tpfs_dir, sectors, period, t0, duration, depth / 1000,
-                                rp_rstar, a_rstar, transits_mask, transit_t0s_list, cpus)
+        if (ra_fov is not None and dec_fov is not None):
+            Watson.plot_folded_tpfs(self.data_dir, mission_prefix, mission, target_id, ra_fov, dec_fov, lc, lc_data,
+                                    tpfs, lc_file, lc_data_file, tpfs_dir, sectors, period, t0, duration, depth / 1000,
+                                    rp_rstar, a_rstar, transits_mask, transit_t0s_list, cpus)
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period, t0,
                                         duration, depth / 1000, rp_rstar, a_rstar, cpus)
@@ -574,7 +575,7 @@ class Watson:
             plt.clf()
             plt.close()
             if tpf_short_framed is not None:
-                tpf_short_framed.plot_pixels(aperture_mask=aperture_mask)
+                tpf_short_framed.plot_pixels(aperture_mask=aperture_mask, markersize=1)
                 plt.savefig(tpf_single_transit_file, dpi=100)
                 plt.clf()
                 plt.close()
@@ -859,11 +860,14 @@ class Watson:
         centroids_offsets_dec_list = []
         centroids_offsets_time_list = []
         for index, tpf in enumerate(tpfs):
-            source_offsets.append((results_fold[index][0][0], results_fold[index][0][1]))
-            light_centroids_sub_coords.append((results_fold[index][1][0], results_fold[index][1][1]))
-            centroids_offsets_time_list.append(results_fold[index][2][0])
-            centroids_offsets_ra_list.append(results_fold[index][2][1])
-            centroids_offsets_dec_list.append(results_fold[index][2][2])
+            if results_fold[index][0] is not None:
+                source_offsets.append((results_fold[index][0][0], results_fold[index][0][1]))
+            if results_fold[index][1] is not None:
+                light_centroids_sub_coords.append((results_fold[index][1][0], results_fold[index][1][1]))
+            if results_fold[index][2] is not None:
+                centroids_offsets_time_list.append(results_fold[index][2][0])
+                centroids_offsets_ra_list.append(results_fold[index][2][1])
+                centroids_offsets_dec_list.append(results_fold[index][2][2])
         # TODO we don't manage to get a nice plot from this
         # centroid_coords_df = pd.DataFrame(columns=['time', 'time_folded', 'centroids_ra', 'centroids_dec'])
         # centroid_coords_df['time'] = list(chain.from_iterable(centroids_offsets_time_list))

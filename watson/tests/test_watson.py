@@ -67,7 +67,7 @@ class TestsWatson(unittest.TestCase):
                                        cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
                                        cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 26
+            assert len(files_in_dir) == 29
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -87,7 +87,7 @@ class TestsWatson(unittest.TestCase):
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
                                        dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 21
+            assert len(files_in_dir) == 24
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
