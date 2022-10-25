@@ -1,7 +1,7 @@
 # import os
 import datetime
 import os
-
+import pathlib
 from astropy.coordinates import Angle
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
@@ -206,8 +206,26 @@ class Report:
                              'period and its first harmonic and subharmonic.</font>'
         story.append(Spacer(1, 5))
         story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
-        figure = figure + 1
         story.append(Spacer(1, 15))
+        figure = figure + 1
+        source_offsets_file = self.data_dir + '/source_offsets.png'
+        if os.path.exists(source_offsets_file):
+            story.append(Image(source_offsets_file, width=15 * cm, height=13 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+                        'The computed centroid offset (red circle) from the differential image centroid (cyan dot)' \
+                        ' and the per-pixel BLS SNR centroid (green dot).</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+        for file in sorted(list(pathlib.Path(self.data_dir).glob('folded_tpf_*.png'))):
+            story.append(Image(str(file), width=16 * cm, height=16 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + '' \
+                ': </strong>TPF and per-pixel BLS SNR best fits</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
         introduction = '<font name="HELVETICA" size="9">The next pages will contain each of the single-transits ' \
                        'vetting sheets with the next information: </font>'
         story.append(Paragraph(introduction, styles["ParagraphAlignJustify"]))
