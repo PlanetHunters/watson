@@ -282,7 +282,7 @@ class Watson:
         if (ra_fov is not None and dec_fov is not None):
             Watson.plot_folded_tpfs(self.data_dir, mission_prefix, mission, target_id, ra_fov, dec_fov, lc, lc_data,
                                     tpfs, lc_file, lc_data_file, tpfs_dir, sectors, period, t0, duration, depth / 1000,
-                                    rp_rstar, a_rstar, transits_mask, transit_t0s_list, cpus)
+                                    rp_rstar, a_rstar, transits_mask, transit_t0s_list, apertures, cpus)
         self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period, t0,
                                         duration, depth / 1000, rp_rstar, a_rstar, cpus)
@@ -743,12 +743,16 @@ class Watson:
 
     @staticmethod
     def plot_folded_tpf(fold_tpf_input):
+        ra = fold_tpf_input['ra']
+        dec = fold_tpf_input['dec']
+        apertures = fold_tpf_input['apertures']
         lc_file = fold_tpf_input['lc_file']
         lc_data_file = fold_tpf_input['lc_data_file']
         tpfs_dir = fold_tpf_input['tpfs_dir']
         transits_mask = fold_tpf_input['transits_mask']
         period = fold_tpf_input['period']
         duration = fold_tpf_input['duration']
+        duration_to_period = duration / period
         t0s_list = fold_tpf_input['t0s_list']
         epoch = fold_tpf_input['epoch']
         mission = fold_tpf_input['mission']
@@ -763,6 +767,12 @@ class Watson:
         pixel_values_j = np.array(range(tpf[0].shape[2]))
         tpf_lc_data = lc_data[(lc_data['time'] >= tpf.time.value[0]) & (lc_data['time'] <= tpf.time.value[-1])].dropna()
         sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
+        if apertures is not None:
+            aperture = apertures[sector]
+            aperture = \
+                ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
+        else:
+            aperture = 'pipeline'
         logging.info("Computing TPF centroids for %s %.0f", sector_name, sector)
         cadence_s = np.round(np.nanmedian(tpf.time.value[1:] - tpf.time.value[:-1]) * 3600 * 24)
         cadences_per_transit = LcbuilderHelper.estimate_transit_cadences(cadence_s, duration * 2)
@@ -785,29 +795,31 @@ class Watson:
         if len(good_quality_t0s) == 0:
             logging.warning("There were transits T0s in %s %.0f but they had no good quality", sector_name, sector)
             return None, None, None
-        snr_map, ax = Watson.plot_pixels(tpf, title=mission_prefix + ' ' + str(id) + ' ' + sector_name + ' ' +
-                                                    str(sector) + ' TPF BLS Analysis',
-                                         period=period, epoch=epoch, duration=duration, aperture_mask="pipeline")
-        plt.savefig(file_dir + '/folded_tpf_' + str(sector) + '.png', dpi=200, bbox_inches='tight')
-        plt.clf()
         hdu = tpf.hdu[2].header
         wcs = WCS(hdu)
+        target_px = wcs.all_world2pix(ra, dec, 0)
         centroids_coords = np.array([[coord.ra.value, coord.dec.value] for coord in
                                      wcs.pixel_to_world(tpf_lc_data['centroids_x'], tpf_lc_data['centroids_y'])])
         centroids_offsets_ra = wotan.flatten(tpf_lc_data['time'].to_numpy(), centroids_coords[:, 0], duration * 4)
         # we sum 180 to the declination because flatten does not tolerate negative values
         centroids_offsets_dec = wotan.flatten(tpf_lc_data['time'].to_numpy(), centroids_coords[:, 1] + 180, duration * 4)
-        source_offset = Watson.light_centroid(snr_map, pixel_values_i, pixel_values_j)
-        source_offset = wcs.pixel_to_world(source_offset[1], source_offset[0])
+        snr_map, ax = Watson.plot_pixels(tpf, title=mission_prefix + ' ' + str(id) + ' ' + sector_name + ' ' +
+                                                    str(sector) + ' TPF BLS Analysis',
+                                         period=period, epoch=epoch, duration=duration, aperture_mask=aperture)
+        tpf_bls_file = file_dir + '/folded_tpf_' + str(sector) + '.png'
+        plt.savefig(tpf_bls_file, dpi=200, bbox_inches='tight')
+        plt.clf()
+        source_offset_px = Watson.light_centroid(snr_map, pixel_values_i, pixel_values_j)
+        source_offset = wcs.pixel_to_world(source_offset_px[1], source_offset_px[0])
         time = foldedleastsquares.core.fold(tpf.time.value, period, epoch + period / 2)
         lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
         lc_df['time'] = tpf.time.value
         lc_df['time_folded'] = time
-        lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration / 2) &
-                             (lc_df['time_folded'] <= 0.5 + duration / 2)]
+        lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
+                             (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
         lc_df_oot = lc_df.loc[
-            ((lc_df['time_folded'] < 0.5 - duration / 2) & (lc_df['time_folded'] > 0.5 - 3 * duration / 2)) |
-            ((lc_df['time_folded'] > 0.5 + duration / 2) & (lc_df['time_folded'] < 0.5 + 3 * duration / 2))]
+            ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
+            ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
         tpf_sub = np.zeros((tpf.shape[1], tpf.shape[2]))
         for i in np.arange(0, tpf.shape[1]):
             for j in np.arange(0, tpf.shape[2]):
@@ -817,19 +829,64 @@ class Watson:
                 lc_df['time_folded'] = time
                 lc_df['flux'] = pixel_flux
                 lc_df = lc_df.sort_values(by=['time_folded'], ascending=True)
-                lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration / 2) &
-                                     (lc_df['time_folded'] <= 0.5 + duration / 2)]
+                lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
+                                     (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
                 lc_df_oot = lc_df.loc[
-                    ((lc_df['time_folded'] < 0.5 - duration / 2) & (lc_df['time_folded'] > 0.5 - 3 * duration / 2)) |
-                    ((lc_df['time_folded'] > 0.5 + duration / 2) & (lc_df['time_folded'] < 0.5 + 3 * duration / 2))]
+                    ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
+                    ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
                 tpf_fluxes_oot = lc_df_oot['flux'].to_numpy()
                 tpf_fluxes_it = lc_df_it['flux'].to_numpy()
                 tpf_sub[i, j] = (np.nanmedian(tpf_fluxes_oot) - np.nanmedian(tpf_fluxes_it)) / \
                                 np.sqrt((np.nanstd(tpf_fluxes_oot) ** 2) + (np.nanstd(tpf_fluxes_it) ** 2))
-        hdu = tpf.hdu[2].header
-        wcs = WCS(hdu)
         light_centroid_sub = Watson.light_centroid(tpf_sub, pixel_values_i, pixel_values_j)
         light_centroids_sub_coord = wcs.pixel_to_world(light_centroid_sub[1], light_centroid_sub[0])
+        fig, ax = plt.subplots(1, 2, figsize=(16, 8))
+        ax[0].imshow(np.flip(snr_map, 0), cmap='viridis',
+                     extent=[tpf.column, tpf.column + tpf.shape[1],
+                             tpf.row, tpf.row + tpf.shape[2]])
+        for i in range(aperture.shape[0]):
+            for j in range(aperture.shape[1]):
+                if aperture[i, j]:
+                    ax[0].add_patch(patches.Rectangle((j + tpf.column, i + tpf.row),
+                                                      1, 1, color='red', fill=True, alpha=0.1))
+                    ax[0].add_patch(patches.Rectangle((j + tpf.column, i + tpf.row),
+                                                      1, 1, color='red', fill=False, alpha=1, lw=2))
+        ax[0].xaxis.set_tick_params(labelsize=18)
+        ax[0].yaxis.set_tick_params(labelsize=18)
+        ax[0].plot(tpf.column + target_px[0] + 0.5, tpf.row + target_px[1] + 0.5, marker='*',
+                   color='orange', markersize=25)
+        ax[0].plot(tpf.column + light_centroid_sub[0] + 0.5, tpf.row + light_centroid_sub[1] + 0.5, marker='P',
+                   color='white', markersize=20)
+        ax[0].set_title("Per-pixel BLS SNR map for " + sector_name + " " + str(sector), fontsize=20)
+        ax[1].imshow(np.flip(tpf_sub, 0), cmap='viridis',
+                     extent=[tpf.column, tpf.column + tpf.shape[1],
+                             tpf.row, tpf.row + tpf.shape[2]])
+        for i in range(aperture.shape[0]):
+            for j in range(aperture.shape[1]):
+                if aperture[i, j]:
+                    ax[1].add_patch(patches.Rectangle((j + tpf.column, i + tpf.row),
+                                                      1, 1, color='red', fill=True, alpha=0.1))
+                    ax[1].add_patch(patches.Rectangle((j + tpf.column, i + tpf.row),
+                                                      1, 1, color='red', fill=False, alpha=1, lw=2))
+        ax[1].plot([tpf.column + 0.5 + target_px[0]], [tpf.row + 0.5 + target_px[1]], marker='*',
+                   color='orange', markersize=25)
+        ax[1].plot(tpf.column + source_offset_px[0] + 0.5, tpf.row + source_offset_px[1] + 0.5, marker='P',
+                   color='white', markersize=20)
+        ax[1].xaxis.set_tick_params(labelsize=18)
+        ax[1].yaxis.set_tick_params(labelsize=18)
+        ax[1].set_title("Differential image SNR map for " + sector_name + " " + str(sector), fontsize=20)
+        tpf_snr_file = file_dir + '/snr_tpf_' + str(sector) + '.png'
+        plt.savefig(tpf_snr_file, dpi=200, bbox_inches='tight')
+        plt.clf()
+        images_list = [tpf_bls_file, tpf_snr_file]
+        imgs = [PIL.Image.open(i) for i in images_list]
+        imgs[0] = imgs[0].resize((imgs[1].size[0],
+                                  int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
+                                 PIL.Image.ANTIALIAS)
+        img_merge = np.vstack((np.asarray(i) for i in imgs))
+        img_merge = PIL.Image.fromarray(img_merge)
+        img_merge.save(tpf_bls_file, quality=95, optimize=True)
+        os.remove(tpf_snr_file)
         return (source_offset.ra.value, source_offset.dec.value), \
                (light_centroids_sub_coord.ra.value, light_centroids_sub_coord.dec.value), \
                (tpf_lc_data['time'].to_numpy(), centroids_offsets_ra, centroids_offsets_dec)
@@ -837,7 +894,7 @@ class Watson:
     @staticmethod
     def plot_folded_tpfs(file_dir, mission_prefix, mission, id, ra, dec, lc, lc_data, tpfs, lc_file, lc_data_file,
                          tpfs_dir, sectors, period, epoch, duration, depth, rp_rstar, a_rstar, transits_mask, t0s_list,
-                         cpus=os.cpu_count() - 1):
+                         apertures, cpus=os.cpu_count() - 1):
         duration = duration / 60 / 24
         duration_to_period = duration / period
         i0 = tpfs[0].shape[1] // 2
@@ -851,7 +908,8 @@ class Watson:
             tpf_fold_inputs.append({'id': id, 'tpfs_dir': tpfs_dir, 'lc_file': lc_file, 'lc_data_file': lc_data_file,
                                     'index': index, 'duration': duration, 't0s_list': t0s_list, 'period': period,
                                     'epoch': epoch, 'transits_mask': transits_mask, 'mission': mission,
-                                    'mission_prefix': mission_prefix, 'file_dir': file_dir})
+                                    'mission_prefix': mission_prefix, 'file_dir': file_dir, 'ra': ra, 'dec': dec,
+                                    'apertures': apertures})
         with multiprocessing.Pool(processes=cpus) as pool:
             results_fold = pool.map(Watson.plot_folded_tpf, tpf_fold_inputs)
         light_centroids_sub = []
@@ -869,19 +927,19 @@ class Watson:
                 centroids_offsets_ra_list.append(results_fold[index][2][1])
                 centroids_offsets_dec_list.append(results_fold[index][2][2])
         # TODO we don't manage to get a nice plot from this
-        # centroid_coords_df = pd.DataFrame(columns=['time', 'time_folded', 'centroids_ra', 'centroids_dec'])
-        # centroid_coords_df['time'] = list(chain.from_iterable(centroids_offsets_time_list))
-        # centroid_coords_df['centroids_ra'] = list(chain.from_iterable(centroids_offsets_ra_list))
-        # centroid_coords_df['centroids_dec'] = list(chain.from_iterable(centroids_offsets_dec_list))
-        # centroid_coords_df['time_folded'] = foldedleastsquares.fold(centroid_coords_df['time'].to_numpy(), period, epoch + period / 2)
-        # centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 2) &
-        #                                         (centroid_coords_df['time_folded'] < 0.5 + duration_to_period * 2)]
-        # centroid_coords_df = centroid_coords_df.sort_values(by=['time_folded'], ascending=True)
-        # fig, axs = plt.subplots(2, 1, figsize=(8, 8))
-        # axs[0].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'])
-        # axs[1].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'])
-        # fig.suptitle(mission_prefix + ' ' + str(id) + ' - Transit centroid offsets')
-        # plt.show()
+        centroid_coords_df = pd.DataFrame(columns=['time', 'time_folded', 'centroids_ra', 'centroids_dec'])
+        centroid_coords_df['time'] = list(chain.from_iterable(centroids_offsets_time_list))
+        centroid_coords_df['centroids_ra'] = list(chain.from_iterable(centroids_offsets_ra_list))
+        centroid_coords_df['centroids_dec'] = list(chain.from_iterable(centroids_offsets_dec_list))
+        centroid_coords_df['time_folded'] = foldedleastsquares.fold(centroid_coords_df['time'].to_numpy(), period, epoch + period / 2)
+        centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 2) &
+                                                (centroid_coords_df['time_folded'] < 0.5 + duration_to_period * 2)]
+        centroid_coords_df = centroid_coords_df.sort_values(by=['time_folded'], ascending=True)
+        fig, axs = plt.subplots(2, 1, figsize=(8, 8))
+        axs[0].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'])
+        axs[1].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'])
+        fig.suptitle(mission_prefix + ' ' + str(id) + ' - Transit centroid offsets')
+        plt.show()
         light_centroids_sub_ra = np.nanmedian(np.array(light_centroids_sub_coords)[:, 0])
         light_centroids_sub_dec = np.nanmedian(np.array(light_centroids_sub_coords)[:, 1])
         light_centroids_sub_ra_err = np.nanstd(np.array(light_centroids_sub_coords)[:, 0])
