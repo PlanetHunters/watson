@@ -842,8 +842,8 @@ class Watson:
         light_centroids_sub_coord = wcs.pixel_to_world(light_centroid_sub[1], light_centroid_sub[0])
         fig, ax = plt.subplots(1, 2, figsize=(16, 8))
         ax[0].imshow(np.flip(snr_map, 0), cmap='viridis',
-                     extent=[tpf.column, tpf.column + tpf.shape[1],
-                             tpf.row, tpf.row + tpf.shape[2]])
+                     extent=[tpf.column, tpf.column + tpf.shape[2],
+                             tpf.row, tpf.row + tpf.shape[1]])
         for i in range(aperture.shape[0]):
             for j in range(aperture.shape[1]):
                 if aperture[i, j]:
@@ -855,12 +855,12 @@ class Watson:
         ax[0].yaxis.set_tick_params(labelsize=18)
         ax[0].plot(tpf.column + target_px[0] + 0.5, tpf.row + target_px[1] + 0.5, marker='*',
                    color='orange', markersize=25)
-        ax[0].plot(tpf.column + light_centroid_sub[0] + 0.5, tpf.row + light_centroid_sub[1] + 0.5, marker='P',
+        ax[0].plot(tpf.column + light_centroid_sub[1] + 0.5, tpf.row + light_centroid_sub[0] + 0.5, marker='P',
                    color='white', markersize=20)
         ax[0].set_title("Per-pixel BLS SNR map for " + sector_name + " " + str(sector), fontsize=20)
         ax[1].imshow(np.flip(tpf_sub, 0), cmap='viridis',
-                     extent=[tpf.column, tpf.column + tpf.shape[1],
-                             tpf.row, tpf.row + tpf.shape[2]])
+                     extent=[tpf.column, tpf.column + tpf.shape[2],
+                             tpf.row, tpf.row + tpf.shape[1]])
         for i in range(aperture.shape[0]):
             for j in range(aperture.shape[1]):
                 if aperture[i, j]:
@@ -870,7 +870,7 @@ class Watson:
                                                       1, 1, color='red', fill=False, alpha=1, lw=2))
         ax[1].plot([tpf.column + 0.5 + target_px[0]], [tpf.row + 0.5 + target_px[1]], marker='*',
                    color='orange', markersize=25)
-        ax[1].plot(tpf.column + source_offset_px[0] + 0.5, tpf.row + source_offset_px[1] + 0.5, marker='P',
+        ax[1].plot(tpf.column + source_offset_px[1] + 0.5, tpf.row + source_offset_px[0] + 0.5, marker='P',
                    color='white', markersize=20)
         ax[1].xaxis.set_tick_params(labelsize=18)
         ax[1].yaxis.set_tick_params(labelsize=18)
@@ -986,14 +986,13 @@ class Watson:
     def light_centroid(snr_map, pixel_values_i, pixel_values_j):
         snr_i_0 = 0
         snr_j_0 = 0
-        for i in pixel_values_i:
-            for j in pixel_values_j:
-                snr_i_0 = snr_i_0 + (snr_map[i, j] ** 2) * i
-                snr_j_0 = snr_j_0 + (snr_map[i, j] ** 2) * j
         snr_div = 0
         for i in pixel_values_i:
             for j in pixel_values_j:
-                snr_div = snr_div + (snr_map[i, j] ** 2)
+                if not np.isnan(snr_map[i, j]):
+                    snr_i_0 = snr_i_0 + (snr_map[i, j] ** 2) * i
+                    snr_j_0 = snr_j_0 + (snr_map[i, j] ** 2) * j
+                    snr_div = snr_div + (snr_map[i, j] ** 2)
         c_i = snr_i_0 / snr_div
         c_j = snr_j_0 / snr_div
         #mass_center = ndimage.measurements.center_of_mass(snr_map)

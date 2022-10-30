@@ -219,7 +219,7 @@ class Report:
             story.append(Spacer(1, 15))
             figure = figure + 1
         for file in sorted(list(pathlib.Path(self.data_dir).glob('folded_tpf_*.png'))):
-            story.append(Image(str(file), width=16 * cm, height=16 * cm))
+            story.append(Image(str(file), width=16 * cm, height=24 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + '' \
                 ': </strong>Above, the TPF and per-pixel BLS SNR best fits. Bottom left, the per-pixel BLS SNR for each' \
                 ' pixel. Bottom right, the differential images SNR for each pixel. The target position is represented ' \
