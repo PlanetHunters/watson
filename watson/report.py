@@ -212,8 +212,9 @@ class Report:
         if os.path.exists(source_offsets_file):
             story.append(Image(source_offsets_file, width=15 * cm, height=13 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                        'The computed centroid offset (red circle) from the differential image centroid (cyan dot)' \
-                        ' and the per-pixel BLS SNR centroid (green dot).</font>'
+                        'Above, the computed target offset (red circle) from the differential image offset (cyan dot)' \
+                        ' and the per-pixel BLS SNR offset (green dot). Bottom left, the right ascension centroid shift with binning. ' \
+                        'Bottom right, the declination centroid shift with binning.</font>'
             story.append(Spacer(1, 5))
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))

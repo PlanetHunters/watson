@@ -798,11 +798,8 @@ class Watson:
         hdu = tpf.hdu[2].header
         wcs = WCS(hdu)
         target_px = wcs.all_world2pix(ra, dec, 0)
-        centroids_coords = np.array([[coord.ra.value, coord.dec.value] for coord in
-                                     wcs.pixel_to_world(tpf_lc_data['centroids_x'], tpf_lc_data['centroids_y'])])
-        centroids_offsets_ra = wotan.flatten(tpf_lc_data['time'].to_numpy(), centroids_coords[:, 0], duration * 4)
-        # we sum 180 to the declination because flatten does not tolerate negative values
-        centroids_offsets_dec = wotan.flatten(tpf_lc_data['time'].to_numpy(), centroids_coords[:, 1] + 180, duration * 4)
+        centroid_shift_time, centroid_shift_ra, centroid_shift_dec = \
+            Watson.compute_centroids_for_tpf(ra, dec, lc_data, tpf, wcs, period, epoch, duration_to_period)
         snr_map, ax = Watson.plot_pixels(tpf, title=mission_prefix + ' ' + str(id) + ' ' + sector_name + ' ' +
                                                     str(sector) + ' TPF BLS Analysis',
                                          period=period, epoch=epoch, duration=duration, aperture_mask=aperture)
@@ -889,7 +886,65 @@ class Watson:
         os.remove(tpf_snr_file)
         return (source_offset.ra.value, source_offset.dec.value), \
                (light_centroids_sub_coord.ra.value, light_centroids_sub_coord.dec.value), \
-               (tpf_lc_data['time'].to_numpy(), centroids_offsets_ra, centroids_offsets_dec)
+               (centroid_shift_time, centroid_shift_ra, centroid_shift_dec)
+
+
+    @staticmethod
+    def compute_centroids_for_tpf(ra, dec, lc_data, tpf, wcs, period, epoch, duration_to_period):
+        df = lc_data[(lc_data['time'] >= tpf.time.value[0]) & (lc_data['time'] <= tpf.time.value[-1])].dropna()
+        time = df["time"].to_numpy()
+        df['time_folded'] = foldedleastsquares.fold(time, period, epoch + period / 2)
+        dif = time[1:] - time[:-1]
+        jumps = np.where(np.abs(dif) > 0.1)[0]
+        jumps = np.append(jumps, len(df))
+        jumps = jumps
+        previous_jump_index = 0
+        df = df.sort_values(by=['time'], ascending=True).reset_index(drop=True)
+        for jumpIndex in jumps:
+            sub_df = df.loc[previous_jump_index:jumpIndex]
+            sub_df_oot = sub_df[(sub_df['time_folded'] < 0.5 - duration_to_period * 2) | (
+                    sub_df['time_folded'] > 0.5 + duration_to_period * 2)]
+            df.loc[previous_jump_index:jumpIndex]['centroids_x'] = (sub_df["centroids_x"] - sub_df_oot[
+                "centroids_x"].median()) / np.nanstd(sub_df_oot["centroids_x"])
+            df.loc[previous_jump_index:jumpIndex]['centroids_y'] = (sub_df["centroids_y"] - sub_df_oot[
+                "centroids_y"].median()) / np.nanstd(sub_df_oot["centroids_y"])
+            df.loc[previous_jump_index:jumpIndex]['motion_x'] = (sub_df["motion_x"] - sub_df_oot[
+                "motion_x"].median()) / np.nanstd(sub_df_oot["motion_x"])
+            df.loc[previous_jump_index:jumpIndex]['motion_y'] = (sub_df["motion_y"] - sub_df_oot[
+                "motion_y"].median()) / np.nanstd(sub_df_oot["motion_y"])
+            previous_jump_index = jumpIndex + 1
+        target_px = wcs.all_world2pix(ra, dec, 0)
+        df['x_shift'] = df['motion_x'] - df['centroids_x'] + target_px[1]
+        df['y_shift'] = df['motion_y'] - df['centroids_y'] + target_px[0]
+        shift_coords = np.array([[coord.ra.value, coord.dec.value] for coord in
+                                 wcs.pixel_to_world(df['x_shift'], df['y_shift'])])
+        shift_ra = shift_coords[:, 0] - ra
+        shift_ra = (shift_ra - np.nanmedian(shift_ra)) / np.nanstd(shift_ra)
+        shift_dec = shift_coords[:, 1] - dec
+        shift_dec = (shift_dec - np.nanmedian(shift_dec)) / np.nanstd(shift_dec)
+        shift_time = df['time_folded'].to_numpy()
+        # bin_means_0, bin_edges_0, binnumber_0 = stats.binned_statistic(df['time_folded'], shift_ra,
+        #                                                                statistic='mean', bins=40)
+        # bin_width_0 = (bin_edges_0[1] - bin_edges_0[0])
+        # bin_centers_0 = bin_edges_0[1:] - bin_width_0 / 2
+        # bin_stds_0, bin_edges_0, binnumber_0 = stats.binned_statistic(df['time_folded'], shift_ra,
+        #                                                               statistic='std', bins=40)
+        # bin_means_1, bin_edges_1, binnumber_1 = stats.binned_statistic(df['time_folded'], shift_dec,
+        #                                                                statistic='mean', bins=40)
+        # bin_stds_1, bin_edges_1, binnumber_1 = stats.binned_statistic(df['time_folded'], shift_dec,
+        #                                                               statistic='std', bins=40)
+        # bin_width_1 = (bin_edges_1[1] - bin_edges_1[0])
+        # bin_centers_1 = bin_edges_1[1:] - bin_width_1 / 2
+        # fig, axs = plt.subplots(1, 2, figsize=(8, 3))
+        # axs[0].set_title("Right Ascension centroid shift", fontsize=15)
+        # axs[0].scatter(df_it['time_folded'], shift_ra, color='gray', alpha=0.2)
+        # axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
+        #                 color='darkorange', alpha=1, linestyle='none')
+        # axs[1].set_title("Declination centroid shift", fontsize=15)
+        # axs[1].scatter(df_it['time_folded'], shift_dec, color='gray', alpha=0.2)
+        # axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_1 / 2, xerr=bin_width_1 / 2, marker='o', markersize=2,
+        #                 color='darkorange', alpha=1, linestyle='none')
+        return shift_time, shift_ra, shift_dec
 
     @staticmethod
     def plot_folded_tpfs(file_dir, mission_prefix, mission, id, ra, dec, lc, lc_data, tpfs, lc_file, lc_data_file,
@@ -916,6 +971,8 @@ class Watson:
         light_centroids_sub_coords = []
         centroids_offsets_ra_list = []
         centroids_offsets_dec_list = []
+        motion_ra_list = []
+        motion_dec_list = []
         centroids_offsets_time_list = []
         for index, tpf in enumerate(tpfs):
             if results_fold[index][0] is not None:
@@ -928,18 +985,54 @@ class Watson:
                 centroids_offsets_dec_list.append(results_fold[index][2][2])
         # TODO we don't manage to get a nice plot from this
         centroid_coords_df = pd.DataFrame(columns=['time', 'time_folded', 'centroids_ra', 'centroids_dec'])
-        centroid_coords_df['time'] = list(chain.from_iterable(centroids_offsets_time_list))
         centroid_coords_df['centroids_ra'] = list(chain.from_iterable(centroids_offsets_ra_list))
         centroid_coords_df['centroids_dec'] = list(chain.from_iterable(centroids_offsets_dec_list))
-        centroid_coords_df['time_folded'] = foldedleastsquares.fold(centroid_coords_df['time'].to_numpy(), period, epoch + period / 2)
-        centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 2) &
-                                                (centroid_coords_df['time_folded'] < 0.5 + duration_to_period * 2)]
+        centroid_coords_df['time_folded'] = list(chain.from_iterable(centroids_offsets_time_list))
         centroid_coords_df = centroid_coords_df.sort_values(by=['time_folded'], ascending=True)
-        fig, axs = plt.subplots(2, 1, figsize=(8, 8))
-        axs[0].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'])
-        axs[1].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'])
-        fig.suptitle(mission_prefix + ' ' + str(id) + ' - Transit centroid offsets')
-        plt.show()
+        centroids_moving_avg_window = int(len(centroid_coords_df) * duration_to_period / 4)
+        centroid_coords_df['centroids_ra'] =\
+            centroid_coords_df['centroids_ra'].rolling(window=centroids_moving_avg_window).mean()
+        centroid_coords_df['centroids_dec'] = \
+            centroid_coords_df['centroids_dec'].rolling(window=centroids_moving_avg_window).mean()
+        centroid_coords_df_it = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period / 2) &
+                                                   (centroid_coords_df['time_folded'] < 0.5 + duration_to_period / 2)]
+        centroid_coords_df_oot = centroid_coords_df[(centroid_coords_df['time_folded'] < 0.5 - duration_to_period / 2) |
+                                                   (centroid_coords_df['time_folded'] > 0.5 + duration_to_period / 2)]
+        centroids_ra_snr = np.round(np.abs(centroid_coords_df_it['centroids_ra'].median() / centroid_coords_df_oot['centroids_ra'].std()), 2)
+        centroids_dec_snr = np.round(np.abs(centroid_coords_df_it['centroids_dec'].median() / centroid_coords_df_oot['centroids_dec'].std()), 2)
+        centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 3) &
+                                                (centroid_coords_df['time_folded'] < 0.5 + duration_to_period * 3)]
+        bin_means_0, bin_edges_0, binnumber_0 = stats.binned_statistic(centroid_coords_df['time_folded'],
+                                                                       centroid_coords_df['centroids_ra'],
+                                                                       statistic='mean', bins=40)
+        bin_width_0 = (bin_edges_0[1] - bin_edges_0[0])
+        bin_centers_0 = bin_edges_0[1:] - bin_width_0 / 2
+        bin_stds_0, bin_edges_0, binnumber_0 = stats.binned_statistic(centroid_coords_df['time_folded'],
+                                                                      centroid_coords_df['centroids_ra'],
+                                                                      statistic='std', bins=40)
+        bin_means_1, bin_edges_1, binnumber_1 = stats.binned_statistic(centroid_coords_df['time_folded'],
+                                                                       centroid_coords_df['centroids_dec'],
+                                                                       statistic='mean', bins=40)
+        bin_stds_1, bin_edges_1, binnumber_1 = stats.binned_statistic(centroid_coords_df['time_folded'],
+                                                                      centroid_coords_df['centroids_dec'],
+                                                                      statistic='std', bins=40)
+        bin_width_1 = (bin_edges_1[1] - bin_edges_1[0])
+        bin_centers_1 = bin_edges_1[1:] - bin_width_1 / 2
+        fig, axs = plt.subplots(1, 2, figsize=(8, 3))
+        axs[0].set_title("Right Ascension centroid shift - SNR=" + str(centroids_ra_snr), fontsize=15)
+        axs[0].axhline(y=0, color='r', linestyle='-', alpha=0.4)
+        axs[0].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'], color='gray', alpha=0.2)
+        axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
+                        color='darkorange', alpha=1, linestyle='none')
+        axs[1].set_title("Declination centroid shift - SNR=" + str(centroids_dec_snr), fontsize=15)
+        axs[1].axhline(y=0, color='r', linestyle='-', alpha=0.4)
+        axs[1].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'], color='gray', alpha=0.2)
+        axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_1 / 2, xerr=bin_width_1 / 2, marker='o', markersize=2,
+                        color='darkorange', alpha=1, linestyle='none')
+        centroids_file = file_dir + '/centroids.png'
+        plt.savefig(centroids_file)
+        plt.close(fig)
+        plt.clf()
         light_centroids_sub_ra = np.nanmedian(np.array(light_centroids_sub_coords)[:, 0])
         light_centroids_sub_dec = np.nanmedian(np.array(light_centroids_sub_coords)[:, 1])
         light_centroids_sub_ra_err = np.nanstd(np.array(light_centroids_sub_coords)[:, 0])
@@ -979,7 +1072,17 @@ class Watson:
                 marker="*", markersize=4, color="cyan", label='Diff image offset')
         ax.set_title(mission_prefix + ' ' + str(id) + " Source offsets - " +
                      str(np.round(distance_sub_arcs, 2)) + r'$\pm$' + str(np.round(offset_err, 2)) + "''")
-        plt.savefig(file_dir + '/source_offsets.png', dpi=200, bbox_inches='tight')
+        offsets_file = file_dir + '/source_offsets.png'
+        plt.savefig(offsets_file, dpi=200, bbox_inches='tight')
+        images_list = [offsets_file, centroids_file]
+        imgs = [PIL.Image.open(i) for i in images_list]
+        imgs[0] = imgs[0].resize((imgs[1].size[0],
+                                  int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
+                                 PIL.Image.ANTIALIAS)
+        img_merge = np.vstack((np.asarray(i) for i in imgs))
+        img_merge = PIL.Image.fromarray(img_merge)
+        img_merge.save(offsets_file, quality=95, optimize=True)
+        os.remove(centroids_file)
         return source_offset_ra, source_offset_dec, distance_sub_arcs
 
     @staticmethod
