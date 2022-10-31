@@ -923,27 +923,6 @@ class Watson:
         shift_dec = shift_coords[:, 1] - dec
         shift_dec = (shift_dec - np.nanmedian(shift_dec)) / np.nanstd(shift_dec)
         shift_time = df['time_folded'].to_numpy()
-        # bin_means_0, bin_edges_0, binnumber_0 = stats.binned_statistic(df['time_folded'], shift_ra,
-        #                                                                statistic='mean', bins=40)
-        # bin_width_0 = (bin_edges_0[1] - bin_edges_0[0])
-        # bin_centers_0 = bin_edges_0[1:] - bin_width_0 / 2
-        # bin_stds_0, bin_edges_0, binnumber_0 = stats.binned_statistic(df['time_folded'], shift_ra,
-        #                                                               statistic='std', bins=40)
-        # bin_means_1, bin_edges_1, binnumber_1 = stats.binned_statistic(df['time_folded'], shift_dec,
-        #                                                                statistic='mean', bins=40)
-        # bin_stds_1, bin_edges_1, binnumber_1 = stats.binned_statistic(df['time_folded'], shift_dec,
-        #                                                               statistic='std', bins=40)
-        # bin_width_1 = (bin_edges_1[1] - bin_edges_1[0])
-        # bin_centers_1 = bin_edges_1[1:] - bin_width_1 / 2
-        # fig, axs = plt.subplots(1, 2, figsize=(8, 3))
-        # axs[0].set_title("Right Ascension centroid shift", fontsize=15)
-        # axs[0].scatter(df_it['time_folded'], shift_ra, color='gray', alpha=0.2)
-        # axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
-        #                 color='darkorange', alpha=1, linestyle='none')
-        # axs[1].set_title("Declination centroid shift", fontsize=15)
-        # axs[1].scatter(df_it['time_folded'], shift_dec, color='gray', alpha=0.2)
-        # axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_1 / 2, xerr=bin_width_1 / 2, marker='o', markersize=2,
-        #                 color='darkorange', alpha=1, linestyle='none')
         return shift_time, shift_ra, shift_dec
 
     @staticmethod
@@ -989,17 +968,15 @@ class Watson:
         centroid_coords_df['centroids_dec'] = list(chain.from_iterable(centroids_offsets_dec_list))
         centroid_coords_df['time_folded'] = list(chain.from_iterable(centroids_offsets_time_list))
         centroid_coords_df = centroid_coords_df.sort_values(by=['time_folded'], ascending=True)
-        centroids_moving_avg_window = int(len(centroid_coords_df) * duration_to_period / 4)
-        centroid_coords_df['centroids_ra'] =\
-            centroid_coords_df['centroids_ra'].rolling(window=centroids_moving_avg_window).mean()
-        centroid_coords_df['centroids_dec'] = \
-            centroid_coords_df['centroids_dec'].rolling(window=centroids_moving_avg_window).mean()
+        centroids_moving_avg_window = int(len(centroid_coords_df) * duration_to_period / 10)
+        centroids_moving_avg_window = centroids_moving_avg_window if centroids_moving_avg_window > 1 else 1
         centroid_coords_df_it = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period / 2) &
                                                    (centroid_coords_df['time_folded'] < 0.5 + duration_to_period / 2)]
         centroid_coords_df_oot = centroid_coords_df[(centroid_coords_df['time_folded'] < 0.5 - duration_to_period / 2) |
                                                    (centroid_coords_df['time_folded'] > 0.5 + duration_to_period / 2)]
-        centroids_ra_snr = np.round(np.abs(centroid_coords_df_it['centroids_ra'].median() / centroid_coords_df_oot['centroids_ra'].std()), 2)
-        centroids_dec_snr = np.round(np.abs(centroid_coords_df_it['centroids_dec'].median() / centroid_coords_df_oot['centroids_dec'].std()), 2)
+        it_points_snr_modifier = np.sqrt(len(centroid_coords_df_it))
+        centroids_ra_snr = np.round(np.abs(centroid_coords_df_it['centroids_ra'].median() * it_points_snr_modifier / centroid_coords_df_oot['centroids_ra'].std()), 2)
+        centroids_dec_snr = np.round(np.abs(centroid_coords_df_it['centroids_dec'].median() * it_points_snr_modifier / centroid_coords_df_oot['centroids_dec'].std()), 2)
         centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 3) &
                                                 (centroid_coords_df['time_folded'] < 0.5 + duration_to_period * 3)]
         bin_means_0, bin_edges_0, binnumber_0 = stats.binned_statistic(centroid_coords_df['time_folded'],
@@ -1019,12 +996,12 @@ class Watson:
         bin_width_1 = (bin_edges_1[1] - bin_edges_1[0])
         bin_centers_1 = bin_edges_1[1:] - bin_width_1 / 2
         fig, axs = plt.subplots(1, 2, figsize=(8, 3))
-        axs[0].set_title("Right Ascension centroid shift - SNR=" + str(centroids_ra_snr), fontsize=15)
+        axs[0].set_title("Right Ascension centroid shift - SNR=" + str(centroids_ra_snr), fontsize=10)
         axs[0].axhline(y=0, color='r', linestyle='-', alpha=0.4)
         axs[0].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'], color='gray', alpha=0.2)
         axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
-        axs[1].set_title("Declination centroid shift - SNR=" + str(centroids_dec_snr), fontsize=15)
+        axs[1].set_title("Declination centroid shift - SNR=" + str(centroids_dec_snr), fontsize=10)
         axs[1].axhline(y=0, color='r', linestyle='-', alpha=0.4)
         axs[1].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'], color='gray', alpha=0.2)
         axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_1 / 2, xerr=bin_width_1 / 2, marker='o', markersize=2,
@@ -1033,6 +1010,10 @@ class Watson:
         plt.savefig(centroids_file)
         plt.close(fig)
         plt.clf()
+        # phot_source_offset_ra = ra + (centroid_coords_df_oot['centroids_ra'].median() * ra / 3600 - \
+        #                         (1 / depth - 1) * centroid_coords_df_it['centroids_ra'].median() * ra / 3600) * np.cos(np.deg2rad(dec))
+        # phot_source_offset_dec = dec + (centroid_coords_df_oot['centroids_dec'].median() * dec / 3600 - \
+        #                         (1 / depth - 1) * centroid_coords_df_it['centroids_dec'].median() * dec / 3600)
         light_centroids_sub_ra = np.nanmedian(np.array(light_centroids_sub_coords)[:, 0])
         light_centroids_sub_dec = np.nanmedian(np.array(light_centroids_sub_coords)[:, 1])
         light_centroids_sub_ra_err = np.nanstd(np.array(light_centroids_sub_coords)[:, 0])
@@ -1050,6 +1031,7 @@ class Watson:
         wcs = WCS(hdu)
         offset_px = wcs.all_world2pix(offset_ra, offset_dec, 0)
         light_centroids_sub_offset_px = wcs.all_world2pix(light_centroids_sub_ra, light_centroids_sub_dec, 0)
+        # phot_source_offset_px = wcs.all_world2pix(phot_source_offset_ra, phot_source_offset_dec, 0)
         source_offset_px = wcs.all_world2pix(source_offset_ra, source_offset_dec, 0)
         c1 = SkyCoord(ra=ra * u.degree, dec=dec * u.degree, frame='icrs')
         c2 = SkyCoord(ra=offset_ra * u.degree, dec=offset_dec * u.degree, frame='icrs')
@@ -1070,6 +1052,8 @@ class Watson:
                 markersize=4, color="green", label='Diff image offset')
         ax.plot([tpf.column + light_centroids_sub_offset_px[0]], [tpf.row + light_centroids_sub_offset_px[1]],
                 marker="*", markersize=4, color="cyan", label='Diff image offset')
+        # ax.plot([tpf.column + phot_source_offset_px[0]], [tpf.row + phot_source_offset_px[1]],
+        #         marker="*", markersize=4, color="pink", label='Diff image offset')
         ax.set_title(mission_prefix + ' ' + str(id) + " Source offsets - " +
                      str(np.round(distance_sub_arcs, 2)) + r'$\pm$' + str(np.round(offset_err, 2)) + "''")
         offsets_file = file_dir + '/source_offsets.png'

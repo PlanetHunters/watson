@@ -210,7 +210,7 @@ class Report:
         figure = figure + 1
         source_offsets_file = self.data_dir + '/source_offsets.png'
         if os.path.exists(source_offsets_file):
-            story.append(Image(source_offsets_file, width=15 * cm, height=13 * cm))
+            story.append(Image(source_offsets_file, width=16 * cm, height=20 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
                         'Above, the computed target offset (red circle) from the differential image offset (cyan dot)' \
                         ' and the per-pixel BLS SNR offset (green dot). Bottom left, the right ascension centroid shift with binning. ' \
