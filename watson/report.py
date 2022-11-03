@@ -52,7 +52,7 @@ class Report:
 
     @staticmethod
     def metrics_row_colors(df, table_object):
-        for index, row in df:
+        for index, row in df.iterrows():
             if row['Passed'].isnull():
                 bg_color = colors.white
             elif row['Passed'] == False:
