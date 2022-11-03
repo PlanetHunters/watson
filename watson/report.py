@@ -12,9 +12,11 @@ from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, 
     Image, Table, TableStyle, ListFlowable
 from os import path
 from astropy import units as u
+import pandas as pd
 
 width, height = A4
 resources_dir = path.join(path.dirname(__file__))
+
 
 class Report:
     LOGO_IMAGE = resources_dir + "/resources/images/watson.png"
@@ -46,14 +48,25 @@ class Report:
                 bg_color = colors.whitesmoke
             else:
                 bg_color = colors.lightgrey
+            table_object.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
 
+    @staticmethod
+    def metrics_row_colors(df, table_object):
+        for index, row in df:
+            if row['Passed'].isnull():
+                bg_color = colors.white
+            elif row['Passed'] == False:
+                bg_color = colors.red
+            elif row['Passed'] == True:
+                bg_color = colors.lightgreen
             table_object.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
 
     def create_header(self, canvas, doc):
         canvas.saveState()
 
         # Logo:
-        canvas.drawImage(self.LOGO_IMAGE, x=1.5 * cm, y=26.8 * cm, height=2 * cm, width=2 * cm, preserveAspectRatio=True)
+        canvas.drawImage(self.LOGO_IMAGE, x=1.5 * cm, y=26.8 * cm, height=2 * cm, width=2 * cm,
+                         preserveAspectRatio=True)
 
         # Title:
         object_id_text = 'WATSON Transits Validation Report: %s' % self.object_id
@@ -131,8 +144,10 @@ class Report:
 
         # Generamos la tabla 1 con los parámetros:
         tabla1_data = [['RA (deg)', 'Dec (deg)', 'V (mag)', 'J (mag)', 'H (mag)', 'K (mag)'],
-                       [Angle(self.ra, u.deg).to_string(unit=u.hourangle, sep=':', precision=2) if self.ra is not None else '-',
-                        Angle(self.dec, u.deg).to_string(unit=u.deg, sep=':', precision=2) if self.dec is not None else '-',
+                       [Angle(self.ra, u.deg).to_string(unit=u.hourangle, sep=':',
+                                                        precision=2) if self.ra is not None else '-',
+                        Angle(self.dec, u.deg).to_string(unit=u.deg, sep=':',
+                                                         precision=2) if self.dec is not None else '-',
                         round(self.v, 2) if self.v is not None else '-',
                         round(self.j, 2) if self.j is not None else '-',
                         round(self.h, 2) if self.h is not None else '-',
@@ -148,11 +163,10 @@ class Report:
                         The proposed target parameters.</font>'
         story.append(Spacer(1, 5))
         story.append(Paragraph(table1_descripcion, styles["ParagraphAlignCenter"]))
-
         story.append(Spacer(1, 15))
         # Generamos la tabla 2 con los parámetros:
         tabla2_data = [['T0 (d)', 'Period (d)', 'Duration (h)', 'Depth (ppt)'],
-                        [round(self.t0, 4),
+                       [round(self.t0, 4),
                         round(self.period, 4),
                         round(self.duration / 60, 2),
                         round(self.depth, 3)]]
@@ -160,7 +174,6 @@ class Report:
         table2_number_rows = len(tabla2_data)
         tabla2 = Table(tabla2_data, table2_colwidth, table2_number_rows * [0.75 * cm])
         tabla2.setStyle(table_style)
-        # Le damos el estilo alternando colores de filas:
         Report.row_colors(tabla2_data, tabla2)
         story.append(tabla2)
         story.append(Spacer(1, 5))
@@ -168,12 +181,31 @@ class Report:
                              'The candidate parameters.</font>'
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
+
+        table_data = [['Metric', 'Value', 'Passed']]
+        metrics_file = self.data_dir + "/metrics.csv"
+        metrics_df = pd.read_csv(metrics_file)
+        for index, metric_row in metrics_df.iterrows():
+            table_data.append([metric_row['metric'],
+                               round(metric_row['score'], 3),
+                               metric_row['Passed']])
+        table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
+        table_number_rows = len(table_data)
+        table = Table(table_data, table_colwidth, table_number_rows * [0.75 * cm])
+        table.setStyle(table_style)
+        Report.metrics_row_colors(metrics_df, table_data)
+        story.append(tabla2)
+        story.append(Spacer(1, 5))
+        table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 2: </strong>' \
+                            'The results of the numerical tests.</font>'
+        story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
+        story.append(Spacer(1, 15))
         cadences_file = self.data_dir + "/folded_cadences.png"
         figure = 1
         if os.path.exists(cadences_file):
             story.append(Image(cadences_file, width=16 * cm, height=16 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                          'Folded curve for all available cadences.</font>'
+                                                                                            'Folded curve for all available cadences.</font>'
             story.append(Spacer(1, 5))
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
@@ -195,26 +227,28 @@ class Report:
         if os.path.exists(transit_depths_file):
             story.append(Image(transit_depths_file, width=16 * cm, height=9 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                                 'The candidate single-transits depths plot.</font>'
+                                                                                            'The candidate single-transits depths plot.</font>'
             story.append(Spacer(1, 5))
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
             figure = figure + 1
         story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=16 * cm))
         descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                             'The candidate folded curve at T0 and its opposite for the selected ' \
-                             'period and its first harmonic and subharmonic.</font>'
+                                                                                        'The candidate folded curve at T0 and its opposite for the selected ' \
+                                                                                        'period and its first harmonic and subharmonic.</font>'
         story.append(Spacer(1, 5))
         story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
         figure = figure + 1
         source_offsets_file = self.data_dir + '/source_offsets.png'
         if os.path.exists(source_offsets_file):
-            story.append(Image(source_offsets_file, width=16 * cm, height=20 * cm))
+            story.append(Image(source_offsets_file, width=16 * cm, height=24 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                        'Above, the computed target offset (red circle) from the differential image offset (cyan dot)' \
-                        ' and the per-pixel BLS SNR offset (green dot). Bottom left, the right ascension centroid shift with binning. ' \
-                        'Bottom right, the declination centroid shift with binning.</font>'
+                                                                                            'Above, the computed target offset (red circle) from the differential image offset (cyan dot)' \
+                                                                                            ' and the per-pixel BLS SNR offset (green dot). Middle left, the right ascension centroid shift with binning. ' \
+                                                                                            'Middle right, the declination centroid shift with binning. ' \
+                                                                                            'Bottom left, optical ghost diagnostic curve for core flux.' \
+                                                                                            'Bottom right, optical ghost diagnostic curve for halo flux</font>'
             story.append(Spacer(1, 5))
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
@@ -222,13 +256,13 @@ class Report:
         for file in sorted(list(pathlib.Path(self.data_dir).glob('folded_tpf_*.png'))):
             story.append(Image(str(file), width=14 * cm, height=22 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + '' \
-                ': </strong>Above, the TPF and per-pixel BLS SNR best fits. Bottom left, the per-pixel BLS SNR for each' \
-                ' pixel. Bottom right, the differential images SNR for each pixel. The target position is represented ' \
-                'by a red star and the TPF independent source offset is represented by a white plus.</font>'
+                                                                                            ': </strong>Above, the TPF and per-pixel BLS SNR best fits. Bottom left, the per-pixel BLS SNR for each' \
+                                                                                            ' pixel. Bottom right, the differential images SNR for each pixel. The target position is represented ' \
+                                                                                            'by a red star and the TPF independent source offset is represented by a white plus.</font>'
             story.append(Spacer(1, 5))
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
-            story.append(Spacer(1, 15))
             figure = figure + 1
+        story.append(PageBreak())
         introduction = '<font name="HELVETICA" size="9">The next pages will contain each of the single-transits ' \
                        'vetting sheets with the next information: </font>'
         story.append(Paragraph(introduction, styles["ParagraphAlignJustify"]))
