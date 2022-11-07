@@ -61,7 +61,9 @@ class Report:
             elif row['passed'] == True:
                 bg_color = colors.lightgreen
             table_object.setStyle(TableStyle([('BACKGROUND', (0, index + 1), (-1, index + 1), bg_color),
-                                              ('FONTSIZE', (0, index), (-1, index), 8)]))
+                                              ('FONTSIZE', (0, index + 1), (-1, index + 1), 9),
+                                              ('TOPPADDING', (0, index + 1), (-1, index + 1), 1),
+                                              ('BOTTOMPADDING', (0, index + 1), (-1, index + 1), 1)]))
 
     def create_header(self, canvas, doc):
         canvas.saveState()
@@ -193,7 +195,7 @@ class Report:
                                metric_row['passed']])
         table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
         table_number_rows = len(table_data)
-        table = Table(table_data, table_colwidth, table_number_rows * [0.75 * cm])
+        table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
         table.setStyle(table_style)
         Report.metrics_row_colors(metrics_df, table)
         story.append(table)
