@@ -13,6 +13,7 @@ from reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, 
 from os import path
 from astropy import units as u
 import pandas as pd
+import numpy as np
 
 width, height = A4
 resources_dir = path.join(path.dirname(__file__))
@@ -53,13 +54,14 @@ class Report:
     @staticmethod
     def metrics_row_colors(df, table_object):
         for index, row in df.iterrows():
-            if row['Passed'].isnull():
+            if np.isnan(row['passed']):
                 bg_color = colors.white
-            elif row['Passed'] == False:
+            elif row['passed'] == False:
                 bg_color = colors.red
-            elif row['Passed'] == True:
+            elif row['passed'] == True:
                 bg_color = colors.lightgreen
-            table_object.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
+            table_object.setStyle(TableStyle([('BACKGROUND', (0, index + 1), (-1, index + 1), bg_color),
+                                              ('FONTSIZE', (0, index), (-1, index), 8)]))
 
     def create_header(self, canvas, doc):
         canvas.saveState()
@@ -188,22 +190,22 @@ class Report:
         for index, metric_row in metrics_df.iterrows():
             table_data.append([metric_row['metric'],
                                round(metric_row['score'], 3),
-                               metric_row['Passed']])
+                               metric_row['passed']])
         table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
         table_number_rows = len(table_data)
         table = Table(table_data, table_colwidth, table_number_rows * [0.75 * cm])
         table.setStyle(table_style)
-        Report.metrics_row_colors(metrics_df, table_data)
-        story.append(tabla2)
+        Report.metrics_row_colors(metrics_df, table)
+        story.append(table)
         story.append(Spacer(1, 5))
-        table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 2: </strong>' \
+        table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
                             'The results of the numerical tests.</font>'
         story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
         cadences_file = self.data_dir + "/folded_cadences.png"
         figure = 1
         if os.path.exists(cadences_file):
-            story.append(Image(cadences_file, width=16 * cm, height=16 * cm))
+            story.append(Image(cadences_file, width=16 * cm, height=20 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
                                                                                             'Folded curve for all available cadences.</font>'
             story.append(Spacer(1, 5))
@@ -232,10 +234,14 @@ class Report:
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
             figure = figure + 1
-        story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=16 * cm))
+        story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=18 * cm))
         descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                                                                                        'The candidate folded curve at T0 and its opposite for the selected ' \
-                                                                                        'period and its first harmonic and subharmonic.</font>'
+                                                                                        'Above, the candidate folded at its found period for the found epoch and epoch + P/2.' \
+                                                                                        'Above middle, the candidate folded at its found period for the found epoch and epoch + ' \
+                                                                                        'P/2 where the harmonic has been masked.' \
+                                                                                        'Bottom middle, the candidate folded at its harmonic for the found epoch and epoch + P.' \
+                                                                                        'Bottom, the candidate folded at its subharmonic for the found epoch and epoch + P/2, where ' \
+                                                                                        'the candidate has been masked.</font>'
         story.append(Spacer(1, 5))
         story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
