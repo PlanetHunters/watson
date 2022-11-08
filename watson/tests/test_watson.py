@@ -16,7 +16,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
             assert len(files_in_dir) == 20
@@ -28,7 +28,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
@@ -59,7 +59,7 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0"
         try:
-            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
@@ -78,7 +78,7 @@ class TestsWatson(unittest.TestCase):
         try:
             transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
             transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
-            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, False, [1, 2], 0.07571,
+            Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
