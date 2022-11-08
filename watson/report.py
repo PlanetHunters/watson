@@ -185,25 +185,25 @@ class Report:
                              'The candidate parameters.</font>'
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
-
-        table_data = [['Metric', 'Value', 'Passed']]
         metrics_file = self.data_dir + "/metrics.csv"
-        metrics_df = pd.read_csv(metrics_file)
-        for index, metric_row in metrics_df.iterrows():
-            table_data.append([metric_row['metric'],
-                               round(metric_row['score'], 3),
-                               metric_row['passed']])
-        table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
-        table_number_rows = len(table_data)
-        table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
-        table.setStyle(table_style)
-        Report.metrics_row_colors(metrics_df, table)
-        story.append(table)
-        story.append(Spacer(1, 5))
-        table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
-                            'The results of the numerical tests.</font>'
-        story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
-        story.append(Spacer(1, 15))
+        if os.path.exists(metrics_file):
+            table_data = [['Metric', 'Value', 'Passed']]
+            metrics_df = pd.read_csv(metrics_file)
+            for index, metric_row in metrics_df.iterrows():
+                table_data.append([metric_row['metric'],
+                                   round(metric_row['score'], 3),
+                                   metric_row['passed']])
+            table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
+            table_number_rows = len(table_data)
+            table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
+            table.setStyle(table_style)
+            Report.metrics_row_colors(metrics_df, table)
+            story.append(table)
+            story.append(Spacer(1, 5))
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
+                                'The results of the numerical tests.</font>'
+            story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
         cadences_file = self.data_dir + "/folded_cadences.png"
         figure = 1
         if os.path.exists(cadences_file):
