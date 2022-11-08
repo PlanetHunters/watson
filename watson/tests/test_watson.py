@@ -19,7 +19,7 @@ class TestsWatson(unittest.TestCase):
             Watson(object_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 20
+            assert len(files_in_dir) == 21
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -35,7 +35,7 @@ class TestsWatson(unittest.TestCase):
                                        apertures_file=object_dir + "/apertures.yaml",
                                        cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 20
+            assert len(files_in_dir) == 21
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -67,7 +67,7 @@ class TestsWatson(unittest.TestCase):
                                        cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
                                        cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 29
+            assert len(files_in_dir) == 33
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -87,7 +87,7 @@ class TestsWatson(unittest.TestCase):
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
                                        dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 24
+            assert len(files_in_dir) == 28
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
