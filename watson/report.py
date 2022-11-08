@@ -55,7 +55,7 @@ class Report:
     def metrics_row_colors(df, table_object):
         for index, row in df.iterrows():
             if np.isnan(row['passed']):
-                bg_color = colors.white
+                bg_color = colors.yellow
             elif row['passed'] == False:
                 bg_color = colors.red
             elif row['passed'] == True:
@@ -229,19 +229,17 @@ class Report:
         #     figure = figure + 1
         transit_depths_file = self.data_dir + "/transit_depths.png"
         if os.path.exists(transit_depths_file):
-            story.append(Image(transit_depths_file, width=16 * cm, height=9 * cm))
+            story.append(Image(transit_depths_file, width=14 * cm, height=8 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
                                                                                             'The candidate single-transits depths plot.</font>'
             story.append(Spacer(1, 5))
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
             figure = figure + 1
-        story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=18 * cm))
+        story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=14 * cm))
         descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
                                                                                         'Above, the candidate folded at its found period for the found epoch and epoch + P/2.' \
-                                                                                        'Above middle, the candidate folded at its found period for the found epoch and epoch + ' \
-                                                                                        'P/2 where the harmonic has been masked.' \
-                                                                                        'Bottom middle, the candidate folded at its harmonic for the found epoch and epoch + P.' \
+                                                                                        'Middle, the candidate folded at its harmonic for the found epoch and epoch + P.' \
                                                                                         'Bottom, the candidate folded at its subharmonic for the found epoch and epoch + P/2, where ' \
                                                                                         'the candidate has been masked.</font>'
         story.append(Spacer(1, 5))
@@ -250,7 +248,7 @@ class Report:
         figure = figure + 1
         source_offsets_file = self.data_dir + '/source_offsets.png'
         if os.path.exists(source_offsets_file):
-            story.append(Image(source_offsets_file, width=16 * cm, height=24 * cm))
+            story.append(Image(source_offsets_file, width=14 * cm, height=21 * cm))
             descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
                                                                                             'Above, the computed target offset (red circle) from the differential image offset (cyan dot)' \
                                                                                             ' and the per-pixel BLS SNR offset (green dot). Middle left, the right ascension centroid shift with binning. ' \

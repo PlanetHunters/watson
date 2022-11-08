@@ -288,18 +288,16 @@ class Watson:
             folded_cadences_snr_significance = folded_cadences_snrs_std / folded_cadences_snrs_mean
             metrics_df = metrics_df.append({'metric': 'folded_cadences_snr', 'score': folded_cadences_snr_significance,
                                'passed': folded_cadences_snr_significance < 0.3}, ignore_index=True)
-        snr_p_t0, snr_p_2t0, snr_p_t0_mask, snr_p_2t0_mask, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
+        snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         metrics_df = metrics_df.append({'metric': 'snr_p_t0', 'score': snr_p_t0, 'passed': snr_p_t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p_2t0', 'score': snr_p_2t0, 'passed': snr_p_t0 < 3}, ignore_index=True)
-        metrics_df = metrics_df.append({'metric': 'snr_p_t0_mask', 'score': snr_p_t0_mask, 'passed': snr_p_t0_mask > 3}, ignore_index=True)
-        metrics_df = metrics_df.append({'metric': 'snr_p_2t0_mask', 'score': snr_p_2t0_mask, 'passed': snr_p_2t0_mask < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_2p_t0', 'score': snr_2p_t0, 'passed': snr_2p_t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_2p_2t0', 'score': snr_2p_2t0, 'passed': snr_2p_2t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t0', 'score': snr_p2_t0, 'passed': snr_p2_t0 < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t02', 'score': snr_p2_t02, 'passed': snr_p2_t02 < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p_score', 'score': snr_p_2t0 / snr_p_t0,
-                                        'passed': snr_p_t0 > 3 and snr_p_2t0 < 3 and snr_p_t0_mask > 3 and snr_p_2t0_mask < 3}, ignore_index=True)
+                                        'passed': snr_p_t0 > 3 and snr_p_2t0 < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_2p_score', 'score': np.abs(snr_2p_t0 - snr_2p_2t0), 'passed': snr_2p_t0 > 3 and snr_2p_t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_score', 'score': np.abs(snr_p2_t0 - snr_p2_t02) / snr_p_t0, 'passed': snr_p2_t0 < 3 and snr_p2_t02 < 3}, ignore_index=True)
         if (ra_fov is not None and dec_fov is not None):
@@ -315,11 +313,13 @@ class Watson:
                 metrics_df = metrics_df.append({'metric': 'transit_offset_ra', 'score': offset_ra, 'passed': np.abs(offset_ra - ra_fov) < pixel_size_degrees}, ignore_index=True)
                 metrics_df = metrics_df.append({'metric': 'transit_offset_dec', 'score': offset_dec, 'passed': np.abs(offset_dec - dec_fov) < pixel_size_degrees}, ignore_index=True)
                 metrics_df = metrics_df.append({'metric': 'transit_offset_err', 'score': offset_err, 'passed': offset_err < pixel_size * 3 / 3600}, ignore_index=True)
-                metrics_df = metrics_df.append({'metric': 'core_flux_snr', 'score': core_flux_snr, 'passed': np.nan }, ignore_index=True)
-                metrics_df = metrics_df.append({'metric': 'halo_flux_snr', 'score': halo_flux_snr, 'passed': np.nan }, ignore_index=True)
-                metrics_df = metrics_df.append({'metric': 'og_score', 'score': og_score, 'passed': og_score < 1 }, ignore_index=True)
-                metrics_df = metrics_df.append({'metric': 'centroids_ra_snr', 'score': centroids_ra_snr, 'passed': centroids_ra_snr < 3 and centroids_ra_snr > -3 }, ignore_index=True)
-                metrics_df = metrics_df.append({'metric': 'centroids_dec_snr', 'score': centroids_dec_snr, 'passed': centroids_dec_snr < 3 and centroids_dec_snr > -3 }, ignore_index=True)
+                target_dist = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2)
+                metrics_df = metrics_df.append({'metric': 'transit_offset_pos', 'score': target_dist, 'passed': target_dist < offset_err}, ignore_index=True)
+                metrics_df = metrics_df.append({'metric': 'core_flux_snr', 'score': core_flux_snr, 'passed': True if core_flux_snr > 3 else np.nan }, ignore_index=True)
+                metrics_df = metrics_df.append({'metric': 'halo_flux_snr', 'score': halo_flux_snr, 'passed': True if halo_flux_snr > 3 else np.nan }, ignore_index=True)
+                metrics_df = metrics_df.append({'metric': 'og_score', 'score': og_score, 'passed': og_score < 1 if core_flux_snr > 3 else np.nan }, ignore_index=True)
+                metrics_df = metrics_df.append({'metric': 'centroids_ra_snr', 'score': centroids_ra_snr, 'passed': np.abs(centroids_ra_snr) < 3 }, ignore_index=True)
+                metrics_df = metrics_df.append({'metric': 'centroids_dec_snr', 'score': centroids_dec_snr, 'passed': np.abs(centroids_dec_snr) < 3 }, ignore_index=True)
         metrics_df.to_csv(self.data_dir + '/metrics.csv')
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
         plot_transits_inputs = []
@@ -638,7 +638,7 @@ class Watson:
         """
         duration = duration / 60 / 24
         figsize = (16, 16)  # x,y
-        rows = 4
+        rows = 3
         cols = 2
         fig, axs = plt.subplots(rows, cols, figsize=figsize, constrained_layout=True)
         logging.info("Preparing folded light curves for target")
@@ -651,37 +651,27 @@ class Watson:
         result_axs, bin_centers, bin_means, bin_stds, snr_p_2t0 = \
             Watson.compute_phased_values_and_fill_plot(id, axs[0][1], lc, plot_period, epoch + plot_period / 2, depth, duration,
                                                    rp_rstar, a_rstar, bins=bins)
-        time_masked, flux_masked, flux_err_masked = \
-            LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, plot_period * 2, duration * 5, epoch, lc.flux_err.value)
-        lc_masked = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
-        result_axs, bin_centers, bin_means, bin_stds, snr_p_t0_mask = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[1][0], lc_masked, plot_period, epoch, depth, duration, rp_rstar,
-                                                       a_rstar, bins=bins)
-        result_axs, bin_centers, bin_means, bin_stds, snr_p_2t0_mask = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[1][1], lc_masked, plot_period, epoch + plot_period / 2, depth,
-                                                       duration,
-                                                       rp_rstar, a_rstar, bins=bins)
         plot_period = period * 2
         result_axs, bin_centers, bin_means, bin_stds, snr_2p_t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[2][0], lc, plot_period, epoch, depth, duration, rp_rstar,
+            Watson.compute_phased_values_and_fill_plot(id, axs[1][0], lc, plot_period, epoch, depth, duration, rp_rstar,
                                                        a_rstar, bins=bins)
         result_axs, bin_centers, bin_means, bin_stds, snr_2p_2t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[2][1], lc, plot_period, epoch + plot_period / 2, depth, duration,
+            Watson.compute_phased_values_and_fill_plot(id, axs[1][1], lc, plot_period, epoch + plot_period / 2, depth, duration,
                                                    rp_rstar, a_rstar, bins=bins)
         plot_period = period / 2
         time_masked, flux_masked, flux_err_masked = \
             LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, period, duration * 5, epoch, lc.flux_err.value)
         lc_masked = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
         result_axs, bin_centers, bin_means, bin_stds, snr_p2_t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[3][0], lc_masked, plot_period, epoch, depth, duration, rp_rstar,
+            Watson.compute_phased_values_and_fill_plot(id, axs[2][0], lc_masked, plot_period, epoch, depth, duration, rp_rstar,
                                                        a_rstar, bins=bins)
         result_axs, bin_centers, bin_means, bin_stds, snr_p2_t02 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[3][1], lc_masked, plot_period, epoch + plot_period / 2, depth, duration,
+            Watson.compute_phased_values_and_fill_plot(id, axs[2][1], lc_masked, plot_period, epoch + plot_period / 2, depth, duration,
                                                    rp_rstar, a_rstar, bins=bins)
         plt.savefig(file_dir + "/odd_even_folded_curves.png", dpi=200)
         fig.clf()
         plt.close(fig)
-        return snr_p_t0, snr_p_2t0, snr_p_t0_mask, snr_p_2t0_mask, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02
+        return snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02
 
     @staticmethod
     def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth, rp_rstar,
@@ -1097,9 +1087,9 @@ class Watson:
         centroid_coords_df['time'] = list(chain.from_iterable(centroids_offsets_time_list))
         centroid_coords_df['time_folded'] = foldedleastsquares.fold(centroid_coords_df['time'].to_numpy(), period, epoch + period / 2)
         centroid_coords_df.to_csv(file_dir + '/centroids.csv')
-        centroids_ra_snr = Watson.compute_snr(centroid_coords_df['time'], centroid_coords_df['centroids_ra'],
+        centroids_ra_snr = Watson.compute_snr(centroid_coords_df['time'], centroid_coords_df['centroids_ra'] + 1,
                                               duration, period, epoch)
-        centroids_dec_snr = Watson.compute_snr(centroid_coords_df['time'], centroid_coords_df['centroids_dec'],
+        centroids_dec_snr = Watson.compute_snr(centroid_coords_df['time'], centroid_coords_df['centroids_dec'] + 1,
                                                duration, period, epoch)
         centroid_coords_df = centroid_coords_df.sort_values(by=['time_folded'], ascending=True)
         centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 3) &
