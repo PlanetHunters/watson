@@ -1006,12 +1006,7 @@ class Watson:
                          apertures, cpus=os.cpu_count() - 1):
         duration = duration / 60 / 24
         duration_to_period = duration / period
-        i0 = tpfs[0].shape[1] // 2
-        j0 = tpfs[0].shape[2] // 2
-        yvec = np.array(range(150))
-        target_coords = (ra, dec)
         logging.info("Computing TPF centroids")
-        source_offsets = []
         tpf_fold_inputs = []
         for index, tpf in enumerate(tpfs):
             tpf_fold_inputs.append({'id': id, 'tpfs_dir': tpfs_dir, 'lc_file': lc_file, 'lc_data_file': lc_data_file,
@@ -1021,21 +1016,19 @@ class Watson:
                                     'apertures': apertures})
         with multiprocessing.Pool(processes=cpus) as pool:
             results_fold = pool.map(Watson.plot_folded_tpf, tpf_fold_inputs)
-        light_centroids_sub = []
-        light_centroids_sub_coords = []
+        source_offsets_diffimg = []
+        source_offsets_bls = []
         centroids_offsets_ra_list = []
         centroids_offsets_dec_list = []
-        motion_ra_list = []
-        motion_dec_list = []
         centroids_offsets_time_list = []
         og_time_list = []
         og_core_flux_list = []
         og_halo_flux_list = []
         for index, tpf in enumerate(tpfs):
             if results_fold[index][0] is not None:
-                source_offsets.append((results_fold[index][0][0], results_fold[index][0][1]))
+                source_offsets_bls.append((results_fold[index][0][0], results_fold[index][0][1]))
             if results_fold[index][1] is not None:
-                light_centroids_sub_coords.append((results_fold[index][1][0], results_fold[index][1][1]))
+                source_offsets_diffimg.append((results_fold[index][1][0], results_fold[index][1][1]))
             if results_fold[index][2] is not None:
                 centroids_offsets_time_list.append(results_fold[index][2][0])
                 centroids_offsets_ra_list.append(results_fold[index][2][1])
@@ -1113,23 +1106,23 @@ class Watson:
         #                         (1 / depth - 1) * centroid_coords_df_it['centroids_ra'].median() * ra / 3600) * np.cos(np.deg2rad(dec))
         # phot_source_offset_dec = dec + (centroid_coords_df_oot['centroids_dec'].median() * dec / 3600 - \
         #                         (1 / depth - 1) * centroid_coords_df_it['centroids_dec'].median() * dec / 3600)
-        light_centroids_sub_ra = np.nanmedian(np.array(light_centroids_sub_coords)[:, 0])
-        light_centroids_sub_dec = np.nanmedian(np.array(light_centroids_sub_coords)[:, 1])
-        light_centroids_sub_ra_err = np.nanstd(np.array(light_centroids_sub_coords)[:, 0])
-        light_centroids_sub_dec_err = np.nanstd(np.array(light_centroids_sub_coords)[:, 1])
-        source_offset_ra = np.nanmedian(np.array(source_offsets)[:, 0])
-        source_offset_dec = np.nanmedian(np.array(source_offsets)[:, 1])
-        source_offset_ra_err = np.nanstd(np.array(source_offsets)[:, 0])
-        source_offset_dec_err = np.nanstd(np.array(source_offsets)[:, 1])
-        offset_ra = np.mean([source_offset_ra, light_centroids_sub_ra])
-        offset_dec = np.mean([source_offset_dec, light_centroids_sub_dec])
-        offset_ra_err = np.sqrt(source_offset_ra_err ** 2 + light_centroids_sub_ra_err ** 2)
-        offset_dec_err = np.sqrt(source_offset_dec_err ** 2 + light_centroids_sub_dec_err ** 2)
+        source_offset_diggimg_ra = np.nanmedian(np.array(source_offsets_diffimg)[:, 0])
+        source_offset_diggimg_dec = np.nanmedian(np.array(source_offsets_diffimg)[:, 1])
+        source_offset_diggimg_ra_err = np.nanstd(np.array(source_offsets_diffimg)[:, 0])
+        source_offset_diggimg_dec_err = np.nanstd(np.array(source_offsets_diffimg)[:, 1])
+        source_offset_bls_ra = np.nanmedian(np.array(source_offsets_bls)[:, 0])
+        source_offset_bls_dec = np.nanmedian(np.array(source_offsets_bls)[:, 1])
+        source_offset_bls_ra_err = np.nanstd(np.array(source_offsets_bls)[:, 0])
+        source_offset_bls_dec_err = np.nanstd(np.array(source_offsets_bls)[:, 1])
+        offset_ra = np.mean([source_offset_bls_ra, source_offset_diggimg_ra])
+        offset_dec = np.mean([source_offset_bls_dec, source_offset_diggimg_dec])
+        offset_ra_err = np.sqrt(source_offset_bls_ra_err ** 2 + source_offset_diggimg_ra_err ** 2)
+        offset_dec_err = np.sqrt(source_offset_bls_dec_err ** 2 + source_offset_diggimg_dec_err ** 2)
         offsets_df = pd.DataFrame(columns=['name', 'ra', 'dec', 'ra_err', 'dec_err'])
-        offsets_df.append({'name': 'diff_img', 'ra': light_centroids_sub_ra, 'dec': light_centroids_sub_dec,
-                           'ra_err': light_centroids_sub_ra_err, 'dec_err': light_centroids_sub_dec_err}, ignore_index=True)
-        offsets_df.append({'name': 'px_bls', 'ra': source_offset_ra, 'dec': source_offset_dec,
-                           'ra_err': source_offset_ra_err, 'dec_err': source_offset_dec_err}, ignore_index=True)
+        offsets_df.append({'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
+                           'ra_err': source_offset_diggimg_ra_err, 'dec_err': source_offset_diggimg_dec_err}, ignore_index=True)
+        offsets_df.append({'name': 'px_bls', 'ra': source_offset_bls_ra, 'dec': source_offset_bls_dec,
+                           'ra_err': source_offset_bls_ra_err, 'dec_err': source_offset_bls_dec_err}, ignore_index=True)
         offsets_df.append({'name': 'mean', 'ra': offset_ra, 'dec': offset_dec,
                            'ra_err': offset_ra_err, 'dec_err': offset_dec_err}, ignore_index=True)
         offsets_df.to_csv(file_dir + '/source_offsets.csv')
@@ -1137,9 +1130,9 @@ class Watson:
         hdu = tpf.hdu[2].header
         wcs = WCS(hdu)
         offset_px = wcs.all_world2pix(offset_ra, offset_dec, 0)
-        light_centroids_sub_offset_px = wcs.all_world2pix(light_centroids_sub_ra, light_centroids_sub_dec, 0)
+        light_centroids_sub_offset_px = wcs.all_world2pix(source_offset_diggimg_ra, source_offset_diggimg_dec, 0)
         # phot_source_offset_px = wcs.all_world2pix(phot_source_offset_ra, phot_source_offset_dec, 0)
-        source_offset_px = wcs.all_world2pix(source_offset_ra, source_offset_dec, 0)
+        source_offset_px = wcs.all_world2pix(source_offset_bls_ra, source_offset_bls_dec, 0)
         c1 = SkyCoord(ra=ra * u.degree, dec=dec * u.degree, frame='icrs')
         c2 = SkyCoord(ra=offset_ra * u.degree, dec=offset_dec * u.degree, frame='icrs')
         distance_sub_arcs = c1.separation(c2).value * 60 * 60
