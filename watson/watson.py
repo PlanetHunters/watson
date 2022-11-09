@@ -263,18 +263,7 @@ class Watson:
                 closest_depths_to_mean = np.abs(transit_depths - depth)
                 summary_t0s_indexes = np.append(summary_t0s_indexes, np.argmin(closest_depths_to_mean))
         else:
-            last_time = lc.time.value[len(lc.time.value) - 1]
-            first_time = lc.time.value[0]
-            num_of_transits_back = int(floor(((t0 - first_time) / period)))
-            transits_lists_back = t0 - period * np.arange(num_of_transits_back, 0, -1) if num_of_transits_back > 0 else np.array([])
-            num_of_transits = int(ceil(((last_time - t0) / period)))
-            transit_lists = t0 + period * np.arange(0, num_of_transits)
-            transit_lists = np.append(transits_lists_back, transit_lists)
-            time_as_array = lc.time.value
-            plot_range = duration / 3600 * 2
-            transits_in_data = [time_as_array[(transit > time_as_array - plot_range) & (transit < time_as_array + plot_range)] for
-                                transit in transit_lists]
-            transit_t0s_list = transit_lists[[len(transits_in_data_set) > 0 for transits_in_data_set in transits_in_data]]
+            transit_t0s_list = LcbuilderHelper.compute_t0s(lc.time.value, period, t0, duration / 60 / 24)
         mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
         snrs = Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period,
@@ -837,8 +826,6 @@ class Watson:
             aperture = apertures[sector]
             aperture = \
                 ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
-            halo_aperture = ndimage.binary_dilation(aperture)
-            halo_aperture = np.logical_and(halo_aperture, np.logical_not(aperture))
         else:
             aperture = tpf.pipeline_mask
         logging.info("Computing TPF centroids for %s %.0f", sector_name, sector)
@@ -866,7 +853,7 @@ class Watson:
         hdu = tpf.hdu[2].header
         wcs = WCS(hdu)
         target_px = wcs.all_world2pix(ra, dec, 0)
-        centroid_shift_time, centroid_shift_ra, centroid_shift_dec = \
+        centroids_drift = \
             Watson.compute_centroids_for_tpf(ra, dec, lc_data, tpf, wcs, period, epoch, duration_to_period)
         snr_map, ax = Watson.plot_pixels(tpf, title=mission_prefix + ' ' + str(id) + ' ' + sector_name + ' ' +
                                                     str(sector) + ' TPF BLS Analysis',
@@ -874,48 +861,12 @@ class Watson:
         tpf_bls_file = file_dir + '/folded_tpf_' + str(sector) + '.png'
         plt.savefig(tpf_bls_file, dpi=200, bbox_inches='tight')
         plt.clf()
+        tpf_sub = Watson.compute_tpf_diff_image(tpf, period, epoch, duration)
+        optical_ghost_data = Watson.compute_optical_ghost_data(tpf, aperture, period, epoch, duration)
         source_offset_px = Watson.light_centroid(snr_map, pixel_values_i, pixel_values_j)
-        source_offset = wcs.pixel_to_world(source_offset_px[1], source_offset_px[0])
-        time = foldedleastsquares.core.fold(tpf.time.value, period, epoch + period / 2)
-        lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
-        lc_df['time'] = tpf.time.value
-        lc_df['time_folded'] = time
-        lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
-                             (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
-        lc_df_oot = lc_df.loc[
-            ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
-            ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
-        tpf_sub = np.zeros((tpf.shape[1], tpf.shape[2]))
-        core_flux = np.zeros((tpf.shape[0]))
-        halo_flux = np.zeros((tpf.shape[0]))
-        for i in np.arange(0, tpf.shape[1]):
-            for j in np.arange(0, tpf.shape[2]):
-                if aperture[i, j]:
-                    core_flux = core_flux + tpf.flux[:, i, j].value
-                if halo_aperture[i, j]:
-                    halo_flux = halo_flux + tpf.flux[:, i, j].value
-                pixel_flux = wotan.flatten(tpf.time.value, tpf.flux[:, i, j].value, duration * 4, method='biweight')
-                lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
-                lc_df['time'] = tpf.time.value
-                lc_df['time_folded'] = time
-                lc_df['flux'] = pixel_flux
-                lc_df = lc_df.sort_values(by=['time_folded'], ascending=True)
-                lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
-                                     (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
-                lc_df_oot = lc_df.loc[
-                    ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
-                    ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
-                tpf_fluxes_oot = lc_df_oot['flux'].to_numpy()
-                tpf_fluxes_it = lc_df_it['flux'].to_numpy()
-                tpf_sub[i, j] = (np.nanmedian(tpf_fluxes_oot) - np.nanmedian(tpf_fluxes_it)) / \
-                                np.sqrt((np.nanstd(tpf_fluxes_oot) ** 2) + (np.nanstd(tpf_fluxes_it) ** 2))
-        core_flux = core_flux / len(np.argwhere(aperture == True))
-        core_flux = wotan.flatten(tpf.time.value, core_flux, duration_to_period * 4, method='biweight')
-        halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
-        halo_flux = wotan.flatten(tpf.time.value, halo_flux, duration_to_period * 4,method='biweight')
-        optical_ghost_data = (tpf.time.value, core_flux, halo_flux)
-        light_centroid_sub = Watson.light_centroid(tpf_sub, pixel_values_i, pixel_values_j)
-        light_centroids_sub_coord = wcs.pixel_to_world(light_centroid_sub[1], light_centroid_sub[0])
+        source_offset_bls = wcs.pixel_to_world(source_offset_px[1], source_offset_px[0])
+        source_offset_diffimg_px = Watson.light_centroid(tpf_sub, pixel_values_i, pixel_values_j)
+        source_offset_diffimg = wcs.pixel_to_world(source_offset_diffimg_px[1], source_offset_diffimg_px[0])
         fig, ax = plt.subplots(1, 2, figsize=(16, 8))
         ax[0].imshow(np.flip(snr_map, 0), cmap='viridis',
                      extent=[tpf.column, tpf.column + tpf.shape[2],
@@ -931,7 +882,7 @@ class Watson:
         ax[0].yaxis.set_tick_params(labelsize=18)
         ax[0].plot(tpf.column + target_px[0] + 0.5, tpf.row + target_px[1] + 0.5, marker='*',
                    color='orange', markersize=25)
-        ax[0].plot(tpf.column + light_centroid_sub[1] + 0.5, tpf.row + light_centroid_sub[0] + 0.5, marker='P',
+        ax[0].plot(tpf.column + source_offset_diffimg_px[1] + 0.5, tpf.row + source_offset_diffimg_px[0] + 0.5, marker='P',
                    color='white', markersize=20)
         ax[0].set_title("Per-pixel BLS SNR map for " + sector_name + " " + str(sector), fontsize=20)
         ax[1].imshow(np.flip(tpf_sub, 0), cmap='viridis',
@@ -963,10 +914,55 @@ class Watson:
         img_merge = PIL.Image.fromarray(img_merge)
         img_merge.save(tpf_bls_file, quality=95, optimize=True)
         os.remove(tpf_snr_file)
-        return (source_offset.ra.value, source_offset.dec.value), \
-               (light_centroids_sub_coord.ra.value, light_centroids_sub_coord.dec.value), \
-               (centroid_shift_time, centroid_shift_ra, centroid_shift_dec), optical_ghost_data
+        return (source_offset_bls.ra.value, source_offset_bls.dec.value), \
+               (source_offset_diffimg.ra.value, source_offset_diffimg.dec.value), \
+               centroids_drift, optical_ghost_data
 
+    @staticmethod
+    def compute_tpf_diff_image(tpf, period, epoch, duration):
+        duration_to_period = duration / period
+        folded_time = foldedleastsquares.core.fold(tpf.time.value, period, epoch + period / 2)
+        tpf_sub = np.zeros((tpf.shape[1], tpf.shape[2]))
+        for i in np.arange(0, tpf.shape[1]):
+            for j in np.arange(0, tpf.shape[2]):
+                pixel_flux = wotan.flatten(tpf.time.value, tpf.flux[:, i, j].value, duration * 4, method='biweight')
+                lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
+                lc_df['time'] = tpf.time.value
+                lc_df['time_folded'] = folded_time
+                lc_df['flux'] = pixel_flux
+                lc_df = lc_df.sort_values(by=['time_folded'], ascending=True)
+                lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
+                                     (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
+                lc_df_oot = lc_df.loc[
+                    ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (
+                            lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
+                    ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (
+                            lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
+                tpf_fluxes_oot = lc_df_oot['flux'].to_numpy()
+                tpf_fluxes_it = lc_df_it['flux'].to_numpy()
+                tpf_sub[i, j] = (np.nanmedian(tpf_fluxes_oot) - np.nanmedian(tpf_fluxes_it)) / \
+                                np.sqrt((np.nanstd(tpf_fluxes_oot) ** 2) + (np.nanstd(tpf_fluxes_it) ** 2))
+        return tpf_sub
+
+    @staticmethod
+    def compute_optical_ghost_data(tpf, aperture, period, epoch, duration):
+        halo_aperture = ndimage.binary_dilation(aperture)
+        halo_aperture = np.logical_and(halo_aperture, np.logical_not(aperture))
+        core_flux = np.zeros((tpf.shape[0]))
+        halo_flux = np.zeros((tpf.shape[0]))
+        duration_to_period = duration / period
+        folded_time = foldedleastsquares.core.fold(tpf.time.value, period, epoch + period / 2)
+        for i in np.arange(0, tpf.shape[1]):
+            for j in np.arange(0, tpf.shape[2]):
+                if aperture[i, j]:
+                    core_flux = core_flux + tpf.flux[:, i, j].value
+                if halo_aperture[i, j]:
+                    halo_flux = halo_flux + tpf.flux[:, i, j].value
+        core_flux = core_flux / len(np.argwhere(aperture == True))
+        core_flux = wotan.flatten(tpf.time.value, core_flux, duration_to_period * 4, method='biweight')
+        halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
+        halo_flux = wotan.flatten(tpf.time.value, halo_flux, duration_to_period * 4, method='biweight')
+        return (tpf.time.value, core_flux, halo_flux)
 
     @staticmethod
     def compute_centroids_for_tpf(ra, dec, lc_data, tpf, wcs, period, epoch, duration_to_period):
@@ -1212,6 +1208,7 @@ class Watson:
             period=None,
             epoch=None,
             duration=1,
+            dry=False,
             **kwargs,
     ):
         if style == "lightkurve" or style is None:
@@ -1277,99 +1274,100 @@ class Watson:
                             it_mask = np.argwhere((lc.time.value > 0.5 - duration_to_period / 2) & (lc.time.value < 0.5 + duration_to_period / 2)).flatten()
                             model[it_mask] = 1 - result['depth'][0]
                             pixel_model_list.append(model)
-        with plt.style.context(style):
-            if ax is None:
-                fig = plt.figure()
-                ax = plt.gca()
-                set_size = True
-            else:
-                fig = ax.get_figure()
-                set_size = False
+        if not dry:
+            with plt.style.context(style):
+                if ax is None:
+                    fig = plt.figure()
+                    ax = plt.gca()
+                    set_size = True
+                else:
+                    fig = ax.get_figure()
+                    set_size = False
 
-            ax.get_xaxis().set_ticks([])
-            ax.get_yaxis().set_ticks([])
-            if periodogram:
-                ax.set(
-                    title=title,
-                    xlabel="Frequency / Column (pixel)",
-                    ylabel="Power / Row (pixel)",
+                ax.get_xaxis().set_ticks([])
+                ax.get_yaxis().set_ticks([])
+                if periodogram:
+                    ax.set(
+                        title=title,
+                        xlabel="Frequency / Column (pixel)",
+                        ylabel="Power / Row (pixel)",
+                    )
+                else:
+                    ax.set(
+                        title=title,
+                        xlabel="Time / Column (pixel)",
+                        ylabel="Flux / Row (pixel)",
+                    )
+
+                gs = gridspec.GridSpec(
+                    tpf.shape[1], tpf.shape[2], wspace=0.01, hspace=0.01
                 )
-            else:
-                ax.set(
-                    title=title,
-                    xlabel="Time / Column (pixel)",
-                    ylabel="Flux / Row (pixel)",
-                )
 
-            gs = gridspec.GridSpec(
-                tpf.shape[1], tpf.shape[2], wspace=0.01, hspace=0.01
-            )
+                for k in range(tpf.shape[1] * tpf.shape[2]):
+                    if pixel_list[k]:
+                        x, y = np.unravel_index(k, (tpf.shape[1], tpf.shape[2]))
 
-            for k in range(tpf.shape[1] * tpf.shape[2]):
-                if pixel_list[k]:
-                    x, y = np.unravel_index(k, (tpf.shape[1], tpf.shape[2]))
+                        # Highlight aperture mask in red
+                        if aperture_mask is not None and mask[x, y]:
+                            rc = {"axes.linewidth": 4, "axes.edgecolor": "purple"}
+                        else:
+                            rc = {"axes.linewidth": 1}
+                        with plt.rc_context(rc=rc):
+                            gax = fig.add_subplot(gs[tpf.shape[1] - x - 1, y])
 
-                    # Highlight aperture mask in red
-                    if aperture_mask is not None and mask[x, y]:
-                        rc = {"axes.linewidth": 4, "axes.edgecolor": "purple"}
-                    else:
-                        rc = {"axes.linewidth": 1}
-                    with plt.rc_context(rc=rc):
-                        gax = fig.add_subplot(gs[tpf.shape[1] - x - 1, y])
+                        # Determine background and foreground color
+                        if show_flux:
+                            gax.set_facecolor(cmap(norm(tpf.flux.value[0, x, y])))
+                            markercolor = "white"
+                        else:
+                            markercolor = "black"
 
-                    # Determine background and foreground color
-                    if show_flux:
-                        gax.set_facecolor(cmap(norm(tpf.flux.value[0, x, y])))
-                        markercolor = "white"
-                    else:
-                        markercolor = "black"
-
-                    # Plot flux or periodogram
-                    if periodogram:
-                        gax.plot(
-                            pixel_list[k].frequency.value,
-                            pixel_list[k].power.value,
-                            marker="None",
-                            color=markercolor,
-                            lw=markersize,
-                        )
-                    else:
-                        gax.plot(
-                            pixel_list[k].time.value,
-                            pixel_list[k].flux.value,
-                            marker=".",
-                            color=markercolor,
-                            ms=markersize,
-                            lw=0,
-                        )
-                        if period is not None:
+                        # Plot flux or periodogram
+                        if periodogram:
+                            gax.plot(
+                                pixel_list[k].frequency.value,
+                                pixel_list[k].power.value,
+                                marker="None",
+                                color=markercolor,
+                                lw=markersize,
+                            )
+                        else:
                             gax.plot(
                                 pixel_list[k].time.value,
-                                pixel_model_list[k],
+                                pixel_list[k].flux.value,
                                 marker=".",
-                                color='red',
-                                alpha=0.8,
+                                color=markercolor,
                                 ms=markersize,
                                 lw=0,
                             )
+                            if period is not None:
+                                gax.plot(
+                                    pixel_list[k].time.value,
+                                    pixel_model_list[k],
+                                    marker=".",
+                                    color='red',
+                                    alpha=0.8,
+                                    ms=markersize,
+                                    lw=0,
+                                )
 
-                    gax.margins(y=0.1, x=0)
-                    gax.set_xticklabels("")
-                    gax.set_yticklabels("")
-                    gax.set_xticks([])
-                    gax.set_yticks([])
+                        gax.margins(y=0.1, x=0)
+                        gax.set_xticklabels("")
+                        gax.set_yticklabels("")
+                        gax.set_xticks([])
+                        gax.set_yticks([])
 
-                    # add row/column numbers to start / end
-                    if x == 0 and y == 0:
-                        gax.set_xlabel(f"{tpf.column}")
-                        gax.set_ylabel(f"{tpf.row}")
-                    if x == 0 and y == tpf.shape[2] - 1:  # lower right
-                        gax.set_xlabel(f"{tpf.column + tpf.shape[2] - 1}")
-                    if x == tpf.shape[1] - 1 and y == 0:  # upper left
-                        gax.set_ylabel(f"{tpf.row + tpf.shape[1] - 1}")
+                        # add row/column numbers to start / end
+                        if x == 0 and y == 0:
+                            gax.set_xlabel(f"{tpf.column}")
+                            gax.set_ylabel(f"{tpf.row}")
+                        if x == 0 and y == tpf.shape[2] - 1:  # lower right
+                            gax.set_xlabel(f"{tpf.column + tpf.shape[2] - 1}")
+                        if x == tpf.shape[1] - 1 and y == 0:  # upper left
+                            gax.set_ylabel(f"{tpf.row + tpf.shape[1] - 1}")
 
-            if set_size:  # use default size when caller does not supply ax
-                fig.set_size_inches((y * 1.5, x * 1.5))
+                if set_size:  # use default size when caller does not supply ax
+                    fig.set_size_inches((y * 1.5, x * 1.5))
         transit_times_score = np.zeros((tpf.shape[1], tpf.shape[2])).tolist()
         duration_score = np.zeros((tpf.shape[1], tpf.shape[2])).tolist()
         depth_score = np.zeros((tpf.shape[1], tpf.shape[2])).tolist()
