@@ -921,27 +921,33 @@ class Watson:
     @staticmethod
     def compute_tpf_diff_image(tpf, period, epoch, duration):
         duration_to_period = duration / period
-        folded_time = foldedleastsquares.core.fold(tpf.time.value, period, epoch + period / 2)
         tpf_sub = np.zeros((tpf.shape[1], tpf.shape[2]))
         for i in np.arange(0, tpf.shape[1]):
             for j in np.arange(0, tpf.shape[2]):
-                pixel_flux = wotan.flatten(tpf.time.value, tpf.flux[:, i, j].value, duration * 4, method='biweight')
-                lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
-                lc_df['time'] = tpf.time.value
-                lc_df['time_folded'] = folded_time
-                lc_df['flux'] = pixel_flux
-                lc_df = lc_df.sort_values(by=['time_folded'], ascending=True)
-                lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
-                                     (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
-                lc_df_oot = lc_df.loc[
-                    ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (
-                            lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
-                    ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (
-                            lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
-                tpf_fluxes_oot = lc_df_oot['flux'].to_numpy()
-                tpf_fluxes_it = lc_df_it['flux'].to_numpy()
-                tpf_sub[i, j] = (np.nanmedian(tpf_fluxes_oot) - np.nanmedian(tpf_fluxes_it)) / \
-                                np.sqrt((np.nanstd(tpf_fluxes_oot) ** 2) + (np.nanstd(tpf_fluxes_it) ** 2))
+                time = tpf.time.value
+                pixel_flux = tpf.flux[:, i, j].value
+                mask_nans = np.isnan(time * pixel_flux)
+                time = time[~mask_nans]
+                if len(time) > 0:
+                    folded_time = foldedleastsquares.core.fold(time, period, epoch + period / 2)
+                    pixel_flux = pixel_flux[~mask_nans]
+                    pixel_flux = wotan.flatten(time, pixel_flux, duration * 4, method='biweight')
+                    lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
+                    lc_df['time'] = time
+                    lc_df['time_folded'] = folded_time
+                    lc_df['flux'] = pixel_flux
+                    lc_df = lc_df.sort_values(by=['time_folded'], ascending=True)
+                    lc_df_it = lc_df.loc[(lc_df['time_folded'] >= 0.5 - duration_to_period / 2) &
+                                         (lc_df['time_folded'] <= 0.5 + duration_to_period / 2)]
+                    lc_df_oot = lc_df.loc[
+                        ((lc_df['time_folded'] < 0.5 - duration_to_period / 2) & (
+                                lc_df['time_folded'] > 0.5 - 3 * duration_to_period / 2)) |
+                        ((lc_df['time_folded'] > 0.5 + duration_to_period / 2) & (
+                                lc_df['time_folded'] < 0.5 + 3 * duration_to_period / 2))]
+                    tpf_fluxes_oot = lc_df_oot['flux'].to_numpy()
+                    tpf_fluxes_it = lc_df_it['flux'].to_numpy()
+                    tpf_sub[i, j] = (np.nanmedian(tpf_fluxes_oot) - np.nanmedian(tpf_fluxes_it)) / \
+                                    np.sqrt((np.nanstd(tpf_fluxes_oot) ** 2) + (np.nanstd(tpf_fluxes_it) ** 2))
         return tpf_sub
 
     @staticmethod
@@ -1248,10 +1254,11 @@ class Watson:
                     lc_df = lc_df[(lc_df['time_folded'] > 0.5 - duration_to_period * 3) & (lc_df['time_folded'] < 0.5 + duration_to_period * 3)]
                     lc = TessLightCurve(time=lc_df['time_folded'], flux=lc_df['flux'], flux_err=lc_df['flux_err'])
                     bls = BoxLeastSquares(lc_df['time_folded'].to_numpy(), lc_df['flux'].to_numpy(), lc_df['flux_err'].to_numpy())
-                    result = bls.power([1],
-                                       np.linspace(duration_to_period - duration_to_period / 2, duration_to_period * 3 / 2, 10))
-                    x, y = np.unravel_index(j, (tpf.shape[1], tpf.shape[2]))
-                    bls_results[x][y] = result
+                    if len(lc_df) > 0:
+                        result = bls.power([1],
+                                           np.linspace(duration_to_period - duration_to_period / 2, duration_to_period * 3 / 2, 10))
+                        x, y = np.unravel_index(j, (tpf.shape[1], tpf.shape[2]))
+                        bls_results[x][y] = result
                 if periodogram:
                     try:
                         pixel_list.append(lc.to_periodogram(**kwargs))
@@ -1371,20 +1378,24 @@ class Watson:
                 residuals[x][y] = np.inf
                 continue
             x, y = np.unravel_index(k, (tpf.shape[1], tpf.shape[2]))
-            max_power_index = np.argwhere(bls_results[x][y].power == np.nanmax(bls_results[x][y].power)).flatten()[0]
-            best_epoch = bls_results[x][y].transit_time[max_power_index]
-            best_duration = bls_results[x][y].duration[max_power_index]
-            best_power = bls_results[x][y].power[max_power_index]
-            best_depth = bls_results[x][y].depth[max_power_index]
-            residuals[x][y] = np.sqrt(np.sum((pixel_list[k].flux.value - pixel_model_list[k]) ** 2))
-            transit_times_score[x][y] = best_epoch
-            duration_score[x][y] = best_duration
-            depth_score[x][y] = best_depth
+            if bls_results[x][y] != 0:
+                max_power_index = np.argwhere(bls_results[x][y].power == np.nanmax(bls_results[x][y].power)).flatten()[0]
+                best_epoch = bls_results[x][y].transit_time[max_power_index]
+                best_duration = bls_results[x][y].duration[max_power_index]
+                best_power = bls_results[x][y].power[max_power_index]
+                best_depth = bls_results[x][y].depth[max_power_index]
+                residuals[x][y] = np.sqrt(np.sum((pixel_list[k].flux.value - pixel_model_list[k]) ** 2))
+                transit_times_score[x][y] = best_epoch
+                duration_score[x][y] = best_duration
+                depth_score[x][y] = best_depth
+            else:
+                residuals[x][y] = np.nan
+        epsilon = 1e-7
         transit_times_score = np.array(transit_times_score)
         duration_score = np.array(duration_score)
         depth_score = np.array(depth_score)
-        transit_times_score = 1 / np.abs(transit_times_score - 0.5)
-        duration_score = 1 / np.abs(duration_score - duration_to_period)
+        transit_times_score = 1 / (np.abs(transit_times_score - 0.5) + epsilon)
+        duration_score = 1 / (np.abs(duration_score - duration_to_period) + epsilon)
         total_score = np.sqrt(transit_times_score * duration_score * depth_score / residuals)
         total_score = np.nan_to_num(total_score, nan=np.nanmedian(total_score))
         snr_map = total_score / np.std(total_score)
