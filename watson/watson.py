@@ -1235,7 +1235,8 @@ class Watson:
             for j in range(tpf.shape[1] * tpf.shape[2]):
                 lc = tpf.to_lightcurve(aperture_mask=masks[j])
                 lc = corrector_func(lc)
-                lc.flux = wotan.flatten(lc.time.value, lc.flux.value, duration * 4, method='biweight')
+                if len(lc) > 0:
+                    lc.flux = wotan.flatten(lc.time.value, lc.flux.value, duration * 4, method='biweight')
                 if period is not None:
                     duration_to_period = duration / period
                     lc_df = pd.DataFrame(columns=['time', 'time_folded', 'flux', 'flux_err'])
