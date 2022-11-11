@@ -960,10 +960,15 @@ class Watson:
         folded_time = foldedleastsquares.core.fold(tpf.time.value, period, epoch + period / 2)
         for i in np.arange(0, tpf.shape[1]):
             for j in np.arange(0, tpf.shape[2]):
-                if aperture[i, j]:
-                    core_flux = core_flux + tpf.flux[:, i, j].value
-                if halo_aperture[i, j]:
-                    halo_flux = halo_flux + tpf.flux[:, i, j].value
+                pixel_flux = tpf.flux[:, i, j].value
+                pixel_all_nans = len(np.argwhere(np.isnan(pixel_flux))) == len(pixel_flux)
+                if not pixel_all_nans:
+                    nanmask = np.isnan(pixel_flux)
+                    pixel_flux[nanmask] = np.nanmedian(pixel_flux)
+                    if aperture[i, j]:
+                        core_flux = core_flux + pixel_flux
+                    if halo_aperture[i, j]:
+                        halo_flux = halo_flux + pixel_flux
         core_flux = core_flux / len(np.argwhere(aperture == True))
         core_flux = wotan.flatten(tpf.time.value, core_flux, duration_to_period * 4, method='biweight')
         halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
@@ -981,17 +986,22 @@ class Watson:
         jumps = jumps
         previous_jump_index = 0
         df = df.sort_values(by=['time'], ascending=True).reset_index(drop=True)
+        range_mult = 2
+        intransit_range = duration_to_period * range_mult
+        while intransit_range >= 0.5 and range_mult >= 0.5:
+            intransit_range = duration_to_period * range_mult
+            range_mult = range_mult - 0.5
         for jumpIndex in jumps:
             sub_df = df.loc[previous_jump_index:jumpIndex]
-            sub_df_oot = sub_df[(sub_df['time_folded'] < 0.5 - duration_to_period * 2) | (
-                    sub_df['time_folded'] > 0.5 + duration_to_period * 2)]
-            df.loc[previous_jump_index:jumpIndex]['centroids_x'] = (sub_df["centroids_x"] - sub_df_oot[
+            sub_df_oot = sub_df[(sub_df['time_folded'] < 0.5 - intransit_range) | (
+                    sub_df['time_folded'] > 0.5 + intransit_range)]
+            df.loc[previous_jump_index:jumpIndex, 'centroids_x'] = (sub_df["centroids_x"] - sub_df_oot[
                 "centroids_x"].median()) / np.nanstd(sub_df_oot["centroids_x"])
-            df.loc[previous_jump_index:jumpIndex]['centroids_y'] = (sub_df["centroids_y"] - sub_df_oot[
+            df.loc[previous_jump_index:jumpIndex, 'centroids_y'] = (sub_df["centroids_y"] - sub_df_oot[
                 "centroids_y"].median()) / np.nanstd(sub_df_oot["centroids_y"])
-            df.loc[previous_jump_index:jumpIndex]['motion_x'] = (sub_df["motion_x"] - sub_df_oot[
+            df.loc[previous_jump_index:jumpIndex, 'motion_x'] = (sub_df["motion_x"] - sub_df_oot[
                 "motion_x"].median()) / np.nanstd(sub_df_oot["motion_x"])
-            df.loc[previous_jump_index:jumpIndex]['motion_y'] = (sub_df["motion_y"] - sub_df_oot[
+            df.loc[previous_jump_index:jumpIndex, 'motion_y'] = (sub_df["motion_y"] - sub_df_oot[
                 "motion_y"].median()) / np.nanstd(sub_df_oot["motion_y"])
             previous_jump_index = jumpIndex + 1
         target_px = wcs.all_world2pix(ra, dec, 0)
