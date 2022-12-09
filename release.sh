@@ -6,10 +6,21 @@ rm dist* -r
 rm -r .tox
 rm -r .pytest_cache
 rm -r build
+rm -r watson-reqs
+rm -R *egg-info
 set -e
 tox -r > tests.log
 tests_results=$(cat tests.log | grep "congratulations")
 if ! [[ -z ${tests_results} ]]; then
+  echo "Building"
+  set +e
+  rm tests.log
+  rm dist* -r
+  rm -r .tox
+  rm -r .pytest_cache
+  rm -r build
+  rm -r watson-reqs
+  set -e
   python3.8 -m venv watson-reqs
   source watson-reqs/bin/activate
   python3.8 -m pip install pip -U
@@ -27,9 +38,14 @@ if ! [[ -z ${tests_results} ]]; then
   git commit -m "Preparing release ${git_tag}"
   git tag ${git_tag} -m "New release"
   git push && git push --tags
+else
+  echo "Failed tests"
 fi
+set +e
 rm -R watson-reqs
 rm dist* -r
 rm -r .tox
 rm -r .pytest_cache
 rm -r build
+rm -R *egg-info
+set -e
