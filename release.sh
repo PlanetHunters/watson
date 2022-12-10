@@ -24,7 +24,7 @@ if ! [[ -z ${tests_results} ]]; then
   python3.8 -m venv watson-reqs
   source watson-reqs/bin/activate
   python3.8 -m pip install pip -U
-  python3.8 -m pip install numpy==1.22.3
+  python3.8 -m pip install numpy==1.22.4
   git_tag=$1
   sed -i '6s/.*/version = "'${git_tag}'"/' setup.py
   sed -i '1s/.*/__version__ = "'${git_tag}'"/' watson/__init__.py
