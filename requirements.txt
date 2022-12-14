@@ -11,12 +11,14 @@ configparser==5.0.1
 cryptography==38.0.4
 cycler==0.11.0
 Cython==0.29.21
-dearwatson==0.4.4
+dearwatson==0.4.5
+everest-pipeline==2.0.12
 extension-helpers==0.1
 fbpca==1.0
 foldedleastsquares==1.0.36
 fonttools==4.38.0
 future==0.18.2
+george==0.4.0
 html5lib==1.1
 idna==3.4
 imageio==2.9.0
@@ -25,9 +27,10 @@ jaraco.classes==3.2.3
 jeepney==0.8.0
 Jinja2==3.1.2
 joblib==1.2.0
+k2plr==0.2.9
 keyring==23.11.0
 kiwisolver==1.4.4
-lcbuilder==0.9.11
+lcbuilder==0.10.0
 lightkurve==2.2.0
 llvmlite==0.39.1
 MarkupSafe==2.1.1
@@ -46,6 +49,8 @@ pip==22.3.1
 pycparser==2.21
 pyerfa==2.0.0.1
 pyparsing==2.4.7
+PyPDF2==2.12.1
+pysyzygy==0.0.2
 python-dateutil==2.8.2
 pytz==2022.6
 pyvo==1.4
