@@ -11,7 +11,7 @@ configparser==5.0.1
 cryptography==38.0.4
 cycler==0.11.0
 Cython==0.29.21
-dearwatson==0.4.5
+dearwatson==0.4.6
 everest-pipeline==2.0.12
 extension-helpers==0.1
 fbpca==1.0
@@ -30,7 +30,7 @@ joblib==1.2.0
 k2plr==0.2.9
 keyring==23.11.0
 kiwisolver==1.4.4
-lcbuilder==0.10.0
+lcbuilder==0.10.1
 lightkurve==2.2.0
 llvmlite==0.39.1
 MarkupSafe==2.1.1
