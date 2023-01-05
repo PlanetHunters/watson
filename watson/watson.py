@@ -884,7 +884,7 @@ class Watson:
                    color='orange', markersize=25)
         ax[0].plot(tpf.column + source_offset_diffimg_px[1] + 0.5, tpf.row + source_offset_diffimg_px[0] + 0.5, marker='P',
                    color='white', markersize=20)
-        ax[0].set_title("Per-pixel BLS SNR map for " + sector_name + " " + str(sector), fontsize=20)
+        ax[0].set_title("Differential image SNR map for " + sector_name + " " + str(sector), fontsize=20)
         ax[1].imshow(np.flip(tpf_sub, 0), cmap='viridis',
                      extent=[tpf.column, tpf.column + tpf.shape[2],
                              tpf.row, tpf.row + tpf.shape[1]])
@@ -901,7 +901,7 @@ class Watson:
                    color='white', markersize=20)
         ax[1].xaxis.set_tick_params(labelsize=18)
         ax[1].yaxis.set_tick_params(labelsize=18)
-        ax[1].set_title("Differential image SNR map for " + sector_name + " " + str(sector), fontsize=20)
+        ax[1].set_title("Per-pixel BLS SNR map for " + sector_name + " " + str(sector), fontsize=20)
         tpf_snr_file = file_dir + '/snr_tpf_' + str(sector) + '.png'
         plt.savefig(tpf_snr_file, dpi=200, bbox_inches='tight')
         plt.clf()
