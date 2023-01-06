@@ -1074,11 +1074,13 @@ class Watson:
         axs[0].set_title("Optical ghost diagnostic core flux. SNR=" + str(np.round(core_flux_snr, 2)), fontsize=10)
         axs[0].axhline(y=1, color='r', linestyle='-', alpha=0.4)
         axs[0].scatter(og_df['time_folded'], og_df['core_flux'], color='gray', alpha=0.2)
+        axs[0].set_ylim([np.percentile(og_df['core_flux'], 16), np.percentile(og_df['core_flux'], 84)])
         axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
         axs[1].set_title("Optical ghost diagnostic halo flux. SNR=" + str(np.round(halo_flux_snr, 2)), fontsize=10)
         axs[1].axhline(y=1, color='r', linestyle='-', alpha=0.4)
         axs[1].scatter(og_df['time_folded'], og_df['halo_flux'], color='gray', alpha=0.2)
+        axs[0].set_ylim([np.percentile(og_df['halo_flux'], 16), np.percentile(og_df['halo_flux'], 84)])
         axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_0 / 1, xerr=bin_width_1 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
         og_file = file_dir + '/optical_ghost.png'
