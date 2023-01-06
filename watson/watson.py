@@ -280,7 +280,7 @@ class Watson:
         snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         metrics_df = metrics_df.append({'metric': 'snr_p_t0', 'score': snr_p_t0, 'passed': snr_p_t0 > 3}, ignore_index=True)
-        metrics_df = metrics_df.append({'metric': 'snr_p_2t0', 'score': snr_p_2t0, 'passed': snr_p_t0 < 3}, ignore_index=True)
+        metrics_df = metrics_df.append({'metric': 'snr_p_2t0', 'score': snr_p_2t0, 'passed': snr_p_2t0 < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_2p_t0', 'score': snr_2p_t0, 'passed': snr_2p_t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_2p_2t0', 'score': snr_2p_2t0, 'passed': snr_2p_2t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t0', 'score': snr_p2_t0, 'passed': snr_p2_t0 < 3}, ignore_index=True)
