@@ -1074,15 +1074,15 @@ class Watson:
         axs[0].set_title("Optical ghost diagnostic core flux. SNR=" + str(np.round(core_flux_snr, 2)), fontsize=10)
         axs[0].axhline(y=1, color='r', linestyle='-', alpha=0.4)
         axs[0].scatter(og_df['time_folded'], og_df['core_flux'], color='gray', alpha=0.2)
-        if len(np.argwhere(~np.isnan(og_df['core_flux']))) > 0:
-            axs[0].set_ylim([np.nanpercentile(og_df['core_flux'], 16), np.nanpercentile(og_df['core_flux'], 84)])
+        if len(np.argwhere(~np.isnan(og_df['core_flux'].to_numpy())).flatten()) > 0:
+            axs[0].set_ylim([np.nanpercentile(og_df['core_flux'], 1), np.nanpercentile(og_df['core_flux'], 99)])
         axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
         axs[1].set_title("Optical ghost diagnostic halo flux. SNR=" + str(np.round(halo_flux_snr, 2)), fontsize=10)
         axs[1].axhline(y=1, color='r', linestyle='-', alpha=0.4)
         axs[1].scatter(og_df['time_folded'], og_df['halo_flux'], color='gray', alpha=0.2)
-        if len(np.argwhere(~np.isnan(og_df['halo_flux']))) > 0:
-            axs[1].set_ylim([np.nanpercentile(og_df['halo_flux'], 16), np.nanpercentile(og_df['halo_flux'], 84)])
+        if len(np.argwhere(~np.isnan(og_df['halo_flux'].to_numpy())).flatten()) > 0:
+            axs[1].set_ylim([np.nanpercentile(og_df['halo_flux'], 1), np.nanpercentile(og_df['halo_flux'], 99)])
         axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_0 / 1, xerr=bin_width_1 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
         og_file = file_dir + '/optical_ghost.png'
@@ -1157,7 +1157,9 @@ class Watson:
         c2 = SkyCoord(ra=offset_ra * u.degree, dec=offset_dec * u.degree, frame='icrs')
         distance_sub_arcs = c1.separation(c2).value * 60 * 60
         target_pixels = wcs.all_world2pix(ra, dec, 0)
-        ax = tpf.plot(aperture_mask='pipeline')
+        aperture = apertures[LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)[1]]
+        aperture = ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
+        ax = tpf.plot(aperture_mask=aperture)
         ax.plot([tpf.column + target_pixels[0]], [tpf.row + target_pixels[1]], marker="*", markersize=14,
                 color="blue", label='target')
         offset_err = offset_ra_err if offset_ra_err > offset_dec_err else offset_dec_err
@@ -1202,8 +1204,8 @@ class Watson:
                     snr_i_0 = snr_i_0 + (snr_map[i, j] ** 2) * i
                     snr_j_0 = snr_j_0 + (snr_map[i, j] ** 2) * j
                     snr_div = snr_div + (snr_map[i, j] ** 2)
-        c_i = snr_i_0 / snr_div
-        c_j = snr_j_0 / snr_div
+        c_i = snr_i_0 / snr_div if snr_div > 0 and not np.isnan(snr_div) else np.nan
+        c_j = snr_j_0 / snr_div if snr_div > 0 and not np.isnan(snr_div) else np.nan
         #mass_center = ndimage.measurements.center_of_mass(snr_map)
         return c_i, c_j
 
@@ -1388,10 +1390,10 @@ class Watson:
         depth_score = np.zeros((tpf.shape[1], tpf.shape[2])).tolist()
         residuals = np.zeros((tpf.shape[1], tpf.shape[2])).tolist()
         for k in range(tpf.shape[1] * tpf.shape[2]):
+            x, y = np.unravel_index(k, (tpf.shape[1], tpf.shape[2]))
             if pixel_list[k] is None:
                 residuals[x][y] = np.inf
                 continue
-            x, y = np.unravel_index(k, (tpf.shape[1], tpf.shape[2]))
             if bls_results[x][y] != 0:
                 max_power_index = np.argwhere(bls_results[x][y].power == np.nanmax(bls_results[x][y].power)).flatten()[0]
                 best_epoch = bls_results[x][y].transit_time[max_power_index]
