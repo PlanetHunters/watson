@@ -972,7 +972,10 @@ class Watson:
         core_flux = core_flux / len(np.argwhere(aperture == True))
         core_flux = wotan.flatten(tpf.time.value, core_flux, duration_to_period * 4, method='biweight')
         halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
-        halo_flux = wotan.flatten(tpf.time.value, halo_flux, duration_to_period * 4, method='biweight')
+        if len(np.argwhere(~np.isnan(halo_flux))) == 0:
+            halo_flux = core_flux
+        else:
+            halo_flux = wotan.flatten(tpf.time.value, halo_flux, duration_to_period * 4, method='biweight')
         return (tpf.time.value, core_flux, halo_flux)
 
     @staticmethod
