@@ -267,7 +267,7 @@ class Watson:
         mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
         snrs = Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period,
-                                               t0, duration, depth / 1000, rp_rstar, a_rstar, cpus)
+                                               t0, duration, depth / 1000, rp_rstar, a_rstar, transits_mask, cpus)
         folded_cadences_snrs = [snr for snr in snrs.values()]
         if len(folded_cadences_snrs) > 0:
             for cadence, snr in snrs.items():
@@ -664,7 +664,7 @@ class Watson:
 
     @staticmethod
     def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth, rp_rstar,
-                                 a_rstar, cpus=os.cpu_count() - 1):
+                                 a_rstar, transits_mask, cpus=os.cpu_count() - 1):
         updated_eleanor = False
         bins = 100
         fig, axs = plt.subplots(3, 1, figsize=(10, 15))
@@ -767,6 +767,7 @@ class Watson:
                 lc = lc.remove_outliers(sigma_lower=float('inf'), sigma_upper=3)
                 if mission == lcbuilder.constants.MISSION_K2:
                     lc = lc.to_corrector("sff").correct(windows=20)
+            lc = LcbuilderHelper.mask_transits_dict(lc, transits_mask)
             snr = Watson.compute_snr(lc.time.value, lc.flux.value, duration, period, epoch)
             snrs[cadence] = snr
             Watson.compute_phased_values_and_fill_plot(id, axs[index], lc, period, epoch, depth, duration,
@@ -793,6 +794,21 @@ class Watson:
                     lc_df['time_folded'] > 0.5 - duration_to_period * oot_range / 2)) |
                        ((lc_df['time_folded'] > 0.5 + duration_to_period) & (
                                    lc_df['time_folded'] < 0.5 + duration_to_period * oot_range / 2))]
+        snr = (1 - lc_it['flux'].median()) * np.sqrt(len(lc_it)) / lc_oot['flux'].std()
+        return snr
+
+    @staticmethod
+    def compute_snr_folded(folded_time, folded_flux, duration, period, oot_range=5):
+        duration_to_period = duration / period
+        lc_df = pd.DataFrame(columns=['time_folded', 'flux'])
+        lc_df['time_folded'] = folded_time
+        lc_df['flux'] = folded_flux
+        lc_it = lc_df[(lc_df['time_folded'] > 0.5 - duration_to_period / 2) &
+                      (lc_df['time_folded'] < 0.5 + duration_to_period / 2)]
+        lc_oot = lc_df[((lc_df['time_folded'] < 0.5 - duration_to_period) & (
+                lc_df['time_folded'] > 0.5 - duration_to_period * oot_range / 2)) |
+                       ((lc_df['time_folded'] > 0.5 + duration_to_period) & (
+                               lc_df['time_folded'] < 0.5 + duration_to_period * oot_range / 2))]
         snr = (1 - lc_it['flux'].median()) * np.sqrt(len(lc_it)) / lc_oot['flux'].std()
         return snr
 
@@ -1064,32 +1080,41 @@ class Watson:
         og_df['og_flux'] = og_df['halo_flux'] - og_df['core_flux']
         og_df.to_csv(file_dir + '/og_dg.csv')
         og_df = og_df.sort_values(by=['time_folded'], ascending=True)
-        core_flux_snr = Watson.compute_snr(og_df['time'], og_df['core_flux'], duration, period, epoch)
-        halo_flux_snr = Watson.compute_snr(og_df['time'], og_df['halo_flux'], duration, period, epoch)
-        og_score = halo_flux_snr / core_flux_snr
         og_df = og_df[(og_df['time_folded'] > 0.5 - duration_to_period * 3) & (
                 og_df['time_folded'] < 0.5 + duration_to_period * 3)]
+        og_core_flux, og_core_mask = LcbuilderHelper.clip_outliers(og_df['core_flux'].to_numpy(), 5)
+        og_halo_flux, og_halo_mask = LcbuilderHelper.clip_outliers(og_df['halo_flux'].to_numpy(), 5)
+        og_time_folded = og_df['time_folded'].to_numpy()
+        og_core_time = og_time_folded[~og_core_mask]
+        og_halo_time = og_time_folded[~og_halo_mask]
+        core_flux_snr = Watson.compute_snr_folded(og_core_time, og_core_flux, duration, period)
+        halo_flux_snr = Watson.compute_snr_folded(og_halo_time, og_halo_flux, duration, period)
+        og_score = halo_flux_snr / core_flux_snr
         bin_centers_0, bin_means_0, bin_width_0, bin_stds_0 = \
-            LcbuilderHelper.bin(og_df['time_folded'], og_df['core_flux'], 40)
+            LcbuilderHelper.bin(og_core_time, og_core_flux, 40)
         bin_centers_1, bin_means_1, bin_width_1, bin_stds_1 = \
-            LcbuilderHelper.bin(og_df['time_folded'], og_df['halo_flux'], 40)
+            LcbuilderHelper.bin(og_halo_time, og_halo_flux, 40)
         fig, axs = plt.subplots(1, 2, figsize=(8, 3))
         axs[0].set_title("Optical ghost diagnostic core flux. SNR=" + str(np.round(core_flux_snr, 2)), fontsize=10)
         axs[0].axhline(y=1, color='r', linestyle='-', alpha=0.4)
-        axs[0].scatter(og_df['time_folded'], og_df['core_flux'], color='gray', alpha=0.2)
-        if len(np.argwhere(~np.isnan(og_df['core_flux'].to_numpy())).flatten()) > 0:
-            axs[0].set_ylim([np.nanpercentile(og_df['core_flux'], 1), np.nanpercentile(og_df['core_flux'], 99)])
+        axs[0].scatter(og_core_time, og_core_flux, color='gray', alpha=0.2)
+        if len(np.argwhere(~np.isnan(og_core_flux)).flatten()) > 0:
+            axs[0].set_ylim([np.nanmin(og_core_flux), np.nanmax(og_core_flux)])
         axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
+        axs[0].set_xlabel("Phase")
+        axs[0].set_ylabel("Norm. flux")
         axs[1].set_title("Optical ghost diagnostic halo flux. SNR=" + str(np.round(halo_flux_snr, 2)), fontsize=10)
         axs[1].axhline(y=1, color='r', linestyle='-', alpha=0.4)
-        axs[1].scatter(og_df['time_folded'], og_df['halo_flux'], color='gray', alpha=0.2)
-        if len(np.argwhere(~np.isnan(og_df['halo_flux'].to_numpy())).flatten()) > 0:
-            axs[1].set_ylim([np.nanpercentile(og_df['halo_flux'], 1), np.nanpercentile(og_df['halo_flux'], 99)])
+        axs[1].scatter(og_halo_time, og_halo_flux, color='gray', alpha=0.2)
+        if len(np.argwhere(~np.isnan(og_halo_flux)).flatten()) > 0:
+            axs[1].set_ylim([np.nanmin(og_halo_flux), np.nanmax(og_halo_flux)])
         axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_0 / 1, xerr=bin_width_1 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
+        axs[1].set_xlabel("Phase")
+        axs[1].set_ylabel("Norm. flux")
         og_file = file_dir + '/optical_ghost.png'
-        plt.savefig(og_file)
+        plt.savefig(og_file, bbox_inches='tight')
         plt.close(fig)
         plt.clf()
         # TODO we don't manage to get a nice plot from this
@@ -1099,30 +1124,39 @@ class Watson:
         centroid_coords_df['time'] = list(chain.from_iterable(centroids_offsets_time_list))
         centroid_coords_df['time_folded'] = foldedleastsquares.fold(centroid_coords_df['time'].to_numpy(), period, epoch + period / 2)
         centroid_coords_df.to_csv(file_dir + '/centroids.csv')
-        centroids_ra_snr = Watson.compute_snr(centroid_coords_df['time'], centroid_coords_df['centroids_ra'] + 1,
-                                              duration, period, epoch)
-        centroids_dec_snr = Watson.compute_snr(centroid_coords_df['time'], centroid_coords_df['centroids_dec'] + 1,
-                                               duration, period, epoch)
         centroid_coords_df = centroid_coords_df.sort_values(by=['time_folded'], ascending=True)
         centroid_coords_df = centroid_coords_df[(centroid_coords_df['time_folded'] > 0.5 - duration_to_period * 3) &
                                                 (centroid_coords_df['time_folded'] < 0.5 + duration_to_period * 3)]
+        centroids_ra, centroids_ra_mask = LcbuilderHelper.clip_outliers(centroid_coords_df['centroids_ra'].to_numpy(), 5)
+        centroids_dec, centroids_dec_mask = LcbuilderHelper.clip_outliers(centroid_coords_df['centroids_dec'].to_numpy(), 5)
+        centroids_time_folded = centroid_coords_df['time_folded'].to_numpy()
+        centroids_ra_time = centroids_time_folded[~centroids_ra_mask]
+        centroids_dec_time = centroids_time_folded[~centroids_dec_mask]
+        centroids_ra_snr = Watson.compute_snr_folded(centroids_ra_time, centroids_ra + 1,
+                                              duration, period, epoch)
+        centroids_dec_snr = Watson.compute_snr_folded(centroids_dec_time, centroids_dec + 1,
+                                               duration, period, epoch)
         bin_centers_0, bin_means_0, bin_width_0, bin_stds_0 = \
-            LcbuilderHelper.bin(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'], 40)
+            LcbuilderHelper.bin(centroids_ra_time, centroids_ra, 40)
         bin_centers_1, bin_means_1, bin_width_1, bin_stds_1 = \
-            LcbuilderHelper.bin(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'], 40)
+            LcbuilderHelper.bin(centroids_dec_time, centroids_dec, 40)
         fig, axs = plt.subplots(1, 2, figsize=(8, 3))
         axs[0].set_title("Right Ascension centroid shift - SNR=" + str(np.round(centroids_ra_snr, 2)), fontsize=10)
         axs[0].axhline(y=0, color='r', linestyle='-', alpha=0.4)
-        axs[0].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_ra'], color='gray', alpha=0.2)
+        axs[0].scatter(centroids_ra_time, centroids_ra, color='gray', alpha=0.2)
         axs[0].errorbar(bin_centers_0, bin_means_0, yerr=bin_stds_0 / 2, xerr=bin_width_0 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
+        axs[0].set_xlabel("Phase")
+        axs[0].set_ylabel("RA Centroid & Motion drift")
         axs[1].set_title("Declination centroid shift - SNR=" + str(np.round(centroids_dec_snr, 2)), fontsize=10)
         axs[1].axhline(y=0, color='r', linestyle='-', alpha=0.4)
-        axs[1].scatter(centroid_coords_df['time_folded'], centroid_coords_df['centroids_dec'], color='gray', alpha=0.2)
+        axs[1].scatter(centroids_dec_time, centroids_dec, color='gray', alpha=0.2)
         axs[1].errorbar(bin_centers_1, bin_means_1, yerr=bin_stds_1 / 2, xerr=bin_width_1 / 2, marker='o', markersize=2,
                         color='darkorange', alpha=1, linestyle='none')
+        axs[1].set_xlabel("Phase")
+        axs[1].set_ylabel("DEC Centroid & Motion drift")
         centroids_file = file_dir + '/centroids.png'
-        plt.savefig(centroids_file)
+        plt.savefig(centroids_file, bbox_inches='tight')
         plt.close(fig)
         plt.clf()
         # phot_source_offset_ra = ra + (centroid_coords_df_oot['centroids_ra'].median() * ra / 3600 - \
@@ -1139,8 +1173,8 @@ class Watson:
         source_offset_bls_dec_err = np.nanstd(np.array(source_offsets_bls)[:, 1])
         offset_ra = np.mean([source_offset_bls_ra, source_offset_diggimg_ra])
         offset_dec = np.mean([source_offset_bls_dec, source_offset_diggimg_dec])
-        offset_ra_err = np.sqrt(source_offset_bls_ra_err ** 2 + source_offset_diggimg_ra_err ** 2)
-        offset_dec_err = np.sqrt(source_offset_bls_dec_err ** 2 + source_offset_diggimg_dec_err ** 2)
+        offset_ra_err = 1/2 * np.sqrt(source_offset_bls_ra_err ** 2 + source_offset_diggimg_ra_err ** 2)
+        offset_dec_err = 1/2 * np.sqrt(source_offset_bls_dec_err ** 2 + source_offset_diggimg_dec_err ** 2)
         offsets_df = pd.DataFrame(columns=['name', 'ra', 'dec', 'ra_err', 'dec_err'])
         offsets_df.append({'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
                            'ra_err': source_offset_diggimg_ra_err, 'dec_err': source_offset_diggimg_dec_err}, ignore_index=True)
@@ -1185,6 +1219,7 @@ class Watson:
         plt.savefig(offsets_file, dpi=200, bbox_inches='tight')
         images_list = [offsets_file, centroids_file, og_file]
         imgs = [PIL.Image.open(i) for i in images_list]
+        imgs[1] = imgs[1].resize((imgs[2].size[0], imgs[2].size[1]), PIL.Image.ANTIALIAS)
         imgs[0] = imgs[0].resize((imgs[1].size[0],
                                   int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
                                  PIL.Image.ANTIALIAS)
