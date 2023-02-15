@@ -5,3 +5,5 @@
 /build/
 /dearwatson.egg-info/
 /dearwatson-*
+/docs/build/
+/docs/source/_autosummary/
