@@ -1,12 +1,10 @@
 import os
-import re
 
 import lcbuilder.eleanor
 import sys
 sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
 import eleanor
 from lcbuilder.eleanor.targetdata import TargetData
-from lcbuilder.eleanor_manager import EleanorManager
 
 import foldedleastsquares
 import lcbuilder
@@ -297,14 +295,15 @@ class NeighbourInput:
 
 def Gauss2D(x, y, mu_x, mu_y, sigma, A):
     """
-    Calculates a circular Gaussian at specified grid points.
+    Calculates a circular Gaussian at specified grid points
+
     Args:
-        x, y (1D numpy arrays): Grid that you would like to calculate
-                                Gaussian over.
-        mu_x, mu_y (floats): Locations of star / Gaussian peak.
+        x, y (1D numpy arrays): Grid that you would like to calculate Gaussian over
+        mu_x, mu_y (floats): Locations of star / Gaussian peak
         sigma (float): Standard deviation of Gaussian
-        A (float): Area under Gaussian.
-    Returns:
+        A (float): Area under Gaussian
+
+    Returns: the gaussian
     """
     xgrid, ygrid = np.meshgrid(x, y)
     exponent = ((xgrid - mu_x) ** 2 + (ygrid - mu_y) ** 2) / (2 * sigma ** 2)
