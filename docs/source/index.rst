@@ -6,10 +6,10 @@
 Welcome to WATSON documentation!
 =============================================
 
-.. image:: _static/matrix.jpg
+.. image:: _static/watson.jpg
    :width: 300px
    :align: center
-   :height: 75px
+   :height: 300px
    :alt: SHERLOCK PIPEline Logo
 
 WATSON (Visual Vetting and Analysis of Transits from Space ObservatioNs is a lightweight software package
