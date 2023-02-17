@@ -19,7 +19,7 @@ import sphinx_rtd_theme
 
 # -- Project information -----------------------------------------------------
 
-project = 'MATRIX'
+project = 'WATSON'
 copyright = '2021, Martín Dévora-Pajares'
 author = ' Martín Dévora-Pajares & Francisco J. Pozuelos'
 
