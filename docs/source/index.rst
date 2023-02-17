@@ -6,11 +6,11 @@
 Welcome to WATSON documentation!
 =============================================
 
-.. image:: _static/watson.jpg
+.. image:: _static/watson.png
    :width: 300px
    :align: center
    :height: 300px
-   :alt: SHERLOCK PIPEline Logo
+   :alt: WATSON Logo
 
 WATSON (Visual Vetting and Analysis of Transits from Space ObservatioNs is a lightweight software package
 that enables a comfortable visual vetting of a transiting signal candidate from Kepler, K2 and TESS missions.

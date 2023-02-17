@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 =============================================
-MATRIX ToolKit: Programmatic API
+WATSON: Programmatic API
 =============================================
 
 .. autosummary::
