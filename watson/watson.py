@@ -6,6 +6,8 @@ import traceback
 import lcbuilder.eleanor
 import sys
 
+from watson.data_validation_report.DvrPreparer import DvrPreparer
+
 sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
 import eleanor
 from lcbuilder.eleanor.targetdata import TargetData
@@ -139,6 +141,8 @@ class Watson:
         os.mkdir(vetting_dir)
         self.data_dir = vetting_dir
         try:
+            if sectors is not None:
+                DvrPreparer().retrieve(id, sectors, vetting_dir)
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
