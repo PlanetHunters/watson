@@ -3,7 +3,7 @@ import os
 import shutil
 import time
 from abc import ABC, abstractmethod
-from typing import List
+from typing import List, Dict
 
 import lcbuilder.constants
 import requests
@@ -80,15 +80,15 @@ class TessDvrUrlBuilder(DvrUrlBuilder):
         data_products = Observations.get_product_list(obsTable)
         data_products = data_products[data_products['productSubGroupDescription'] == 'DVR']
         print(data_products['productFilename'])
-        download_manifest = Observations.download_products(data_products, download_dir=the_dir)
-        download_dir = download_dir + '/mastDownload/TESS/'
+        download_manifest = Observations.download_products(data_products, download_dir=download_dir)
+        inner_download_dir = download_dir + '/mastDownload/TESS/'
         result_files = []
-        for dir in sorted(os.listdir(download_dir)):
-            inner_dir = download_dir + '/' + dir
-            for file in sorted(os.listdir(inner_dir + '/')):
+        for dir in sorted(os.listdir(inner_download_dir)):
+            report_inner_dir = inner_download_dir + '/' + dir
+            for file in sorted(os.listdir(report_inner_dir + '/')):
                 if file.endswith('.pdf'):
                     result_path = download_dir + '/' + file
-                    shutil.move(inner_dir + '/' + file, result_path)
+                    shutil.move(report_inner_dir + '/' + file, result_path)
                     result_files.append(result_path)
         shutil.rmtree(download_dir + '/mastDownload')
         return result_files
@@ -96,12 +96,9 @@ class TessDvrUrlBuilder(DvrUrlBuilder):
 
 class DvrPreparer:
     """Class offering official data validation report download"""
-    URL_BUILDERS: List[DvrUrlBuilder] = []
-
-    def __init__(self) -> None:
-        super().__init__()
-        self.URL_BUILDERS[lcbuilder.constants.MISSION_KEPLER] = KeplerDvrUrlBuilder()
-        self.URL_BUILDERS[lcbuilder.constants.MISSION_TESS] = TessDvrUrlBuilder()
+    URL_BUILDERS: Dict[str, DvrUrlBuilder] = {lcbuilder.constants.MISSION_KEPLER: KeplerDvrUrlBuilder(),
+                                              lcbuilder.constants.MISSION_TESS: TessDvrUrlBuilder()}
+    """Dictionary containing the files preparer for each supported mission"""
 
     def retrieve(self, target_id: str, sectors: List[int], destination: str) -> List[str]:
         """
