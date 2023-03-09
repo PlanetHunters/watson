@@ -842,6 +842,7 @@ class Watson:
         pixel_values_j = np.array(range(tpf[0].shape[2]))
         tpf_lc_data = lc_data[(lc_data['time'] >= tpf.time.value[0]) & (lc_data['time'] <= tpf.time.value[-1])].dropna()
         sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
+        sector = sector[0]
         if apertures is not None:
             aperture = apertures[sector]
             aperture = \
@@ -1198,7 +1199,9 @@ class Watson:
         c2 = SkyCoord(ra=offset_ra * u.degree, dec=offset_dec * u.degree, frame='icrs')
         distance_sub_arcs = c1.separation(c2).value * 60 * 60
         target_pixels = wcs.all_world2pix(ra, dec, 0)
-        aperture = apertures[LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)[1]]
+        sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
+        sector = sector[0]
+        aperture = apertures[sector]
         aperture = ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
         ax = tpf.plot(aperture_mask=aperture)
         ax.plot([tpf.column + target_pixels[0]], [tpf.row + target_pixels[1]], marker="*", markersize=14,
