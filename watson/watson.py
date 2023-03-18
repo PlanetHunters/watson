@@ -1033,6 +1033,8 @@ class Watson:
         df['y_shift'] = df['motion_y'] - df['centroids_y'] + target_px[0]
         shift_coords = np.array([[coord.ra.value, coord.dec.value] for coord in
                                  wcs.pixel_to_world(df['x_shift'], df['y_shift'])])
+        if len(shift_coords) == 0:
+            return [], 0, 0
         shift_ra = shift_coords[:, 0] - ra
         shift_ra = (shift_ra - np.nanmedian(shift_ra)) / np.nanstd(shift_ra)
         shift_dec = shift_coords[:, 1] - dec
