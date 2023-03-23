@@ -1039,7 +1039,7 @@ class Watson:
         shift_ra_std = np.nanstd(shift_ra)
         shift_ra = (shift_ra - np.nanmedian(shift_ra)) / np.nanstd(shift_ra) if shift_ra_std > 0 else 0
         shift_dec = shift_coords[:, 1] - dec
-        shift_dec_std = np.nanstd(shift_ra)
+        shift_dec_std = np.nanstd(shift_dec)
         shift_dec = (shift_dec - np.nanmedian(shift_dec)) / np.nanstd(shift_dec) if shift_dec_std > 0 else 0
         shift_time = df['time'].to_numpy()
         return shift_time, shift_ra, shift_dec
