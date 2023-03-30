@@ -10,6 +10,7 @@ from watson.data_validation_report.DvrPreparer import DvrPreparer
 
 sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
 import eleanor
+from eleanor.utils import SearchError
 from lcbuilder.eleanor.targetdata import TargetData
 from lcbuilder.eleanor_manager import EleanorManager
 import warnings
@@ -705,17 +706,21 @@ class Watson:
                     if not updated_eleanor:
                         EleanorManager.update()
                         updated_eleanor = True
-                    star = eleanor.multi_sectors(tic=round(id), sectors='all',
-                                                 post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
-                                                 metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
-                    data = []
-                    for s in star:
-                        datum = TargetData(s, height=CUTOUT_SIZE, width=CUTOUT_SIZE, do_pca=True)
-                        data.append(datum)
-                    lc = data[0].to_lightkurve(data[0].pca_flux).remove_nans().flatten()
-                    if len(data) > 1:
-                        for datum in data[1:]:
-                            lc = lc.append(datum.to_lightkurve(datum.pca_flux).remove_nans().flatten())
+                    try:
+                        star = eleanor.multi_sectors(tic=round(id), sectors='all',
+                                                     post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
+                                                     metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
+                        data = []
+                        for s in star:
+                            datum = TargetData(s, height=CUTOUT_SIZE, width=CUTOUT_SIZE, do_pca=True)
+                            data.append(datum)
+                        lc = data[0].to_lightkurve(data[0].pca_flux).remove_nans().flatten()
+                        if len(data) > 1:
+                            for datum in data[1:]:
+                                lc = lc.append(datum.to_lightkurve(datum.pca_flux).remove_nans().flatten())
+                    except SearchError:
+                        logging.exception("ELEANOR did not find the target in any sector")
+                        continue
                     lc = lc.remove_nans()
                 else:
                     matching_objects = []
