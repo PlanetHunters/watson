@@ -11,7 +11,7 @@ configparser==5.0.1
 cryptography==40.0.1
 cycler==0.11.0
 Cython==0.29.21
-dearwatson==0.5.10
+dearwatson==0.5.11
 everest-pipeline==2.0.12
 extension-helpers==0.1
 fbpca==1.0
