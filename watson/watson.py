@@ -335,6 +335,8 @@ class Watson:
         if os.path.exists(lc_data_file):
             lc_data = pd.read_csv(lc_data_file, header=0)
             lc_data_norm = Watson.normalize_lc_data(lc_data)
+            if 'quality' in lc_data.columns:
+                lc_data = lc_data.drop('quality', axis='columns')
         time, flux, flux_err = lc["#time"].values, lc["flux"].values, lc["flux_err"].values
         for transit_mask in transits_mask:
             logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
