@@ -345,7 +345,6 @@ class Watson:
             time, flux, flux_err = LcbuilderHelper.mask_transits(time, flux,  transit_mask["P"],
                                                                  transit_mask["D"] / 60 / 24, transit_mask["T0"])
         lc = TessLightCurve(time=time, flux=flux, flux_err=flux_err, quality=np.zeros(len(time)))
-        lc.extra_columns = []
         tpfs = []
         if os.path.exists(tpfs_dir):
             for tpf_file in sorted(os.listdir(tpfs_dir)):
@@ -369,13 +368,13 @@ class Watson:
         previous_jump_index = 0
         for jumpIndex in jumps:
             token = lc_data_copy["centroids_x"][previous_jump_index:jumpIndex]
-            lc_data_copy["centroids_x"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
+            lc_data_copy.iloc[previous_jump_index:jumpIndex]["centroids_x"] = token - np.nanmedian(token)
             token = lc_data_copy["centroids_y"][previous_jump_index:jumpIndex]
-            lc_data_copy["centroids_y"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
+            lc_data_copy.iloc[previous_jump_index:jumpIndex]["centroids_y"] = token - np.nanmedian(token)
             token = lc_data_copy["motion_x"][previous_jump_index:jumpIndex]
-            lc_data_copy["motion_x"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
+            lc_data_copy.iloc[previous_jump_index:jumpIndex]["motion_x"] = token - np.nanmedian(token)
             token = lc_data_copy["motion_y"][previous_jump_index:jumpIndex]
-            lc_data_copy["motion_y"][previous_jump_index:jumpIndex] = token - np.nanmedian(token)
+            lc_data_copy.iloc[previous_jump_index:jumpIndex]["motion_y"] = token - np.nanmedian(token)
             previous_jump_index = jumpIndex
         return lc_data_copy
 
