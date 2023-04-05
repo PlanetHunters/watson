@@ -55,8 +55,6 @@ from watson import constants
 import watson.tpfplotterSub.tpfplotter as tpfplotter
 import pandas as pd
 import os
-from math import ceil, floor
-from copy import deepcopy
 
 from watson.neighbours import CreateStarCsvInput, create_star_csv, NeighbourInput, get_neighbour_lc
 from watson.report import Report
@@ -777,6 +775,7 @@ class Watson:
                 lc = lc.remove_outliers(sigma_lower=float('inf'), sigma_upper=3)
                 if mission == lcbuilder.constants.MISSION_K2:
                     lc = lc.to_corrector("sff").correct(windows=20)
+            lc.flux = wotan.flatten(lc.time.value, lc.flux.value, window_length=duration * 4, method="biweight")
             lc = LcbuilderHelper.mask_transits_dict(lc, transits_mask)
             snr = Watson.compute_snr(lc.time.value, lc.flux.value, duration, period, epoch)
             snrs[cadence] = snr
