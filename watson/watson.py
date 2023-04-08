@@ -271,15 +271,9 @@ class Watson:
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
         snrs = Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period,
                                                t0, duration, depth / 1000, rp_rstar, a_rstar, transits_mask, cpus)
-        folded_cadences_snrs = [snr for snr in snrs.values()]
-        if len(folded_cadences_snrs) > 0:
+        if len(snrs.values()) > 0:
             for cadence, snr in snrs.items():
                 metrics_df = metrics_df.append({'metric': cadence + '_snr', 'score': snr, 'passed': snr > 3}, ignore_index=True)
-            folded_cadences_snrs_mean = np.nanmean(folded_cadences_snrs)
-            folded_cadences_snrs_std = np.nanstd(folded_cadences_snrs)
-            folded_cadences_snr_significance = folded_cadences_snrs_std / folded_cadences_snrs_mean
-            metrics_df = metrics_df.append({'metric': 'folded_cadences_snr', 'score': folded_cadences_snr_significance,
-                               'passed': folded_cadences_snr_significance < 0.3}, ignore_index=True)
         snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         metrics_df = metrics_df.append({'metric': 'snr_p_t0', 'score': snr_p_t0, 'passed': snr_p_t0 > 3}, ignore_index=True)
