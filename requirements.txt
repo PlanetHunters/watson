@@ -2,7 +2,7 @@ astropy==5.0.4
 astroquery==0.4.7.dev8479
 autograd==1.5
 batman-package==2.4.9
-beautifulsoup4==4.12.0
+beautifulsoup4==4.12.2
 bokeh==2.4.2
 certifi==2022.12.7
 cffi==1.15.1
@@ -11,7 +11,7 @@ configparser==5.0.1
 cryptography==40.0.1
 cycler==0.11.0
 Cython==0.29.21
-dearwatson==0.5.14
+dearwatson==0.5.15
 everest-pipeline==2.0.12
 extension-helpers==0.1
 fbpca==1.0
@@ -22,7 +22,7 @@ george==0.4.0
 html5lib==1.1
 idna==3.4
 imageio==2.9.0
-importlib-metadata==6.1.0
+importlib-metadata==6.2.0
 importlib-resources==5.12.0
 jaraco.classes==3.2.3
 jeepney==0.8.0
@@ -33,12 +33,12 @@ keyring==23.13.1
 kiwisolver==1.4.4
 lcbuilder==0.11.0
 lightkurve==2.4.0
-llvmlite==0.39.1
+llvmlite==0.40.0rc1
 MarkupSafe==2.1.2
 matplotlib==3.5.2
 memoization==0.4.0
 more-itertools==9.1.0
-numba==0.56.4
+numba==0.57.0rc1
 numpy==1.22.4
 oktopus==0.1.2
 packaging==23.0
