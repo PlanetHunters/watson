@@ -166,7 +166,7 @@ class Watson:
         file_name = "transits_validation_report_summary.pdf"
         logging.info("Creating summary report")
         report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list,
-                        summary_list_t0s_indexes, v, j, h, k, with_tpfs)
+                        summary_list_t0s_indexes, v, j, h, k, with_tpfs, is_summary=True)
         report.create_report()
 
 

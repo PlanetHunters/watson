@@ -23,7 +23,7 @@ class Report:
     LOGO_IMAGE = resources_dir + "/resources/images/watson.png"
 
     def __init__(self, data_dir, file_name, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list,
-                 summary_list_t0s_indexes, v, j, h, k, with_tpfs=True):
+                 summary_list_t0s_indexes, v, j, h, k, with_tpfs=True, is_summary=False):
         self.data_dir = data_dir
         self.file_name = file_name
         self.object_id = object_id
@@ -40,6 +40,7 @@ class Report:
         self.h = h
         self.k = k
         self.with_tpfs = with_tpfs
+        self.is_summary = is_summary
 
     @staticmethod
     def row_colors(df, table_object):
@@ -259,16 +260,17 @@ class Report:
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
             figure = figure + 1
-        for file in sorted(list(pathlib.Path(self.data_dir).glob('folded_tpf_*.png'))):
-            story.append(Image(str(file), width=14 * cm, height=22 * cm))
-            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + '' \
-                                                                                            ': </strong>Above, the TPF and per-pixel BLS SNR best fits. Bottom left, the per-pixel BLS SNR for each' \
-                                                                                            ' pixel. Bottom right, the differential images SNR for each pixel. The target position is represented ' \
-                                                                                            'by a red star and the TPF independent source offset is represented by a white plus.</font>'
-            story.append(Spacer(1, 5))
-            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
-            figure = figure + 1
-        story.append(PageBreak())
+        if not self.is_summary:
+            for file in sorted(list(pathlib.Path(self.data_dir).glob('folded_tpf_*.png'))):
+                story.append(Image(str(file), width=14 * cm, height=22 * cm))
+                descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + '' \
+                                                                                                ': </strong>Above, the TPF and per-pixel BLS SNR best fits. Bottom left, the per-pixel BLS SNR for each' \
+                                                                                                ' pixel. Bottom right, the differential images SNR for each pixel. The target position is represented ' \
+                                                                                                'by a red star and the TPF independent source offset is represented by a white plus.</font>'
+                story.append(Spacer(1, 5))
+                story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+                figure = figure + 1
+            story.append(PageBreak())
         introduction = '<font name="HELVETICA" size="9">The next pages will contain each of the single-transits ' \
                        'vetting sheets with the next information: </font>'
         story.append(Paragraph(introduction, styles["ParagraphAlignJustify"]))
