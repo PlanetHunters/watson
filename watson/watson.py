@@ -298,7 +298,7 @@ class Watson:
                 offset_test = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2) < pixel_size / 3600
                 metrics_df = metrics_df.append({'metric': 'transit_offset_ra', 'score': offset_ra, 'passed': np.abs(offset_ra - ra_fov) < pixel_size_degrees}, ignore_index=True)
                 metrics_df = metrics_df.append({'metric': 'transit_offset_dec', 'score': offset_dec, 'passed': np.abs(offset_dec - dec_fov) < pixel_size_degrees}, ignore_index=True)
-                metrics_df = metrics_df.append({'metric': 'transit_offset_err', 'score': offset_err, 'passed': offset_err < pixel_size * 3 / 3600}, ignore_index=True)
+                metrics_df = metrics_df.append({'metric': 'transit_offset_err', 'score': offset_err, 'passed': True if offset_err < pixel_size * 3 / 3600 else np.nan}, ignore_index=True)
                 target_dist = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2)
                 metrics_df = metrics_df.append({'metric': 'transit_offset_pos', 'score': target_dist, 'passed': target_dist < offset_err}, ignore_index=True)
                 metrics_df = metrics_df.append({'metric': 'core_flux_snr', 'score': core_flux_snr, 'passed': True if core_flux_snr > 3 else np.nan }, ignore_index=True)
