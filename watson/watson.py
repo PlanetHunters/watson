@@ -3,25 +3,17 @@
 import logging
 import multiprocessing
 import traceback
-import lcbuilder.eleanor
 import sys
 
 from watson.data_validation_report.DvrPreparer import DvrPreparer
 
-sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
-import eleanor
-from eleanor.utils import SearchError
-from lcbuilder.eleanor.targetdata import TargetData
-from lcbuilder.eleanor_manager import EleanorManager
 import warnings
 from itertools import chain
 import PIL
 import batman
-import scipy
 import foldedleastsquares
 import lcbuilder
 import lightkurve
-from lightkurve.periodogram import BoxLeastSquaresPeriodogram
 from lightkurve import MPLSTYLE
 import numpy as np
 import matplotlib.pyplot as plt
@@ -32,7 +24,7 @@ from astropy.timeseries.periodograms import BoxLeastSquares
 from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 from astropy import units as u
-from lcbuilder.constants import CUTOUT_SIZE, LIGHTKURVE_CACHE_DIR, ELEANOR_CACHE_DIR
+from lcbuilder.constants import CUTOUT_SIZE, LIGHTKURVE_CACHE_DIR
 from lcbuilder.helper import LcbuilderHelper
 from lcbuilder.lcbuilder_class import LcBuilder
 from lcbuilder.objectinfo.MissionObjectInfo import MissionObjectInfo
@@ -663,7 +655,6 @@ class Watson:
     @staticmethod
     def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth, rp_rstar,
                                  a_rstar, transits_mask, cpus=os.cpu_count() - 1):
-        updated_eleanor = False
         bins = 100
         fig, axs = plt.subplots(3, 1, figsize=(10, 15))
         duration = duration / 60 / 24
@@ -683,92 +674,39 @@ class Watson:
                 author = "Kepler"
             elif mission == lcbuilder.constants.MISSION_K2:
                 author = "K2"
-            if mission == "TESS" and cadence == 'long':
-                lcs = lightkurve.search_lightcurve(
-                    mission_prefix + " " + str(id),
-                    mission=mission,
-                    sector=sectors,
-                    campaign=sectors,
-                    quarter=sectors,
-                    author=author,
-                    cadence=cadence
-                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
-                if lcs is None:
-                    if not updated_eleanor:
-                        EleanorManager.update()
-                        updated_eleanor = True
-                    try:
-                        star = eleanor.multi_sectors(tic=round(id), sectors='all',
-                                                     post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
-                                                     metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
-                        data = []
-                        for s in star:
-                            datum = TargetData(s, height=CUTOUT_SIZE, width=CUTOUT_SIZE, do_pca=True)
-                            data.append(datum)
-                        lc = data[0].to_lightkurve(data[0].pca_flux).remove_nans().flatten()
-                        if len(data) > 1:
-                            for datum in data[1:]:
-                                lc = lc.append(datum.to_lightkurve(datum.pca_flux).remove_nans().flatten())
-                    except SearchError:
-                        logging.exception("ELEANOR did not find the target in any sector")
-                        continue
-                    lc = lc.remove_nans()
-                else:
-                    matching_objects = []
-                    for i in range(0, len(lcs.data)):
-                        if lcs.data[i].label == "TIC " + str(id):
-                            if lc is None:
-                                lc = lcs.data[i].normalize()
-                            else:
-                                lc = lc.append(lcs.data[i].normalize())
-                        else:
-                            matching_objects.append(lcs.data[i].label)
+            lcs = lightkurve.search_lightcurve(
+                mission_prefix + " " + str(id),
+                mission=mission,
+                sector=sectors,
+                campaign=sectors,
+                quarter=sectors,
+                author=author,
+                cadence=cadence
+            ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
+            if lcs is None:
+                continue
+            matching_objects = []
+            for i in range(0, len(lcs.data)):
+                if lcs.data[i].label == mission_prefix + " " + str(id):
                     if lc is None:
-                        continue
+                        lc = lcs.data[i].normalize()
                     else:
-                        if mission == lcbuilder.constants.MISSION_TESS:
-                            found_sectors = lcs.sector
-                        elif mission == lcbuilder.constants.MISSION_KEPLER:
-                            found_sectors = lcs.quarter
-                        elif mission == lcbuilder.constants.MISSION_K2:
-                            found_sectors = lcs.campaign
-                    lc = lc.remove_nans()
-                    if mission == lcbuilder.constants.MISSION_K2:
-                        lc = lc.to_corrector("sff").correct(windows=20)
-            else:
-                lcs = lightkurve.search_lightcurve(
-                    mission_prefix + " " + str(id),
-                    mission=mission,
-                    sector=sectors,
-                    campaign=sectors,
-                    quarter=sectors,
-                    author=author,
-                    cadence=cadence
-                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
-                if lcs is None:
-                    continue
-                matching_objects = []
-                for i in range(0, len(lcs.data)):
-                    if lcs.data[i].label == mission_prefix + " " + str(id):
-                        if lc is None:
-                            lc = lcs.data[i].normalize()
-                        else:
-                            lc = lc.append(lcs.data[i].normalize())
-                    else:
-                        matching_objects.append(lcs.data[i].label)
-                if lc is None:
-                    continue
+                        lc = lc.append(lcs.data[i].normalize())
                 else:
-                    if mission == lcbuilder.constants.MISSION_TESS:
-                        found_sectors = lcs.sector
-                    elif mission == lcbuilder.constants.MISSION_KEPLER:
-                        found_sectors = lcs.quarter
-                    elif mission == lcbuilder.constants.MISSION_K2:
-                        found_sectors = lcs.campaign
-                lc = lc.remove_nans()
-                lc = lc.remove_outliers(sigma_lower=float('inf'), sigma_upper=3)
-                if mission == lcbuilder.constants.MISSION_K2:
-                    lc = lc.to_corrector("sff").correct(windows=20)
+                    matching_objects.append(lcs.data[i].label)
+            if lc is None:
+                continue
+            else:
+                if mission == lcbuilder.constants.MISSION_TESS:
+                    found_sectors = lcs.sector
+                elif mission == lcbuilder.constants.MISSION_KEPLER:
+                    found_sectors = lcs.quarter
+                elif mission == lcbuilder.constants.MISSION_K2:
+                    found_sectors = lcs.campaign
+            lc = lc.remove_nans()
+            lc = lc.remove_outliers(sigma_lower=float('inf'), sigma_upper=3)
+            if mission == lcbuilder.constants.MISSION_K2:
+                lc = lc.to_corrector("sff").correct(windows=20)
             lc.flux = wotan.flatten(lc.time.value, lc.flux.value, window_length=duration * 4, method="biweight")
             lc = LcbuilderHelper.mask_transits_dict(lc, transits_mask)
             snr = Watson.compute_snr(lc.time.value, lc.flux.value, duration, period, epoch)
@@ -1491,8 +1429,6 @@ class Watson:
         page = 0
         file = file_dir + '/star_nb_' + str(page) + '.png'
         duration = duration / 60 / 60
-        if mission == "TESS":
-            EleanorManager.update()
         neighbour_inputs = []
         for index, star_row in stars_df.iterrows():
             neighbour_inputs.append(
@@ -1753,7 +1689,7 @@ class Watson:
         :param ra: the right ascension of the target
         :param dec: the declination of the target
         :param sectors: the sectors where the target was observed
-        :param source: the source where the aperture was generated [tpf, tesscut, eleanor]
+        :param source: the source where the aperture was generated [tpf, tesscut]
         :param apertures: a dict mapping sectors to boolean apertures
         :param cpus: cores to be used
         :return: the directory where resulting data is stored
