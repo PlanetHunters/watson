@@ -11,11 +11,11 @@ configparser==5.0.1
 cryptography==40.0.1
 cycler==0.11.0
 Cython==0.29.21
-dearwatson==0.6.0
+dearwatson==0.6.1
 everest-pipeline==2.0.12
 extension-helpers==0.1
 fbpca==1.0
-foldedleastsquares==1.0.37
+foldedleastsquares==1.0.39
 fonttools==4.39.3
 future==0.18.3
 george==0.4.0
@@ -31,7 +31,7 @@ joblib==1.2.0
 k2plr==0.2.9
 keyring==23.13.1
 kiwisolver==1.4.4
-lcbuilder==0.11.1
+lcbuilder==0.11.2
 lightkurve==2.4.0
 llvmlite==0.40.0rc1
 MarkupSafe==2.1.2
@@ -41,7 +41,7 @@ more-itertools==9.1.0
 numba==0.57.0rc1
 numpy==1.22.4
 oktopus==0.1.2
-packaging==23.0
+packaging==23.1
 pandas==1.3.1
 patsy==0.5.3
 photutils==1.0.2
