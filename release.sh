@@ -21,15 +21,15 @@ if ! [[ -z ${tests_results} ]]; then
   rm -r build
   rm -r watson-reqs
   set -e
-  python3.8 -m venv watson-reqs
+  python3.9 -m venv watson-reqs
   source watson-reqs/bin/activate
-  python3.8 -m pip install pip -U
-  python3.8 -m pip install numpy==1.22.4
+  python3.9 -m pip install pip -U
+  python3.9 -m pip install numpy==1.23.5
   git_tag=$1
   sed -i '6s/.*/version = "'${git_tag}'"/' setup.py
   sed -i '1s/.*/__version__ = "'${git_tag}'"/' watson/__init__.py
-  python3.8 setup.py install
-  python3.8 -m pip list --format=freeze > requirements.txt
+  python3.9 setup.py install
+  python3.9 -m pip list --format=freeze > requirements.txt
   deactivate
   git pull
   git add setup.py
