@@ -274,10 +274,6 @@ class Watson:
         metrics_df = metrics_df.append({'metric': 'snr_2p_2t0', 'score': snr_2p_2t0, 'passed': snr_2p_2t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t0', 'score': snr_p2_t0, 'passed': snr_p2_t0 < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t02', 'score': snr_p2_t02, 'passed': snr_p2_t02 < 3}, ignore_index=True)
-        metrics_df = metrics_df.append({'metric': 'snr_p_score', 'score': snr_p_2t0 / snr_p_t0,
-                                        'passed': snr_p_t0 > 3 and snr_p_2t0 < 3}, ignore_index=True)
-        metrics_df = metrics_df.append({'metric': 'snr_2p_score', 'score': np.abs(snr_2p_t0 - snr_2p_2t0), 'passed': snr_2p_t0 > 3 and snr_2p_t0 > 3}, ignore_index=True)
-        metrics_df = metrics_df.append({'metric': 'snr_p2_score', 'score': np.abs(snr_p2_t0 - snr_p2_t02) / snr_p_t0, 'passed': snr_p2_t0 < 3 and snr_p2_t02 < 3}, ignore_index=True)
         if (ra_fov is not None and dec_fov is not None):
             if tpfs is not None and len(tpfs) > 0:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
@@ -1121,6 +1117,10 @@ class Watson:
         offset_dec = np.mean([source_offset_bls_dec, source_offset_diggimg_dec])
         offset_ra_err = 1/2 * np.sqrt(source_offset_bls_ra_err ** 2 + source_offset_diggimg_ra_err ** 2)
         offset_dec_err = 1/2 * np.sqrt(source_offset_bls_dec_err ** 2 + source_offset_diggimg_dec_err ** 2)
+        if np.isnan(offset_ra_err) or offset_ra_err == 0.0:
+            offset_ra_err = np.nanstd([source_offset_bls_ra, source_offset_diggimg_ra])
+        if np.isnan(offset_dec_err) or offset_dec_err == 0.0:
+            offset_dec_err = np.nanstd([source_offset_bls_dec, source_offset_diggimg_dec])
         offsets_df = pd.DataFrame(columns=['name', 'ra', 'dec', 'ra_err', 'dec_err'])
         offsets_df.append({'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
                            'ra_err': source_offset_diggimg_ra_err, 'dec_err': source_offset_diggimg_dec_err}, ignore_index=True)
