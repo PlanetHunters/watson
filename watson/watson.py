@@ -664,21 +664,44 @@ class Watson:
             axs[index].set_title(mission_prefix + " " + str(id) + " " + str(found_sectors) + ": " + cadence)
             if mission == lcbuilder.constants.MISSION_TESS and cadence == 'long':
                 author = "TESS-SPOC"
+                lcs = lightkurve.search_lightcurve(
+                    mission_prefix + " " + str(id),
+                    mission=mission,
+                    sector=sectors,
+                    campaign=sectors,
+                    quarter=sectors,
+                    author=author,
+                    cadence=cadence
+                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
             elif mission == lcbuilder.constants.MISSION_TESS and cadence != 'long':
                 author = "SPOC"
+                lcs = lightkurve.search_lightcurve(
+                    mission_prefix + " " + str(id),
+                    mission=mission,
+                    sector=sectors,
+                    campaign=sectors,
+                    quarter=sectors,
+                    author=author,
+                    cadence=cadence
+                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
             elif mission == lcbuilder.constants.MISSION_KEPLER:
                 author = "Kepler"
+                lcs = lightkurve.search_lightcurve(
+                    mission_prefix + " " + str(id),
+                    mission=mission,
+                    quarter=sectors,
+                    author=author,
+                    cadence=cadence
+                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
             elif mission == lcbuilder.constants.MISSION_K2:
                 author = "K2"
-            lcs = lightkurve.search_lightcurve(
-                mission_prefix + " " + str(id),
-                mission=mission,
-                sector=sectors,
-                campaign=sectors,
-                quarter=sectors,
-                author=author,
-                cadence=cadence
-            ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
+                lcs = lightkurve.search_lightcurve(
+                    mission_prefix + " " + str(id),
+                    mission=mission,
+                    campaign=sectors,
+                    author=author,
+                    cadence=cadence
+                ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
             if lcs is None:
                 continue
             matching_objects = []
@@ -1118,9 +1141,9 @@ class Watson:
         offset_ra_err = 1/2 * np.sqrt(source_offset_bls_ra_err ** 2 + source_offset_diggimg_ra_err ** 2)
         offset_dec_err = 1/2 * np.sqrt(source_offset_bls_dec_err ** 2 + source_offset_diggimg_dec_err ** 2)
         if np.isnan(offset_ra_err) or offset_ra_err == 0.0:
-            offset_ra_err = np.nanstd([source_offset_bls_ra, source_offset_diggimg_ra])
+            offset_ra_err = 3 * np.nanstd([source_offset_bls_ra, source_offset_diggimg_ra])
         if np.isnan(offset_dec_err) or offset_dec_err == 0.0:
-            offset_dec_err = np.nanstd([source_offset_bls_dec, source_offset_diggimg_dec])
+            offset_dec_err = 3 * np.nanstd([source_offset_bls_dec, source_offset_diggimg_dec])
         offsets_df = pd.DataFrame(columns=['name', 'ra', 'dec', 'ra_err', 'dec_err'])
         offsets_df.append({'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
                            'ra_err': source_offset_diggimg_ra_err, 'dec_err': source_offset_diggimg_dec_err}, ignore_index=True)
