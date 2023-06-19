@@ -2,8 +2,8 @@
 
 import logging
 import multiprocessing
+import shutil
 import traceback
-import sys
 
 from watson.data_validation_report.DvrPreparer import DvrPreparer
 
@@ -57,9 +57,9 @@ class Watson:
     Provides transiting candidate vetting information like centroids and spaceship motion, momentum dumps, neighbours
     curves inspection and more to give a deeper insight on the quality of the candidate signal.
     """
-    def __init__(self, object_dir):
+    def __init__(self, object_dir, output_dir):
         self.object_dir = os.getcwd() if object_dir is None else object_dir
-        self.data_dir = self.object_dir + "/"
+        self.data_dir = output_dir
 
     def vetting(self, id, period, t0, duration, depth, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
@@ -104,6 +104,9 @@ class Watson:
         logging.info("Rp_Rstar: %.4f", rp_rstar)
         logging.info("a_Rstar: %.2f", a_rstar)
         logging.info("Sectors: %s", sectors)
+        if self.data_dir != self.object_dir and os.path.exists(self.data_dir) or os.path.isdir(self.data_dir):
+            shutil.rmtree(self.data_dir)
+        os.mkdir(self.data_dir)
         lc_builder = LcBuilder()
         if transits_mask is None:
             transits_mask = []
@@ -113,27 +116,20 @@ class Watson:
         if lc_file is None or lc_data_file is None:
             lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence,
                                                           initial_transit_mask=transits_mask), self.data_dir)
-            lc_build.lc_data.to_csv(self.data_dir + "/lc_data.csv")
-            lc_file = self.data_dir + "/lc.csv"
-            lc_data_file = self.data_dir + "/lc_data.csv"
+            lc_build.lc_data.to_csv(self.object_dir + "/lc_data.csv")
+            lc_file = self.object_dir + "/lc.csv"
+            lc_data_file = self.object_dir + "/lc_data.csv"
         if a_rstar is None and lc_build is None:
             raise ValueError("You need to define a_rstar if you are providing the lc_file and lc_data_file")
         if a_rstar is None:
             a_rstar = HabitabilityCalculator().calculate_semi_major_axis(period, lc_build.star_info.mass)
         if tpfs_dir is None:
-            tpfs_dir = self.data_dir + "/tpfs/"
+            tpfs_dir = self.object_dir + "/tpfs/"
         if apertures_file is None:
-            apertures_file = self.data_dir + "/apertures.yaml"
-        index = 0
-        vetting_dir = self.data_dir + "/vetting_" + str(index)
-        while os.path.exists(vetting_dir) or os.path.isdir(vetting_dir):
-            vetting_dir = self.data_dir + "/vetting_" + str(index)
-            index = index + 1
-        os.mkdir(vetting_dir)
-        self.data_dir = vetting_dir
+            apertures_file = self.object_dir + "/apertures.yaml"
         try:
             if sectors is not None:
-                DvrPreparer().retrieve(id, sectors, vetting_dir)
+                DvrPreparer().retrieve(id, sectors, self.data_dir)
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
