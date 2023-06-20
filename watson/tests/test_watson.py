@@ -14,19 +14,19 @@ from watson.watson import Watson
 class TestsWatson(unittest.TestCase):
     def test_vetting_by_params(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = object_dir + "/vetting_0"
+        vetting_dir = object_dir + "/vetting_0/"
         try:
             Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 25
+            assert len(files_in_dir) == 34
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
     def test_vetting_by_files(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = object_dir + "/vetting_0"
+        vetting_dir = object_dir + "/vetting_0/"
         try:
             Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
@@ -42,7 +42,7 @@ class TestsWatson(unittest.TestCase):
 
     def test_fov_plots(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = object_dir + "/vetting_0"
+        vetting_dir = object_dir + "/vetting_0/"
         fov_dir = object_dir + "/fov"
         os.mkdir(fov_dir)
         try:
@@ -58,7 +58,7 @@ class TestsWatson(unittest.TestCase):
 
     def test_vetting_by_files_with_fov(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = object_dir + "/vetting_0"
+        vetting_dir = object_dir + "/vetting_0/"
         try:
             Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
@@ -75,7 +75,7 @@ class TestsWatson(unittest.TestCase):
 
     def test_vetting_by_files_with_transits_list(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = object_dir + "/vetting_0"
+        vetting_dir = object_dir + "/vetting_0/"
         try:
             transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
             transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
@@ -95,7 +95,7 @@ class TestsWatson(unittest.TestCase):
 
     def test_create_report(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-        vetting_dir = TestsWatson.get_path("vetting_test")
+        vetting_dir = TestsWatson.get_path("vetting_test/")
         transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
         transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
         transits_list_df = transits_list_df[transits_list_df["depth"].notnull()]
