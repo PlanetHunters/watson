@@ -114,7 +114,7 @@ class Watson:
             rp_rstar = np.sqrt(depth / 1000)
         lc_build = None
         if lc_file is None or lc_data_file is None:
-            lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence,
+            lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence, high_rms_enabled=False,
                                                           initial_transit_mask=transits_mask), self.data_dir)
             lc_build.lc_data.to_csv(self.object_dir + "/lc_data.csv")
             lc_file = self.object_dir + "/lc.csv"
@@ -1141,11 +1141,11 @@ class Watson:
         if np.isnan(offset_dec_err) or offset_dec_err == 0.0:
             offset_dec_err = 3 * np.nanstd([source_offset_bls_dec, source_offset_diggimg_dec])
         offsets_df = pd.DataFrame(columns=['name', 'ra', 'dec', 'ra_err', 'dec_err'])
-        offsets_df.append({'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
+        offsets_df = offsets_df.append({'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
                            'ra_err': source_offset_diggimg_ra_err, 'dec_err': source_offset_diggimg_dec_err}, ignore_index=True)
-        offsets_df.append({'name': 'px_bls', 'ra': source_offset_bls_ra, 'dec': source_offset_bls_dec,
+        offsets_df = offsets_df.append({'name': 'px_bls', 'ra': source_offset_bls_ra, 'dec': source_offset_bls_dec,
                            'ra_err': source_offset_bls_ra_err, 'dec_err': source_offset_bls_dec_err}, ignore_index=True)
-        offsets_df.append({'name': 'mean', 'ra': offset_ra, 'dec': offset_dec,
+        offsets_df = offsets_df.append({'name': 'mean', 'ra': offset_ra, 'dec': offset_dec,
                            'ra_err': offset_ra_err, 'dec_err': offset_dec_err}, ignore_index=True)
         offsets_df.to_csv(file_dir + '/source_offsets.csv')
         tpf = tpfs[0]
