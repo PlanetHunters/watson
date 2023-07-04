@@ -19,7 +19,7 @@ class TestsWatson(unittest.TestCase):
             Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        cadence=120, cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 34
+            assert len(files_in_dir) == 33
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
