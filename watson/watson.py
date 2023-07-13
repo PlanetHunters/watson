@@ -101,8 +101,10 @@ class Watson:
         logging.info("Epoch (d): %.2f", t0)
         logging.info("Duration (min): %.2f", duration)
         logging.info("Depth (ppt): %.2f", depth)
-        logging.info("Rp_Rstar: %.4f", rp_rstar)
-        logging.info("a_Rstar: %.2f", a_rstar)
+        if rp_rstar is not None:
+            logging.info("Rp_Rstar: %.4f", rp_rstar)
+        if a_rstar is not None:
+            logging.info("a_Rstar: %.2f", a_rstar)
         logging.info("Sectors: %s", sectors)
         if self.data_dir != self.object_dir and os.path.exists(self.data_dir) or os.path.isdir(self.data_dir):
             shutil.rmtree(self.data_dir)
