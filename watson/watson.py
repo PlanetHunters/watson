@@ -1725,6 +1725,7 @@ class Watson:
                 return
             target_title = "TIC " + str(tic)
             #TODO use retrieval method depending on source parameter
+            cadence = 121
             if cadence > 120:
                 tpf_source = lightkurve.search_tesscut(target_title, sector=sectors_search)
                 if tpf_source is None or len(tpf_source) == 0:
