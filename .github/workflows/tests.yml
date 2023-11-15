@@ -17,14 +17,10 @@ jobs:
         os:
           - Ubuntu
         py:
-          - "3.9"
           - "3.10"
         toxenv:
-          - "py30"
           - "py310"
         exclude:
-          - py: "3.9"
-            toxenv: "py310"
           - py: "3.10"
             toxenv: "py39"
     steps:
