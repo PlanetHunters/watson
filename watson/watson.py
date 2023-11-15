@@ -60,6 +60,8 @@ class Watson:
     def __init__(self, object_dir, output_dir):
         self.object_dir = os.getcwd() if object_dir is None else object_dir
         self.data_dir = output_dir
+        if not isinstance(logging.root, logging.RootLogger):
+            logging.root = logging.RootLogger(logging.INFO)
 
     def vetting(self, id, period, t0, duration, depth, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
