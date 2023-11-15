@@ -48,8 +48,9 @@ class TestsWatson(unittest.TestCase):
         try:
             apertures = yaml.load(open(object_dir + "/apertures.yaml"), yaml.SafeLoader)
             apertures = apertures["sectors"]
-            Watson(object_dir, vetting_dir).vetting_field_of_view(fov_dir, "TESS", "25155310", 120, 63.374706, -69.226593, [1, 2],
-                                                     "tpf", apertures, multiprocessing.cpu_count() // 2)
+            Watson(object_dir, vetting_dir).vetting_field_of_view(fov_dir, "TESS", "25155310", 120, 63.374706,
+                                                                  -69.226593, [1, 2], "tpf", apertures,
+                                                                  multiprocessing.cpu_count() // 2)
             files_in_dir = os.listdir(fov_dir)
             assert len(files_in_dir) == 6
         finally:
