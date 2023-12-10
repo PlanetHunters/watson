@@ -187,8 +187,27 @@ class Report:
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
         metrics_file = self.data_dir + "/metrics.csv"
+        iatson_file = self.data_dir + "/iatson.csv"
+        table_data = [['Metric', 'Value', 'Passed']]
+        if os.path.exists(iatson_file):
+            iatson_df = pd.read_csv(iatson_file)
+            score_median = iatson_df['prediction'].mean(skipna=True)
+            score_uncertainty = iatson_df['prediction'].std(skipna=True)
+            if score_median > 0.99:
+                passed = True
+            elif score_median > 0.5:
+                passed = np.nan
+            else:
+                passed = False
+            table_data.append("WATSON-NET err", score_median, passed)
+            if score_uncertainty < 0.015:
+                passed = True
+            elif score_uncertainty < 0.1:
+                passed = np.nan
+            else:
+                passed = False
+            table_data.append("WATSON-NET err", score_uncertainty, passed)
         if os.path.exists(metrics_file):
-            table_data = [['Metric', 'Value', 'Passed']]
             metrics_df = pd.read_csv(metrics_file)
             for index, metric_row in metrics_df.iterrows():
                 table_data.append([metric_row['metric'],
