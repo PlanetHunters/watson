@@ -7,6 +7,7 @@ rm -r .tox
 rm -r .pytest_cache
 rm -r build
 rm -r watson-reqs
+conda remove -n lcbuilder-reqs --all -y
 rm -R *egg-info
 set -e
 tox -r > tests.log
@@ -20,16 +21,17 @@ if ! [[ -z ${tests_results} ]]; then
   rm -r .pytest_cache
   rm -r build
   rm -r watson-reqs
+  conda remove -n lcbuilder-reqs --all -y
   set -e
-  python3.9 -m venv watson-reqs
-  source watson-reqs/bin/activate
-  python3.9 -m pip install pip -U
-  python3.9 -m pip install numpy==1.23.5
+  conda create -n watson-reqs python=3.10 anaconda -y
+  ~/anaconda3/bin/activate watson-reqs
+  python3 -m pip install pip -U
+  python3 -m pip install numpy==1.23.5
   git_tag=$1
   sed -i '6s/.*/version = "'${git_tag}'"/' setup.py
   sed -i '1s/.*/__version__ = "'${git_tag}'"/' watson/__init__.py
-  python3.9 setup.py install
-  python3.9 -m pip list --format=freeze > requirements.txt
+  python3 setup.py install
+  python3 -m pip list --format=freeze > requirements.txt
   deactivate
   git pull
   git add setup.py
@@ -48,4 +50,5 @@ rm -r .tox
 rm -r .pytest_cache
 rm -r build
 rm -R *egg-info
+conda remove -n lcbuilder-reqs --all -y
 set -e
