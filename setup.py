@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = "0.7.15"
+version = "0.8.0"
 setuptools.setup(
     name="dearwatson", # Replace with your own username
     version=version,
@@ -24,16 +24,15 @@ setuptools.setup(
     install_requires=[
                         "bokeh==2.4.2", # TPFPlotter dependency
                         'configparser==5.0.1',
-                        "cython==0.29.21",
                         "extension-helpers==0.1",
-                        "exoml==0.0.12",
+                        "exoml==0.0.15",
                         "imageio==2.9.0",
                         "lcbuilder==0.14.2",
-                        "matplotlib==3.5.2",
+                        "matplotlib==3.8.2",
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==6.0.1",
                         "pillow==9.5.0",
-                        "reportlab==3.5.59",
+                        "reportlab==4.0.7",
                         'setuptools>=41.0.0'
     ]
 )
