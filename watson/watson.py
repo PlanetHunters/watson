@@ -1682,7 +1682,7 @@ class Watson:
             nx, ny = np.shape(mean_tpf)
             norm = ImageNormalize(stretch=stretching.LogStretch())
             division = np.int(np.log10(np.nanmax(tpf.flux.value)))
-            splot = plt.imshow(np.nanmean(tpf.flux, axis=0) / 10 ** division, norm=norm, cmap="viridis", \
+            splot = plt.imshow(np.nanmean(tpf.flux.value, axis=0) / 10 ** division, norm=norm, cmap="viridis", \
                                extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
             aperture = fov_process_input.apertures[tpf.sector]
             aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
