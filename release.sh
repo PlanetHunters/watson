@@ -7,7 +7,7 @@ rm -r .tox
 rm -r .pytest_cache
 rm -r build
 rm -r watson-reqs
-conda remove -n lcbuilder-reqs --all -y
+conda remove -n watson-reqs --all -y
 rm -R *egg-info
 set -e
 tox -r > tests.log
@@ -21,7 +21,7 @@ if ! [[ -z ${tests_results} ]]; then
   rm -r .pytest_cache
   rm -r build
   rm -r watson-reqs
-  conda remove -n lcbuilder-reqs --all -y
+  conda remove -n watson-reqs --all -y
   set -e
   conda create -n watson-reqs python=3.10 anaconda -y
   ~/anaconda3/bin/activate watson-reqs
@@ -50,5 +50,5 @@ rm -r .tox
 rm -r .pytest_cache
 rm -r build
 rm -R *egg-info
-conda remove -n lcbuilder-reqs --all -y
+conda remove -n watson-reqs --all -y
 set -e
