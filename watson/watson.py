@@ -4,6 +4,11 @@ import logging
 import multiprocessing
 import shutil
 import traceback
+import requests
+import zipfile
+import io
+from exoml.iatson.IATSON_planet import IATSON_planet
+from exoml.ml.model.base_model import HyperParams
 
 from watson.data_validation_report.DvrPreparer import DvrPreparer
 
@@ -66,7 +71,8 @@ class Watson:
     def vetting(self, id, period, t0, duration, depth, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
-                v=None, j=None, h=None, k=None, clean=True, transits_mask=None):
+                v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
+                star_file=None, iatson_enabled=False, iatson_inputs_save=False):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -94,6 +100,9 @@ class Watson:
         :param k: star K magnitude
         :param clean: whether to clean all the pngs created for the final pdfs
         :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
+        :param star_file: the file contianing the star info
+        :param iatson_enabled: whether the cross validation deep learning model should be run
+        :param iatson_inputs_save: whether the iatson input values plots should be stored
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -131,13 +140,21 @@ class Watson:
             tpfs_dir = self.object_dir + "/tpfs/"
         if apertures_file is None:
             apertures_file = self.object_dir + "/apertures.yaml"
+        if star_file is None:
+            mission, mission_prefix, _ = MissionLightcurveBuilder().parse_object_id(id)
+            pixel_size = LcbuilderHelper.mission_pixel_size(mission)
+            create_star_csv(CreateStarCsvInput(lc_file, mission, id, pixel_size, 50,
+                                               None, KicStarCatalog() if 'KIC' in id else TicStarCatalog(),
+                                               self.data_dir))
         try:
             if sectors is not None:
                 DvrPreparer().retrieve(id, sectors, self.data_dir)
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
-                                                                 dec, transits_list, transits_mask)
+                                                                 dec, transits_list, transits_mask,
+                                                                 star_file=star_file, iatson_enabled=iatson_enabled,
+                                                                 iatson_inputs_save=iatson_inputs_save)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir))
             if clean:
@@ -163,7 +180,7 @@ class Watson:
 
 
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None,
-                          transits_mask=None):
+                          transits_mask=None, iatson_enabled=False, iatson_inputs_save=False):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -173,6 +190,8 @@ class Watson:
         :param create_fov_plots: whether to generate Field Of View plots.
         :param cadence_fov: the cadence to use to download fov_plots
         :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
+        :param iatson_enabled: whether the cross validation deep learning model should be run
+        :param iatson_inputs_save: whether the iatson input values plots should be stored
         """
         if transits_mask is None:
             transits_mask = []
@@ -202,13 +221,15 @@ class Watson:
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
                          dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
-                         transits_mask=transits_mask)
+                         transits_mask=transits_mask, iatson_enabled=iatson_enabled,
+                         iatson_inputs_save=iatson_inputs_save)
         except Exception as e:
             traceback.print_exc()
 
     def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
-                  transits_list=None, transits_mask=None):
+                  transits_list=None, transits_mask=None, star_file=None, iatson_enabled=False,
+                  iatson_inputs_save=False):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -230,6 +251,9 @@ class Watson:
         :param dec_fov: the DEC to use to download fov_plots
         :param transits_list: a list of dictionaries with shape: {'t0': value, 'depth': value, 'depth_err': value}
         :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
+        :param star_file: the file containing the star info
+        :param iatson_enabled: whether the cross validation deep learning model should be run
+        :param iatson_inputs_save: whether the iatson input values plots should be stored
         """
         logging.info("Running Transit Plots")
         lc, lc_data, lc_data_norm, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
@@ -274,7 +298,7 @@ class Watson:
         metrics_df = metrics_df.append({'metric': 'snr_2p_2t0', 'score': snr_2p_2t0, 'passed': snr_2p_2t0 > 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t0', 'score': snr_p2_t0, 'passed': snr_p2_t0 < 3}, ignore_index=True)
         metrics_df = metrics_df.append({'metric': 'snr_p2_t02', 'score': snr_p2_t02, 'passed': snr_p2_t02 < 3}, ignore_index=True)
-        if (ra_fov is not None and dec_fov is not None):
+        if ra_fov is not None and dec_fov is not None:
             if tpfs is not None and len(tpfs) > 0:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
                 centroids_ra_snr, centroids_dec_snr =\
@@ -303,7 +327,46 @@ class Watson:
                                                                   duration, period, rp_rstar, a_rstar, transits_mask))
         with multiprocessing.Pool(processes=cpus) as pool:
             pool.map(Watson.plot_single_transit, plot_transits_inputs)
+        if iatson_enabled:
+            predictions, predictions_cal = self.run_iatson(target_id, period, duration, t0, depth, self.data_dir, star_file,
+                                                           lc_data_file, transits_mask, plot_inputs=iatson_inputs_save)
+            iatson_df = pd.Dataframe(columns=['prediction', 'prediction_calibrated'])
+            for index, prediction in enumerate(predictions):
+                iatson_df = iatson_df.append({'prediction': prediction, 'prediction_calibrated': predictions_cal[index]}, ignore_index=True)
+            iatson_df.to_csv(self.data_dir + '/iatson.csv')
         return transit_t0s_list, summary_t0s_indexes
+
+    @staticmethod
+    def run_iatson(target_id, period, duration, epoch, depth_ppt, watson_dir, star_filename, lc_filename, transits_mask,
+                   plot_inputs=False):
+        home_path = f'{os.path.expanduser("~")}/.watson'
+        if not os.path.exists(home_path):
+            os.mkdir(home_path)
+        iatson_model_root_path = f'{home_path}/0.0.4'
+        if not os.path.exists(iatson_model_root_path) or len(os.listdir(iatson_model_root_path)) != 13:
+            r = requests.get("https://www.dropbox.com/scl/fi/gayjdc00m9g5xreyq3is0/0.0.4.zip?rlkey=aebck4dluccnpjtyink183j38&dl=1")
+            z = zipfile.ZipFile(io.BytesIO(r.content))
+            z.extractall(f'{iatson_model_root_path}/')
+        calibrated_model_path = f'{iatson_model_root_path}/IATSON_planet_model_cal_isotonic.pkl'
+        iatson = IATSON_planet({0: 'planet_transit', 1: 'planet', 2: 'fp', 3: 'fa', 4: 'tce', 5: 'tce_secondary',
+                                6: 'tce_centroids_offset', 7: 'tce_source_offset', 8: 'tce_og', 9: 'tce_odd_even',
+                                10: 'none', 11: 'EB', 12: 'bckEB'},
+                               ['planet_transit', 'planet', 'fp', 'fa', 'tce', 'tce_og',
+                                'tce_secondary', 'tce_source_offset', 'tce_centroids_offset', 'tce_odd_even', 'none',
+                                'EB', 'bckEB'],
+                               {'fp': [0], 'fa': [0], 'planet': [1], 'planet_transit': [1], 'tce': [0],
+                                'tce_centroids_offset': [0],
+                                'tce_source_offset': [0], 'tce_secondary': [0], 'tce_og': [0], 'tce_odd_even': [0],
+                                'none': [0],
+                                'EB': [0], 'bckEB': [0], 'candidate': [0], 'tce_candidate': [0]}, HyperParams(),
+                               mode="all") \
+            .build(use_transformers=False, transformer_blocks=1, transformer_heads=2)
+        predictions, predictions_cal = iatson.predict_watson(target_id, period, duration / 60, epoch, depth_ppt, watson_dir,
+                                                             star_filename, lc_filename, transits_mask=transits_mask,
+                                                             cv_dir=f"{iatson_model_root_path}",
+                                                             plot_inputs=plot_inputs,
+                                                             calibrator_path=f'{calibrated_model_path}')
+        return predictions, predictions_cal
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir, transits_mask=None):
