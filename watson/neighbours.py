@@ -32,7 +32,7 @@ def create_star_csv(create_star_input):
                 columns=['id', 'ra', 'dec', 'ld_a', 'ld_b', 'Teff', 'lum', 'logg', 'radius', 'mass', 'v', 'j', 'h',
                          'k',
                          'dist_arcsec'])
-            star_df = star_df.append({'id': object_id, 'ra': star_info[11], 'dec': star_info[12],
+            star_df = star_df.append({'id': create_star_input.id, 'ra': star_info[11], 'dec': star_info[12],
                                       'ld_a': star_info[0][0],
                                       'ld_b': star_info[0][1], 'Teff': star_info[1],
                                       'lum': star_info[2], 'logg': star_info[3], 'radius': star_info[5],
@@ -97,8 +97,8 @@ def create_star_csv(create_star_input):
                                       'k': star['Kmag'], 'dist_arcsec': star['dist_arcsec']}, ignore_index=True)
         star_df = star_df.sort_values(["dist_arcsec"], ascending=True)
     except Exception as e:
-        logging.exception('Something failed when retrieving neighbours info for object id %s', str(object_id))
-    file = create_star_input.output_dir + '/' + str(create_star_input.id) + '_' + str(object_id) + '_stars.csv'
+        logging.exception('Something failed when retrieving neighbours info for object id %s', str(create_star_input.id))
+    file = create_star_input.output_dir + '/' + str(create_star_input.id) + '_stars.csv'
     star_df.to_csv(file)
     logging.info('Processed object id ' + str(object_id))
     return file
