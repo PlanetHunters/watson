@@ -328,12 +328,16 @@ class Watson:
         with multiprocessing.Pool(processes=cpus) as pool:
             pool.map(Watson.plot_single_transit, plot_transits_inputs)
         if iatson_enabled:
-            predictions, predictions_cal = self.run_iatson(target_id, period, duration, t0, depth, self.data_dir, star_file,
-                                                           lc_data_file, transits_mask, plot_inputs=iatson_inputs_save)
-            iatson_df = pd.Dataframe(columns=['prediction', 'prediction_calibrated'])
-            for index, prediction in enumerate(predictions):
-                iatson_df = iatson_df.append({'prediction': prediction, 'prediction_calibrated': predictions_cal[index]}, ignore_index=True)
-            iatson_df.to_csv(self.data_dir + '/iatson.csv')
+            logging.info("Running WATSON-NET")
+            try:
+                predictions, predictions_cal = self.run_iatson(target_id, period, duration, t0, depth, self.data_dir, star_file,
+                                                               lc_data_file, transits_mask, plot_inputs=iatson_inputs_save)
+                iatson_df = pd.Dataframe(columns=['prediction', 'prediction_calibrated'])
+                for index, prediction in enumerate(predictions):
+                    iatson_df = iatson_df.append({'prediction': prediction, 'prediction_calibrated': predictions_cal[index]}, ignore_index=True)
+                iatson_df.to_csv(self.data_dir + '/iatson.csv')
+            except Exception as e:
+                logging.exception("A problem was found when running WATSON-NET.")
         return transit_t0s_list, summary_t0s_indexes
 
     @staticmethod
