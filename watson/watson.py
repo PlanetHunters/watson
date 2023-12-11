@@ -214,6 +214,7 @@ class Watson:
         lc_file = "/lc_" + str(curve) + ".csv"
         lc_file = self.object_dir + lc_file
         lc_data_file = self.object_dir + "/lc_data.csv"
+        star_file = self.object_dir + '/params_star.csv'
         tpfs_dir = self.object_dir + "/tpfs"
         apertures_file = self.object_dir + "/apertures.yaml"
         try:
@@ -221,7 +222,7 @@ class Watson:
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
                          dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
-                         transits_mask=transits_mask, iatson_enabled=iatson_enabled,
+                         transits_mask=transits_mask, star_file=star_file, iatson_enabled=iatson_enabled,
                          iatson_inputs_save=iatson_inputs_save)
         except Exception as e:
             traceback.print_exc()
