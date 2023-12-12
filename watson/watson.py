@@ -159,7 +159,7 @@ class Watson:
                         v, j, h, k, os.path.exists(tpfs_dir))
             if clean:
                 for filename in os.listdir(self.data_dir):
-                    if not filename.endswith(".pdf") and not filename.endswith(".csv"):
+                    if not os.path.isdir(self.data_dir + '/' + filename) and not filename.endswith(".pdf") and not filename.endswith(".csv"):
                         os.remove(self.data_dir + "/" + filename)
 
         except Exception as e:
@@ -331,9 +331,9 @@ class Watson:
         if iatson_enabled:
             logging.info("Running WATSON-NET")
             try:
-                predictions, predictions_cal = self.run_iatson(target_id, period, duration, t0, depth, self.data_dir, star_file,
-                                                               lc_data_file, transits_mask, plot_inputs=iatson_inputs_save)
-                iatson_df = pd.Dataframe(columns=['prediction', 'prediction_calibrated'])
+                predictions, predictions_cal = self.run_iatson(id, period, duration, t0, depth, self.data_dir, star_file,
+                                                               lc_file, transits_mask, plot_inputs=iatson_inputs_save)
+                iatson_df = pd.DataFrame(columns=['prediction', 'prediction_calibrated'])
                 for index, prediction in enumerate(predictions):
                     iatson_df = iatson_df.append({'prediction': prediction, 'prediction_calibrated': predictions_cal[index]}, ignore_index=True)
                 iatson_df.to_csv(self.data_dir + '/iatson.csv')

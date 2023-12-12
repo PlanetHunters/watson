@@ -199,14 +199,14 @@ class Report:
                 passed = np.nan
             else:
                 passed = False
-            table_data.append("WATSON-NET err", score_median, passed)
+            table_data.append(["WATSON-NET", round(score_median, 4), passed])
             if score_uncertainty < 0.015:
                 passed = True
             elif score_uncertainty < 0.1:
                 passed = np.nan
             else:
                 passed = False
-            table_data.append("WATSON-NET err", score_uncertainty, passed)
+            table_data.append(["WATSON-NET err", round(score_uncertainty, 4), passed])
         if os.path.exists(metrics_file):
             metrics_df = pd.read_csv(metrics_file)
             for index, metric_row in metrics_df.iterrows():
