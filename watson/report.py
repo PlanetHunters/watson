@@ -53,18 +53,19 @@ class Report:
             table_object.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
 
     @staticmethod
-    def metrics_row_colors(df, table_object):
-        for index, row in df.iterrows():
-            if np.isnan(row['passed']):
-                bg_color = colors.yellow
-            elif row['passed'] == False:
-                bg_color = colors.red
-            elif row['passed'] == True:
-                bg_color = colors.lightgreen
-            table_object.setStyle(TableStyle([('BACKGROUND', (0, index + 1), (-1, index + 1), bg_color),
-                                              ('FONTSIZE', (0, index + 1), (-1, index + 1), 9),
-                                              ('TOPPADDING', (0, index + 1), (-1, index + 1), 1),
-                                              ('BOTTOMPADDING', (0, index + 1), (-1, index + 1), 1)]))
+    def metrics_row_colors(table_data, table_object):
+        for index, row in enumerate(table_data):
+            if not isinstance(row[2], str):
+                if np.isnan(row[2]):
+                    bg_color = colors.yellow
+                elif row[2] == False:
+                    bg_color = colors.red
+                elif row[2] == True:
+                    bg_color = colors.lightgreen
+                table_object.setStyle(TableStyle([('BACKGROUND', (0, index), (-1, index), bg_color),
+                                              ('FONTSIZE', (0, index), (-1, index), 9),
+                                              ('TOPPADDING', (0, index), (-1, index), 1),
+                                              ('BOTTOMPADDING', (0, index), (-1, index), 1)]))
 
     def create_header(self, canvas, doc):
         canvas.saveState()
@@ -217,7 +218,7 @@ class Report:
             table_number_rows = len(table_data)
             table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
             table.setStyle(table_style)
-            Report.metrics_row_colors(metrics_df, table)
+            Report.metrics_row_colors(table_data, table)
             story.append(table)
             story.append(Spacer(1, 5))
             table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
