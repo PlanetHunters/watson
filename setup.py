@@ -27,7 +27,6 @@ setuptools.setup(
                         "extension-helpers==0.1",
                         "exoml==0.0.18",
                         "imageio==2.9.0",
-                        "matplotlib==3.8.2",
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==6.0.1",
                         "pillow==9.5.0",
