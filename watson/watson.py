@@ -1682,7 +1682,7 @@ class Watson:
             mean_tpf = np.mean(tpf.flux.value, axis=0)
             nx, ny = np.shape(mean_tpf)
             norm = ImageNormalize(stretch=stretching.LogStretch())
-            division = np.int(np.log10(np.nanmax(tpf.flux.value)))
+            division = int(np.log10(np.nanmax(tpf.flux.value)))
             splot = plt.imshow(np.nanmean(tpf.flux.value, axis=0) / 10 ** division, norm=norm, cmap="viridis", \
                                extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
             aperture = fov_process_input.apertures[tpf.sector]
@@ -1701,7 +1701,7 @@ class Watson:
             # Gaia sources
             gaia_id, mag = tpfplotter.get_gaia_data(fov_process_input.ra, fov_process_input.dec,
                                                     search_radius=search_radius)
-            r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + np.float(maglim), targ_mag=mag)
+            r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + float(maglim), targ_mag=mag)
             x, y, gaiamags = r
             x, y, gaiamags = np.array(x) + 0.5, np.array(y) + 0.5, np.array(gaiamags)
             size = 128.0 / 2 ** ((gaiamags - mag))
@@ -1711,15 +1711,15 @@ class Watson:
             plt.scatter(x[this], y[this], marker='x', c='white', s=32, zorder=11)
             # Legend
             add = 0
-            if np.int(maglim) % 2 != 0:
+            if int(maglim) % 2 != 0:
                 add = 1
-            maxmag = np.int(maglim) + add
-            legend_mags = np.linspace(-2, maxmag, np.int((maxmag + 2) / 2 + 1))
+            maxmag = int(maglim) + add
+            legend_mags = np.linspace(-2, maxmag, int((maxmag + 2) / 2 + 1))
             fake_sizes = mag + legend_mags  # np.array([mag-2,mag,mag+2,mag+5, mag+8])
             for f in fake_sizes:
                 size = 128.0 / 2 ** ((f - mag))
                 plt.scatter(0, 0, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10,
-                            label=r'$\Delta m=$ ' + str(np.int(f - mag)))
+                            label=r'$\Delta m=$ ' + str(int(f - mag)))
             ax1.legend(fancybox=True, framealpha=0.7)
             # Source labels
             dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
