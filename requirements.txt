@@ -16,11 +16,11 @@ contourpy==1.2.1
 cryptography==42.0.7
 cycler==0.12.1
 Cython==3.0.6
-dearwatson==0.10.2
+dearwatson==0.10.3
 dm-tree==0.1.8
 ellc==1.8.8
 everest-pipeline==2.0.12
-exoml==0.1.10
+exoml==0.1.11
 extension-helpers==0.1
 fbpca==1.0
 filelock==3.14.0
@@ -54,7 +54,7 @@ keras-core==0.1.7
 keras-nlp==0.8.1
 keyring==25.2.0
 kiwisolver==1.4.5
-lcbuilder==0.18.1
+lcbuilder==0.18.2
 libclang==18.1.1
 lightkurve==2.4.2
 llvmlite==0.41.1
