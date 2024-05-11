@@ -1602,7 +1602,7 @@ class Watson:
         axs.set_xlabel("Time (d)")
         axs.set_ylabel("Flux norm.")
         if len(folded_y) > 0:
-            axs.set_ylim(np.min(folded_y), np.max(folded_y))
+            axs.set_ylim(np.nanmin(folded_y), np.nanmax(folded_y))
         #axs.set_ylim([1 - 3 * depth, 1 + 3 * depth])
         logging.info("Processed phase-folded plot for P=%.2f and T0=%.2f", period, epoch)
         return axs, bin_centers, bin_means, bin_stds, snr
