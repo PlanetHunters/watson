@@ -33,13 +33,13 @@ def create_star_csv(create_star_input):
                          'k',
                          'dist_arcsec'])
             star_df = pd.concat([star_df, pd.DataFrame.from_dict(
-                {'id': create_star_input.id, 'ra': star_info[11], 'dec': star_info[12],
-                 'ld_a': star_info[0][0],
-                 'ld_b': star_info[0][1], 'Teff': star_info[1],
-                 'lum': star_info[2], 'logg': star_info[3], 'radius': star_info[5],
-                 'mass': star_info[8], 'v': star_info[13], 'j': star_info[15],
-                 'h': star_info[17],
-                 'k': star_info[19], 'dist_arcsec': 0},
+                {'id': [create_star_input.id], 'ra': [star_info[11]], 'dec': [star_info[12]],
+                 'ld_a': [star_info[0][0]],
+                 'ld_b': [star_info[0][1]], 'Teff': [star_info[1]],
+                 'lum': [star_info[2]], 'logg': [star_info[3]], 'radius': [star_info[5]],
+                 'mass': [star_info[8]], 'v': [star_info[13]], 'j': [star_info[15]],
+                 'h': [star_info[17]],
+                 'k': [star_info[19]], 'dist_arcsec': [0]},
                 orient='columns')], ignore_index=True)
             break
         except Exception as e:
@@ -92,12 +92,12 @@ def create_star_csv(create_star_input):
         stars["PA (E of N)"] = pa  # TODO should we use this?
         for index, star in stars.iterrows():
             star_df = pd.concat([star_df, pd.DataFrame.from_dict(
-                {'id': star['ID'], 'ra': star['ra'], 'dec': star['dec'], 'ld_a': 0,
-                 'ld_b': 0, 'Teff': star['Teff'],
-                 'lum': star['lum'], 'logg': star['logg'], 'radius': star['rad'],
-                 'mass': star['mass'], 'v': star['Vmag'], 'j': star['Jmag'],
-                 'h': star['Hmag'],
-                 'k': star['Kmag'], 'dist_arcsec': star['dist_arcsec']},
+                {'id': [star['ID']], 'ra': [star['ra']], 'dec': [star['dec']], 'ld_a': [0],
+                 'ld_b': [0], 'Teff': [star['Teff']],
+                 'lum': [star['lum']], 'logg': [star['logg']], 'radius': [star['rad']],
+                 'mass': [star['mass']], 'v': [star['Vmag']], 'j': [star['Jmag']],
+                 'h': [star['Hmag']],
+                 'k': [star['Kmag']], 'dist_arcsec': [star['dist_arcsec']]},
                 orient='columns')], ignore_index=True)
         star_df = star_df.sort_values(["dist_arcsec"], ascending=True)
     except Exception as e:

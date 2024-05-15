@@ -291,22 +291,22 @@ class Watson:
         if len(snrs.values()) > 0:
             for cadence, snr in snrs.items():
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': cadence + '_snr', 'score': snr, 'passed': snr > 3},
+                    {'metric': [cadence + '_snr'], 'score': [snr], 'passed': [snr > 3]},
                     orient='columns')], ignore_index=True)
         snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': 'snr_p_t0', 'score': snr_p_t0, 'passed': snr_p_t0 > 3}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p_t0'], 'score': [snr_p_t0], 'passed': [snr_p_t0 > 3]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': 'snr_p_2t0', 'score': snr_p_2t0, 'passed': snr_p_2t0 < 3}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p_2t0'], 'score': [snr_p_2t0], 'passed': [snr_p_2t0 < 3]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': 'snr_2p_t0', 'score': snr_2p_t0, 'passed': snr_2p_t0 > 3}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_2p_t0'], 'score': [snr_2p_t0], 'passed': [snr_2p_t0 > 3]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': 'snr_2p_2t0', 'score': snr_2p_2t0, 'passed': snr_2p_2t0 > 3}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_2p_2t0'], 'score': [snr_2p_2t0], 'passed': [snr_2p_2t0 > 3]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': 'snr_p2_t0', 'score': snr_p2_t0, 'passed': snr_p2_t0 < 3}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p2_t0'], 'score': [snr_p2_t0], 'passed': [snr_p2_t0 < 3]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': 'snr_p2_t02', 'score': snr_p2_t02, 'passed': snr_p2_t02 < 3}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p2_t02'], 'score': [snr_p2_t02], 'passed': [snr_p2_t02 < 3]}, orient='columns')], ignore_index=True)
         if ra_fov is not None and dec_fov is not None:
             if tpfs is not None and len(tpfs) > 0:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
@@ -318,30 +318,30 @@ class Watson:
                 pixel_size_degrees = pixel_size / 3600
                 offset_test = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2) < pixel_size / 3600
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'transit_offset_ra', 'score': offset_ra, 'passed': np.abs(offset_ra - ra_fov) < pixel_size_degrees}, orient='columns')],
+                    {'metric': ['transit_offset_ra'], 'score': [offset_ra], 'passed': [np.abs(offset_ra - ra_fov) < pixel_size_degrees]}, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'transit_offset_dec', 'score': offset_dec, 'passed': np.abs(offset_dec - dec_fov) < pixel_size_degrees}, orient='columns')], ignore_index=True)
+                    {'metric': ['transit_offset_dec'], 'score': [offset_dec], 'passed': [np.abs(offset_dec - dec_fov) < pixel_size_degrees]}, orient='columns')], ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'transit_offset_err', 'score': offset_err, 'passed': True if offset_err < pixel_size * 3 / 3600 else np.nan}, orient='columns')], ignore_index=True)
+                    {'metric': ['transit_offset_err'], 'score': [offset_err], 'passed': [True if offset_err < pixel_size * 3 / 3600 else np.nan]}, orient='columns')], ignore_index=True)
                 target_dist = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'transit_offset_pos', 'score': target_dist, 'passed': target_dist < offset_err}, orient='columns')],
+                    {'metric': ['transit_offset_pos'], 'score': [target_dist], 'passed': [target_dist < offset_err]}, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'core_flux_snr', 'score': core_flux_snr, 'passed': True if core_flux_snr > 3 else np.nan }, orient='columns')],
+                    {'metric': ['core_flux_snr'], 'score': [core_flux_snr], 'passed': [True if core_flux_snr > 3 else np.nan] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'halo_flux_snr', 'score': halo_flux_snr, 'passed': True if halo_flux_snr > 3 else np.nan }, orient='columns')],
+                    {'metric': ['halo_flux_snr'], 'score': [halo_flux_snr], 'passed': [True if halo_flux_snr > 3 else np.nan] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'og_score', 'score': og_score, 'passed': og_score < 1 if core_flux_snr > 3 else np.nan }, orient='columns')],
+                    {'metric': ['og_score'], 'score': [og_score], 'passed': [og_score < 1 if core_flux_snr > 3 else np.nan] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'centroids_ra_snr', 'score': centroids_ra_snr, 'passed': np.abs(centroids_ra_snr) < 3 }, orient='columns')],
+                    {'metric': ['centroids_ra_snr'], 'score': [centroids_ra_snr], 'passed': [np.abs(centroids_ra_snr) < 3] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': 'centroids_dec_snr', 'score': centroids_dec_snr, 'passed': np.abs(centroids_dec_snr) < 3 }, orient='columns')],
+                    {'metric': ['centroids_dec_snr'], 'score': [centroids_dec_snr], 'passed': [np.abs(centroids_dec_snr) < 3] }, orient='columns')],
                                        ignore_index=True)
         metrics_df.to_csv(self.data_dir + '/metrics.csv')
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
@@ -360,7 +360,7 @@ class Watson:
                 iatson_df = pd.DataFrame(columns=['prediction', 'prediction_calibrated'])
                 for index, prediction in enumerate(predictions):
                     iatson_df = pd.concat([iatson_df, pd.DataFrame.from_dict(
-                        {'prediction': prediction, 'prediction_calibrated': predictions_cal[index]}, orient='columns')],
+                        {'prediction': [prediction], 'prediction_calibrated': [predictions_cal[index]]}, orient='columns')],
                                            ignore_index=True)
                 iatson_df.to_csv(self.data_dir + '/iatson.csv')
             except Exception as e:
@@ -1240,16 +1240,16 @@ class Watson:
             offset_dec_err = 3 * np.nanstd([source_offset_bls_dec, source_offset_diggimg_dec])
         offsets_df = pd.DataFrame(columns=['name', 'ra', 'dec', 'ra_err', 'dec_err'])
         offsets_df = pd.concat([offsets_df, pd.DataFrame.from_dict(
-            {'name': 'diff_img', 'ra': source_offset_diggimg_ra, 'dec': source_offset_diggimg_dec,
-             'ra_err': source_offset_diggimg_ra_err, 'dec_err': source_offset_diggimg_dec_err}, orient='columns')],
+            {'name': ['diff_img'], 'ra': [source_offset_diggimg_ra], 'dec': [source_offset_diggimg_dec],
+             'ra_err': [source_offset_diggimg_ra_err], 'dec_err': [source_offset_diggimg_dec_err]}, orient='columns')],
                               ignore_index=True)
         offsets_df = pd.concat([offsets_df, pd.DataFrame.from_dict(
-            {'name': 'px_bls', 'ra': source_offset_bls_ra, 'dec': source_offset_bls_dec,
-             'ra_err': source_offset_bls_ra_err, 'dec_err': source_offset_bls_dec_err}, orient='columns')],
+            {'name': ['px_bls'], 'ra': [source_offset_bls_ra], 'dec': [source_offset_bls_dec],
+             'ra_err': [source_offset_bls_ra_err], 'dec_err': [source_offset_bls_dec_err]}, orient='columns')],
                               ignore_index=True)
         offsets_df = pd.concat([offsets_df, pd.DataFrame.from_dict(
-            {'name': 'mean', 'ra': offset_ra, 'dec': offset_dec,
-             'ra_err': offset_ra_err, 'dec_err': offset_dec_err}, orient='columns')],
+            {'name': ['mean'], 'ra': [offset_ra], 'dec': [offset_dec],
+             'ra_err': [offset_ra_err], 'dec_err': [offset_dec_err]}, orient='columns')],
                               ignore_index=True)
         offsets_df.to_csv(file_dir + '/source_offsets.csv')
         tpf = tpfs[0]
