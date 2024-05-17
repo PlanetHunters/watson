@@ -296,17 +296,17 @@ class Watson:
         snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p_t0'], 'score': [snr_p_t0], 'passed': [snr_p_t0 > 3]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p_t0'], 'score': [snr_p_t0], 'passed': [int(snr_p_t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p_2t0'], 'score': [snr_p_2t0], 'passed': [snr_p_2t0 < 3]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p_2t0'], 'score': [snr_p_2t0], 'passed': [int(snr_p_2t0 < 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_2p_t0'], 'score': [snr_2p_t0], 'passed': [snr_2p_t0 > 3]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_2p_t0'], 'score': [snr_2p_t0], 'passed': [int(snr_2p_t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_2p_2t0'], 'score': [snr_2p_2t0], 'passed': [snr_2p_2t0 > 3]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_2p_2t0'], 'score': [snr_2p_2t0], 'passed': [int(snr_2p_2t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p2_t0'], 'score': [snr_p2_t0], 'passed': [snr_p2_t0 < 3]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p2_t0'], 'score': [snr_p2_t0], 'passed': [int(snr_p2_t0 < 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p2_t02'], 'score': [snr_p2_t02], 'passed': [snr_p2_t02 < 3]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr_p2_t02'], 'score': [snr_p2_t02], 'passed': [int(snr_p2_t02 < 3)]}, orient='columns')], ignore_index=True)
         if ra_fov is not None and dec_fov is not None:
             if tpfs is not None and len(tpfs) > 0:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
@@ -318,30 +318,30 @@ class Watson:
                 pixel_size_degrees = pixel_size / 3600
                 offset_test = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2) < pixel_size / 3600
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['transit_offset_ra'], 'score': [offset_ra], 'passed': [np.abs(offset_ra - ra_fov) < pixel_size_degrees]}, orient='columns')],
+                    {'metric': ['transit_offset_ra'], 'score': [offset_ra], 'passed': [int(np.abs(offset_ra - ra_fov) < pixel_size_degrees)]}, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['transit_offset_dec'], 'score': [offset_dec], 'passed': [np.abs(offset_dec - dec_fov) < pixel_size_degrees]}, orient='columns')], ignore_index=True)
+                    {'metric': ['transit_offset_dec'], 'score': [offset_dec], 'passed': [int(np.abs(offset_dec - dec_fov) < pixel_size_degrees)]}, orient='columns')], ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['transit_offset_err'], 'score': [offset_err], 'passed': [True if offset_err < pixel_size * 3 / 3600 else np.nan]}, orient='columns')], ignore_index=True)
+                    {'metric': ['transit_offset_err'], 'score': [offset_err], 'passed': [1 if offset_err < pixel_size * 3 / 3600 else np.nan]}, orient='columns')], ignore_index=True)
                 target_dist = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['transit_offset_pos'], 'score': [target_dist], 'passed': [target_dist < offset_err]}, orient='columns')],
+                    {'metric': ['transit_offset_pos'], 'score': [target_dist], 'passed': [int(target_dist < offset_err)]}, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['core_flux_snr'], 'score': [core_flux_snr], 'passed': [True if core_flux_snr > 3 else np.nan] }, orient='columns')],
+                    {'metric': ['core_flux_snr'], 'score': [core_flux_snr], 'passed': [1 if core_flux_snr > 3 else np.nan] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['halo_flux_snr'], 'score': [halo_flux_snr], 'passed': [True if halo_flux_snr > 3 else np.nan] }, orient='columns')],
+                    {'metric': ['halo_flux_snr'], 'score': [halo_flux_snr], 'passed': [1 if halo_flux_snr > 3 else np.nan] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                     {'metric': ['og_score'], 'score': [og_score], 'passed': [og_score < 1 if core_flux_snr > 3 else np.nan] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['centroids_ra_snr'], 'score': [centroids_ra_snr], 'passed': [np.abs(centroids_ra_snr) < 3] }, orient='columns')],
+                    {'metric': ['centroids_ra_snr'], 'score': [centroids_ra_snr], 'passed': [int(np.abs(centroids_ra_snr) < 3)] }, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['centroids_dec_snr'], 'score': [centroids_dec_snr], 'passed': [np.abs(centroids_dec_snr) < 3] }, orient='columns')],
+                    {'metric': ['centroids_dec_snr'], 'score': [centroids_dec_snr], 'passed': [int(np.abs(centroids_dec_snr) < 3)] }, orient='columns')],
                                        ignore_index=True)
         metrics_df.to_csv(self.data_dir + '/metrics.csv')
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
@@ -442,13 +442,13 @@ class Watson:
         previous_jump_index = 0
         for jumpIndex in jumps:
             token = lc_data_copy["centroids_x"][previous_jump_index:jumpIndex]
-            lc_data_copy.iloc[previous_jump_index:jumpIndex]["centroids_x"] = token - np.nanmedian(token)
+            lc_data_copy.loc[previous_jump_index:jumpIndex, "motion_y"] = token - np.nanmedian(token)
             token = lc_data_copy["centroids_y"][previous_jump_index:jumpIndex]
-            lc_data_copy.iloc[previous_jump_index:jumpIndex]["centroids_y"] = token - np.nanmedian(token)
+            lc_data_copy.loc[previous_jump_index:jumpIndex, "centroids_y"] = token - np.nanmedian(token)
             token = lc_data_copy["motion_x"][previous_jump_index:jumpIndex]
-            lc_data_copy.iloc[previous_jump_index:jumpIndex]["motion_x"] = token - np.nanmedian(token)
+            lc_data_copy.loc[previous_jump_index:jumpIndex, "motion_x"] = token - np.nanmedian(token)
             token = lc_data_copy["motion_y"][previous_jump_index:jumpIndex]
-            lc_data_copy.iloc[previous_jump_index:jumpIndex]["motion_y"] = token - np.nanmedian(token)
+            lc_data_copy.loc[previous_jump_index:jumpIndex, "motion_y"] = token - np.nanmedian(token)
             previous_jump_index = jumpIndex
         return lc_data_copy
 
@@ -509,7 +509,7 @@ class Watson:
         fig.suptitle('Vetting of ' + str(single_transit_process_input.id) + ' single transit no. ' +
                      str(single_transit_process_input.index) +
                      ' at T0=' + str(round(transit_time, 2)) + 'd', size=26)
-        gs = gridspec.GridSpec(2, 3, hspace=0.4, wspace=0.1)  # 2 rows, 3 columns
+        gs = gridspec.GridSpec(2, 3, hspace=0.4, wspace=0.1, figure=fig)  # 2 rows, 3 columns
         ax1 = fig.add_subplot(gs[0, 0])  # First row, first column
         ax2 = fig.add_subplot(gs[0, 1])  # First row, second column
         ax3 = fig.add_subplot(gs[0, 2])  # First row, third column
@@ -686,7 +686,7 @@ class Watson:
                 imgs[0] = imgs[0].resize((imgs[1].size[0],
                                           int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
                                           PIL.Image.ANTIALIAS)
-                img_merge = np.vstack((np.asarray(i) for i in imgs))
+                img_merge = np.vstack([np.asarray(i) for i in imgs])
                 img_merge = PIL.Image.fromarray(img_merge)
                 img_merge.save(single_transit_file, quality=95, optimize=True)
                 os.remove(tpf_single_transit_file)
@@ -981,7 +981,7 @@ class Watson:
         imgs[0] = imgs[0].resize((imgs[1].size[0],
                                   int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
                                  PIL.Image.ANTIALIAS)
-        img_merge = np.vstack((np.asarray(i) for i in imgs))
+        img_merge = np.vstack([np.asarray(i) for i in imgs])
         img_merge = PIL.Image.fromarray(img_merge)
         img_merge.save(tpf_bls_file, quality=95, optimize=True)
         os.remove(tpf_snr_file)
@@ -1294,7 +1294,7 @@ class Watson:
         imgs[0] = imgs[0].resize((imgs[1].size[0],
                                   int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
                                  PIL.Image.ANTIALIAS)
-        img_merge = np.vstack((np.asarray(i) for i in imgs))
+        img_merge = np.vstack([np.asarray(i) for i in imgs])
         img_merge = PIL.Image.fromarray(img_merge)
         img_merge.save(offsets_file, quality=95, optimize=True)
         os.remove(centroids_file)
