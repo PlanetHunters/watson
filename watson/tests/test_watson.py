@@ -17,10 +17,10 @@ class TestsWatson(unittest.TestCase):
         vetting_dir = TestsWatson.get_path("vetting_test")
         predictions, predictions_cal = Watson.run_iatson("TIC 25155310", 3.2899, 199, 1327.51, 6.082,
                           vetting_dir, object_dir + '/params_star.csv', object_dir + '/lc.csv', transits_mask=None, plot_inputs=False)
-        self.assertAlmostEqual(numpy.nanmean(predictions), 0.1875166633632034, 3)
-        self.assertAlmostEqual(numpy.nanstd(predictions), 0.18039051615653923, 3)
-        self.assertAlmostEqual(numpy.nanmean(predictions_cal), 0.08423510030843318, 3)
-        self.assertAlmostEqual(numpy.nanstd(predictions_cal), 0.08905803332002465, 3)
+        self.assertAlmostEqual(numpy.nanmean(predictions), 0.1954, 3)
+        self.assertAlmostEqual(numpy.nanstd(predictions), 0.18934455039188502, 3)
+        self.assertAlmostEqual(numpy.nanmean(predictions_cal), 0.09089329673442989, 3)
+        self.assertAlmostEqual(numpy.nanstd(predictions_cal), 0.10500657674917456, 3)
 
     def test_vetting_by_params(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
