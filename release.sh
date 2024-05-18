@@ -9,6 +9,7 @@ rm -r build
 rm -r watson-reqs
 conda remove -n watson-reqs --all -y
 rm -R *egg-info
+rm -R .tox
 set -e
 tox > tests.log
 tests_results=$(cat tests.log | grep "congratulations")
@@ -48,5 +49,6 @@ rm dist* -r
 rm -r .pytest_cache
 rm -r build
 rm -R *egg-info
+rm -R .tox
 conda remove -n watson-reqs --all -y
 set -e
