@@ -1,5 +1,5 @@
 # from __future__ import print_function, absolute_import, division
-
+import base64
 import logging
 import multiprocessing
 import shutil
@@ -9,6 +9,7 @@ import zipfile
 import io
 from exoml.iatson.IATSON_planet import IATSON_planet
 from exoml.ml.model.base_model import HyperParams
+from openai import OpenAI
 
 from watson.data_validation_report.DvrPreparer import DvrPreparer
 
@@ -72,7 +73,7 @@ class Watson:
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
-                star_file=None, iatson_enabled=False, iatson_inputs_save=False):
+                star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -103,6 +104,8 @@ class Watson:
         :param star_file: the file contianing the star info
         :param iatson_enabled: whether the cross validation deep learning model should be run
         :param iatson_inputs_save: whether the iatson input values plots should be stored
+        :param gpt_enabled: whether gpt analysis should be done
+        :param gpt_api_key: gpt api key
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -154,7 +157,8 @@ class Watson:
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
                                                                  dec, transits_list, transits_mask,
                                                                  star_file=star_file, iatson_enabled=iatson_enabled,
-                                                                 iatson_inputs_save=iatson_inputs_save)
+                                                                 iatson_inputs_save=iatson_inputs_save,
+                                                                 gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir))
             if clean:
@@ -180,7 +184,8 @@ class Watson:
 
 
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None,
-                          transits_mask=None, iatson_enabled=False, iatson_inputs_save=False):
+                          transits_mask=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False,
+                          gpt_api_key=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -192,6 +197,8 @@ class Watson:
         :param transits_mask: array with shape [{P:period, T0:t0, D:d}, ...] to use for transits masking before vetting
         :param iatson_enabled: whether the cross validation deep learning model should be run
         :param iatson_inputs_save: whether the iatson input values plots should be stored
+        :param gpt_enabled: whether gpt analysis should be done
+        :param gpt_api_key: gpt api key
         """
         if transits_mask is None:
             transits_mask = []
@@ -223,14 +230,14 @@ class Watson:
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
                          dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
                          transits_mask=transits_mask, star_file=star_file, iatson_enabled=iatson_enabled,
-                         iatson_inputs_save=iatson_inputs_save)
+                         iatson_inputs_save=iatson_inputs_save, gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key)
         except Exception as e:
             traceback.print_exc()
 
     def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
                   transits_list=None, transits_mask=None, star_file=None, iatson_enabled=False,
-                  iatson_inputs_save=False):
+                  iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -255,6 +262,8 @@ class Watson:
         :param star_file: the file containing the star info
         :param iatson_enabled: whether the cross validation deep learning model should be run
         :param iatson_inputs_save: whether the iatson input values plots should be stored
+        :param gpt_enabled: whether gpt analysis should be done
+        :param gpt_api_key: gpt api key
         """
         logging.info("Running Transit Plots")
         lc, lc_data, lc_data_norm, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
@@ -365,7 +374,68 @@ class Watson:
                 iatson_df.to_csv(self.data_dir + '/iatson.csv')
             except Exception as e:
                 logging.exception("A problem was found when running WATSON-NET.")
+        if gpt_enabled:
+            try:
+                gpt_result, gpt_content = self.run_gpt4o(gpt_api_key)
+                gpt_df = pd.DataFrame.from_dict({'prediction': [gpt_result], 'content': [gpt_content]}, orient='columns')
+                gpt_df.to_csv(self.data_dir + '/gpt.csv')
+            except:
+                logging.exception("GPT analysis failed")
         return transit_t0s_list, summary_t0s_indexes
+
+    @staticmethod
+    def encode_image(image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode("utf-8")
+
+    def run_gpt4o(self, api_key):
+        base64_image_cadences = Watson.encode_image(f'{self.data_dir}/folded_cadences.png')
+        base64_image_odd_even = Watson.encode_image(f'{self.data_dir}/odd_even_folded_curves.png')
+        base64_image_offset = Watson.encode_image(f'{self.data_dir}/source_offsets.png')
+        openai_client = OpenAI(api_key=api_key)
+        completion = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role": "system",
+                 "content": "You are an exoplanets expert capable of analyzing transiting candidates vetting " + \
+                            "reports to assess whether they are False Positives or not."},
+                {"role": "user", "content": [
+                    {"type": "text",
+                     "text": "Image 1 contains the folded focused light curve around the candidate transit for " + \
+                             "several curves with different exposure times. The transit shape has to be consistent among " + \
+                             "the three possible curves. One or two of the three curves might be missing due to lack of " + \
+                             "data and the missing ones should be ignored in those cases." + \
+                             " Image 2 show 6 plots. 1) Top-left is the folded curve with the candidate's period " + \
+                             "focused on the transit epoch. 2) Top-right is folded with the candidate's period focused on " + \
+                             "the epoch + period/2  3) Middle-left is folded with doble the period focused on the candidate's " + \
+                             "epoch 4) Middle-right is folded with doble the period focused on the candidate's epoch + period " + \
+                             "5) Bottom-left has the candidate transits masked, is folded with half the period and focused on " + \
+                             "the transit epoch 6) Bottom-right has the candidate transits masked, folded with half the period " + \
+                             "and focused on the candidate's epoch + period / 4. Whenever plot 2 shows a transit dip instead of " + \
+                             "a baseline, or the transit depth of plot 3 differs from transit depth on plot 4, or figure 5 " + \
+                             "or 6 show a transit dip instead of a baseline, the candidate would be a false positive." + \
+                             "Image 3 plots a target pixel file of a star where a transit candidate signal was found. " + \
+                             "The image shows a top panel where a blue star where the target is located, a red dot which " + \
+                             "points to the place where the signal is spotted in the field of view, rounded by an orange " + \
+                             "circle showing the signal placement error. Additionally, several panels are placed at the " + \
+                             "bottom. Left side we plot the centroids shift for the right ascension. Right we plot the " + \
+                             "centroids shift for the declination. Left below we plot the optical core transit depth and " + \
+                             "at the bottom right the optical halo transit depth. Whenever the halo transit depth is deeper " + \
+                             "than core transit depth, the candidate is a false positive. Also, whenever the target blue star " + \
+                             "is outside the orange circle, the candidate is probably a false positive. Whenever the right " + \
+                             "ascension or declination centroid shift deviate from the baseline, we also would have a false " + \
+                             "positive. Your should report a per-image analysis and a last sentence only containing a 1 " + \
+                             "(true positive) or 0 (false positive). Please the output should not contain special characters" +\
+                             " like %, *, {, }, etc."
+
+                     }, {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image_cadences}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image_odd_even}"}},
+                    {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image_offset}"}}
+                ]}
+            ], temperature=0.0
+        )
+        gpt_result = completion.choices[0].message.content
+        return gpt_result[-1], gpt_result
 
     @staticmethod
     def run_iatson(target_id, period, duration, epoch, depth_ppt, watson_dir, star_filename, lc_filename, transits_mask,

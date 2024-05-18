@@ -190,6 +190,7 @@ class Report:
         story.append(Spacer(1, 15))
         metrics_file = self.data_dir + "/metrics.csv"
         iatson_file = self.data_dir + "/iatson.csv"
+        gpt_file = self.data_dir + '/gpt.csv'
         table_data = [['Metric', 'Value']]
         metrics_df = pd.DataFrame(columns=['metric', 'value', 'passed'])
         if os.path.exists(iatson_file):
@@ -212,6 +213,19 @@ class Report:
                 passed = False
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {"metric": ["WATSON-NET err"], 'value': [round(score_uncertainty, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+        if os.path.exists(gpt_file):
+            gpt_df = pd.read_csv(gpt_file)
+            score_gpt = gpt_df.loc[0, 'prediction']
+            content_gpt = gpt_df.loc[0, 'content']
+            if score_gpt == 1:
+                passed = True
+            elif score_gpt == 0:
+                passed = False
+            else:
+                passed = np.nan
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["GPT"], 'value': [score_gpt], 'passed': [passed]},
+                orient='columns')], ignore_index=True)
         if os.path.exists(metrics_file):
             metrics_df = pd.concat([metrics_df, pd.read_csv(metrics_file)], ignore_index=True)
             metrics_df['passed'] = metrics_df['passed'].replace({'True': 1, 'False': 0})
@@ -231,6 +245,11 @@ class Report:
                                 + 'inconclusive. Red represents problematic metrics.</font>'
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
+        if os.path.exists(gpt_file):
+            story.append(Paragraph('<font name="HELVETICA" size="9">GPT has been enabled to analyze this report. Its output is:</font>', styles["ParagraphAlignJustify"]))
+            for gpt_explanation_paragraph in content_gpt.split('\n'):
+                story.append(Paragraph('<font name="HELVETICA" size="9">' + gpt_explanation_paragraph + '</font>', styles["ParagraphAlignJustify"]))
+            story.append(Spacer(1, 30))
         cadences_file = self.data_dir + "/folded_cadences.png"
         figure = 1
         if os.path.exists(cadences_file):
