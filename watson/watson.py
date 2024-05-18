@@ -291,7 +291,7 @@ class Watson:
         if len(snrs.values()) > 0:
             for cadence, snr in snrs.items():
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': [cadence + '_snr'], 'score': [snr], 'passed': [snr > 3]},
+                    {'metric': [cadence + '_snr'], 'score': [snr], 'passed': [int(snr > 3)]},
                     orient='columns')], ignore_index=True)
         snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)

@@ -53,19 +53,20 @@ class Report:
             table_object.setStyle(TableStyle([('BACKGROUND', (0, each), (-1, each), bg_color)]))
 
     @staticmethod
-    def metrics_row_colors(table_data, table_object):
-        for index, row in enumerate(table_data):
-            if not isinstance(row[2], str):
-                if np.isnan(row[2]):
+    def metrics_row_colors(df, table_object):
+        for index, row in df.iterrows():
+            if not isinstance(row['passed'], str):
+                if np.isnan(row['passed']):
                     bg_color = colors.yellow
-                elif row[2] == False:
+                elif row['passed'] is False or row['passed'] == 0:
                     bg_color = colors.red
-                elif row[2] == True:
+                elif row['passed'] is True or row['passed'] == 1:
                     bg_color = colors.lightgreen
-                table_object.setStyle(TableStyle([('BACKGROUND', (0, index), (-1, index), bg_color),
-                                              ('FONTSIZE', (0, index), (-1, index), 9),
-                                              ('TOPPADDING', (0, index), (-1, index), 1),
-                                              ('BOTTOMPADDING', (0, index), (-1, index), 1)]))
+                table_index = index + 1
+                table_object.setStyle(TableStyle([('BACKGROUND', (0, table_index), (-1, table_index), bg_color),
+                                              ('FONTSIZE', (0, table_index), (-1, table_index), 9),
+                                              ('TOPPADDING', (0, table_index), (-1, table_index), 1),
+                                              ('BOTTOMPADDING', (0, table_index), (-1, table_index), 1)]))
 
     def create_header(self, canvas, doc):
         canvas.saveState()
@@ -189,7 +190,8 @@ class Report:
         story.append(Spacer(1, 15))
         metrics_file = self.data_dir + "/metrics.csv"
         iatson_file = self.data_dir + "/iatson.csv"
-        table_data = [['Metric', 'Value', 'Passed']]
+        table_data = [['Metric', 'Value']]
+        metrics_df = pd.DataFrame(columns=['metric', 'value', 'passed'])
         if os.path.exists(iatson_file):
             iatson_df = pd.read_csv(iatson_file)
             score_median = iatson_df['prediction'].mean(skipna=True)
@@ -200,29 +202,33 @@ class Report:
                 passed = np.nan
             else:
                 passed = False
-            table_data.append(["WATSON-NET", round(score_median, 4), passed])
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["WATSON-NET"], 'value': [round(score_median, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
             if score_uncertainty < 0.015:
                 passed = True
             elif score_uncertainty < 0.1:
                 passed = np.nan
             else:
                 passed = False
-            table_data.append(["WATSON-NET err", round(score_uncertainty, 4), passed])
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["WATSON-NET err"], 'value': [round(score_uncertainty, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
         if os.path.exists(metrics_file):
-            metrics_df = pd.read_csv(metrics_file)
+            metrics_df = pd.concat([metrics_df, pd.read_csv(metrics_file)], ignore_index=True)
+            metrics_df['passed'] = metrics_df['passed'].replace({'True': 1, 'False': 0})
+            metrics_df['passed'] = metrics_df['passed'].replace({True: 1, False: 0})
+            metrics_df['passed'] = pd.to_numeric(metrics_df['passed'], errors='coerce')
             for index, metric_row in metrics_df.iterrows():
-                table_data.append([metric_row['metric'],
-                                   round(metric_row['score'], 3),
-                                   metric_row['passed']])
+                table_data.append([metric_row['metric'], round(metric_row['score'], 3)])
             table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
             table_number_rows = len(table_data)
             table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
             table.setStyle(table_style)
-            Report.metrics_row_colors(table_data, table)
+            Report.metrics_row_colors(metrics_df, table)
             story.append(table)
             story.append(Spacer(1, 5))
             table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
-                                'The results of the numerical tests.</font>'
+                                + 'The results of the numerical tests. Green cells mean acceptable values. Yellow means ' \
+                                + 'inconclusive. Red represents problematic metrics.</font>'
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
         cadences_file = self.data_dir + "/folded_cadences.png"
