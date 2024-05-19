@@ -446,6 +446,9 @@ class Watson:
         home_path = f'{os.path.expanduser("~")}/.watson'
         if not os.path.exists(home_path):
             os.mkdir(home_path)
+        iatson_dir = watson_dir + '/iatson'
+        if not os.path.exists(iatson_dir):
+            os.mkdir(iatson_dir)
         iatson_model_root_path = f'{home_path}/0.0.4'
         if not os.path.exists(iatson_model_root_path) or len(os.listdir(iatson_model_root_path)) != 13:
             r = requests.get("https://www.dropbox.com/scl/fi/gayjdc00m9g5xreyq3is0/0.0.4.zip?rlkey=aebck4dluccnpjtyink183j38&dl=1")
