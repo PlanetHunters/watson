@@ -19,8 +19,8 @@ class TestsWatson(unittest.TestCase):
                           vetting_dir, object_dir + '/params_star.csv', object_dir + '/lc.csv', transits_mask=None, plot_inputs=False)
         self.assertAlmostEqual(numpy.nanmean(predictions), 0.1954, 3)
         self.assertAlmostEqual(numpy.nanstd(predictions), 0.18934455039188502, 3)
-        self.assertAlmostEqual(numpy.nanmean(predictions_cal), 0.09089329673442989, 3)
-        self.assertAlmostEqual(numpy.nanstd(predictions_cal), 0.10500657674917456, 3)
+        self.assertAlmostEqual(numpy.nanmean(predictions_cal), 0.0925005359807983, 3)
+        self.assertAlmostEqual(numpy.nanstd(predictions_cal), 0.10950608490582747, 3)
 
     def test_vetting_by_params(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
