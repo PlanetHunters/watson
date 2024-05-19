@@ -363,6 +363,9 @@ class Watson:
             pool.map(Watson.plot_single_transit, plot_transits_inputs)
         if iatson_enabled:
             logging.info("Running WATSON-NET")
+            iatson_store_dir = self.data_dir + '/iatson'
+            if not os.path.exists(iatson_store_dir):
+                os.mkdir(iatson_store_dir)
             try:
                 predictions, predictions_cal = self.run_iatson(id, period, duration, t0, depth, self.data_dir, star_file,
                                                                lc_file, transits_mask, plot_inputs=iatson_inputs_save)
