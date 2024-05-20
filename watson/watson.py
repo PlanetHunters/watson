@@ -73,7 +73,8 @@ class Watson:
                 cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
-                star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None):
+                star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None,
+                only_summary=False):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -106,6 +107,7 @@ class Watson:
         :param iatson_inputs_save: whether the iatson input values plots should be stored
         :param gpt_enabled: whether gpt analysis should be done
         :param gpt_api_key: gpt api key
+        :param only_summary: whether only summary report should be created
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -158,7 +160,8 @@ class Watson:
                                                                  dec, transits_list, transits_mask,
                                                                  star_file=star_file, iatson_enabled=iatson_enabled,
                                                                  iatson_inputs_save=iatson_inputs_save,
-                                                                 gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key)
+                                                                 gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
+                                                                         only_summary=only_smmary)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir))
             if clean:
@@ -185,7 +188,7 @@ class Watson:
 
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None,
                           transits_mask=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False,
-                          gpt_api_key=None):
+                          gpt_api_key=None, only_summary=False):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -199,6 +202,7 @@ class Watson:
         :param iatson_inputs_save: whether the iatson input values plots should be stored
         :param gpt_enabled: whether gpt analysis should be done
         :param gpt_api_key: gpt api key
+        :param only_summary: whether only summary report should be created
         """
         if transits_mask is None:
             transits_mask = []
@@ -230,14 +234,15 @@ class Watson:
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
                          dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
                          transits_mask=transits_mask, star_file=star_file, iatson_enabled=iatson_enabled,
-                         iatson_inputs_save=iatson_inputs_save, gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key)
+                         iatson_inputs_save=iatson_inputs_save, gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
+                         only_summary=only_summary)
         except Exception as e:
             traceback.print_exc()
 
     def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
                   transits_list=None, transits_mask=None, star_file=None, iatson_enabled=False,
-                  iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None):
+                  iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None, only_summary=False):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -264,6 +269,7 @@ class Watson:
         :param iatson_inputs_save: whether the iatson input values plots should be stored
         :param gpt_enabled: whether gpt analysis should be done
         :param gpt_api_key: gpt api key
+        :param only_summary: whether only the summary report should be created
         """
         logging.info("Running Transit Plots")
         lc, lc_data, lc_data_norm, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
@@ -354,13 +360,14 @@ class Watson:
                                        ignore_index=True)
         metrics_df.to_csv(self.data_dir + '/metrics.csv')
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
-        plot_transits_inputs = []
-        for index, transit_times in enumerate(transit_t0s_list):
-            plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,
-                                                                  tpfs_dir, apertures, transit_times, depth / 1000,
-                                                                  duration, period, rp_rstar, a_rstar, transits_mask))
-        with multiprocessing.Pool(processes=cpus) as pool:
-            pool.map(Watson.plot_single_transit, plot_transits_inputs)
+        if not only_summary:
+            plot_transits_inputs = []
+            for index, transit_times in enumerate(transit_t0s_list):
+                plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,
+                                                                      tpfs_dir, apertures, transit_times, depth / 1000,
+                                                                      duration, period, rp_rstar, a_rstar, transits_mask))
+            with multiprocessing.Pool(processes=cpus) as pool:
+                pool.map(Watson.plot_single_transit, plot_transits_inputs)
         if iatson_enabled:
             logging.info("Running WATSON-NET")
             iatson_store_dir = self.data_dir + '/iatson'
