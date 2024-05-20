@@ -192,7 +192,7 @@ class Report:
         iatson_file = self.data_dir + "/iatson.csv"
         gpt_file = self.data_dir + '/gpt.csv'
         table_data = [['Metric', 'Value']]
-        metrics_df = pd.DataFrame(columns=['metric', 'value', 'passed'])
+        metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
         if os.path.exists(iatson_file):
             iatson_df = pd.read_csv(iatson_file)
             score_median = iatson_df['prediction'].mean(skipna=True)
@@ -204,7 +204,7 @@ class Report:
             else:
                 passed = False
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                {"metric": ["WATSON-NET"], 'value': [round(score_median, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+                {"metric": ["WATSON-NET"], 'score': [round(score_median, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
             if score_uncertainty < 0.015:
                 passed = True
             elif score_uncertainty < 0.1:
@@ -212,7 +212,7 @@ class Report:
             else:
                 passed = False
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                {"metric": ["WATSON-NET err"], 'value': [round(score_uncertainty, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+                {"metric": ["WATSON-NET err"], 'score': [round(score_uncertainty, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
         if os.path.exists(gpt_file):
             gpt_df = pd.read_csv(gpt_file)
             score_gpt = gpt_df.loc[0, 'prediction']
@@ -224,7 +224,7 @@ class Report:
             else:
                 passed = np.nan
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                {"metric": ["GPT"], 'value': [score_gpt], 'passed': [passed]},
+                {"metric": ["GPT"], 'score': [score_gpt], 'passed': [passed]},
                 orient='columns')], ignore_index=True)
         if os.path.exists(metrics_file):
             metrics_df = pd.concat([metrics_df, pd.read_csv(metrics_file)], ignore_index=True)
