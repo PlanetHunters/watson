@@ -161,7 +161,7 @@ class Watson:
                                                                  star_file=star_file, iatson_enabled=iatson_enabled,
                                                                  iatson_inputs_save=iatson_inputs_save,
                                                                  gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
-                                                                         only_summary=only_smmary)
+                                                                         only_summary=only_summary)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir))
             if clean:
@@ -768,7 +768,7 @@ class Watson:
                 imgs = [PIL.Image.open(i) for i in images_list]
                 imgs[0] = imgs[0].resize((imgs[1].size[0],
                                           int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
-                                          PIL.Image.ANTIALIAS)
+                                          PIL.Image.LANCZOS)
                 img_merge = np.vstack([np.asarray(i) for i in imgs])
                 img_merge = PIL.Image.fromarray(img_merge)
                 img_merge.save(single_transit_file, quality=95, optimize=True)
