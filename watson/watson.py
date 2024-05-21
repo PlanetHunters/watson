@@ -163,7 +163,7 @@ class Watson:
                                                                  gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
                                                                          only_summary=only_summary)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
-                        v, j, h, k, os.path.exists(tpfs_dir))
+                        v, j, h, k, os.path.exists(tpfs_dir), only_summary=only_summary)
             if clean:
                 for filename in os.listdir(self.data_dir):
                     if not os.path.isdir(self.data_dir + '/' + filename) and not filename.endswith(".pdf") and not filename.endswith(".csv"):
@@ -173,12 +173,13 @@ class Watson:
             traceback.print_exc()
 
     def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k,
-               with_tpfs=True):
-        file_name = "transits_validation_report.pdf"
-        logging.info("Creating complete report")
-        report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, None,
-                        v, j, h, k, with_tpfs)
-        report.create_report()
+               with_tpfs=True, only_summary=False):
+        if not only_summary:
+            file_name = "transits_validation_report.pdf"
+            logging.info("Creating complete report")
+            report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list, None,
+                            v, j, h, k, with_tpfs)
+            report.create_report()
         file_name = "transits_validation_report_summary.pdf"
         logging.info("Creating summary report")
         report = Report(self.data_dir, file_name, id, ra, dec, t0, period, duration, depth, transits_list,
