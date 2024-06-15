@@ -1,5 +1,6 @@
 # import os
 import datetime
+import logging
 import os
 import pathlib
 from astropy.coordinates import Angle
@@ -338,8 +339,11 @@ class Report:
         for index, transit_time in enumerate(self.transit_t0s_list):
             if self.summary_list_t0s_indexes is None or (self.summary_list_t0s_indexes is not None and
                                                          index in self.summary_list_t0s_indexes):
-                image = Image(self.data_dir + "/single_transit_" + str(index) + "_T0_" + str(transit_time) + ".png",
-                              width=width, height=height)
+                image_file = self.data_dir + "/single_transit_" + str(index) + "_T0_" + str(transit_time) + ".png"
+                if not os.path.exists(image_file):
+                    logging.warning(f"The image {image_file} doesn't exist, skipping.")
+                    continue
+                image = Image(image_file, width=width, height=height)
                 story.append(image)
                 table3_descripcion = '<font name="HELVETICA" size="9"><strong>Figure %s: </strong>' \
                                      'The single transit no. %s vetting plots</font>' % (str(figure), str(index))
