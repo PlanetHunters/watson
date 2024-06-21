@@ -1068,7 +1068,8 @@ class Watson:
         img_merge = np.vstack([np.asarray(i) for i in imgs])
         img_merge = PIL.Image.fromarray(img_merge)
         img_merge.save(tpf_bls_file, quality=95, optimize=True)
-        os.remove(tpf_snr_file)
+        if os.path.exists(tpf_snr_file):
+            os.remove(tpf_snr_file)
         return (source_offset_bls.ra.value, source_offset_bls.dec.value), \
                (source_offset_diffimg.ra.value, source_offset_diffimg.dec.value), \
                centroids_drift, optical_ghost_data
