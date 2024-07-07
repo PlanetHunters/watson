@@ -952,6 +952,7 @@ class Watson:
 
     @staticmethod
     def plot_folded_tpf(fold_tpf_input):
+        pid = os.getpid()
         ra = fold_tpf_input['ra']
         dec = fold_tpf_input['dec']
         apertures = fold_tpf_input['apertures']
@@ -1013,7 +1014,7 @@ class Watson:
         snr_map, ax = Watson.plot_pixels(tpf, title=mission_prefix + ' ' + str(id) + ' ' + sector_name + ' ' +
                                                     str(sector) + ' TPF BLS Analysis',
                                          period=period, epoch=epoch, duration=duration, aperture_mask=aperture)
-        tpf_bls_file = file_dir + '/folded_tpf_' + str(sector) + '.png'
+        tpf_bls_file = file_dir + f'/folded_tpf_{sector}_{pid}.png'
         plt.savefig(tpf_bls_file, dpi=200, bbox_inches='tight')
         plt.clf()
         tpf_sub = Watson.compute_tpf_diff_image(tpf, period, epoch, duration)
@@ -1057,7 +1058,7 @@ class Watson:
         ax[1].xaxis.set_tick_params(labelsize=18)
         ax[1].yaxis.set_tick_params(labelsize=18)
         ax[1].set_title("Per-pixel BLS SNR map for " + sector_name + " " + str(sector), fontsize=20)
-        tpf_snr_file = file_dir + '/snr_tpf_' + str(sector) + '.png'
+        tpf_snr_file = file_dir + f'/snr_tpf_{sector}_{pid}.png'
         plt.savefig(tpf_snr_file, dpi=200, bbox_inches='tight')
         plt.clf()
         images_list = [tpf_bls_file, tpf_snr_file]
