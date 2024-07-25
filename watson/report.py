@@ -283,12 +283,11 @@ class Report:
             story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
             figure = figure + 1
-        story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=16 * cm, height=14 * cm))
+        story.append(Image(self.data_dir + "/odd_even_folded_curves.png", width=10 * cm, height=14 * cm))
         descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                                                                                        'Above, the candidate folded at its found period for the found epoch and epoch + P/2.' \
-                                                                                        'Middle, the candidate folded at its harmonic for the found epoch and epoch + P.' \
-                                                                                        'Bottom, the candidate folded at its subharmonic for the found epoch and epoch + P/2, where ' \
-                                                                                        'the candidate has been masked.</font>'
+                                                                                        'Left, the candidate folded at its found period for the found epoch.' \
+                                                                                        'Middle, the candidate secondary event plot.' \
+                                                                                        'Bottom, the candidate odd and even curves and their binned difference with its best fitted model.</font>'
         story.append(Spacer(1, 5))
         story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))

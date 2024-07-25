@@ -10,6 +10,8 @@ import io
 from exoml.iatson.IATSON_planet import IATSON_planet
 from exoml.ml.model.base_model import HyperParams
 from openai import OpenAI
+from triceratops import triceratops
+from triceratops.triceratops import target
 
 from watson.data_validation_report.DvrPreparer import DvrPreparer
 
@@ -48,6 +50,7 @@ from astropy.table import Table
 from astropy.io import ascii
 import astropy.visualization as stretching
 from scipy import stats, ndimage
+from scipy.stats import pearsonr
 
 from watson import constants
 import watson.tpfplotterSub.tpfplotter as tpfplotter
@@ -56,6 +59,40 @@ import os
 
 from watson.neighbours import CreateStarCsvInput, create_star_csv, NeighbourInput, get_neighbour_lc
 from watson.report import Report
+
+
+class SingleTransitProcessInput:
+    def __init__(self, data_dir, id, index, lc_file, lc_data_file, tpfs_dir, apertures,
+                                         transit_times, depth, duration, period, rp_rstar, a_rstar, transits_mask):
+        self.data_dir = data_dir
+        self.id = id
+        self.index = index
+        self.lc_file = lc_file
+        self.lc_data_file = lc_data_file
+        self.tpfs_dir = tpfs_dir
+        self.apertures = apertures
+        self.transit_times = transit_times
+        self.depth = depth
+        self.duration = duration
+        self.period = period
+        self.rp_rstar = rp_rstar
+        self.a_rstar = a_rstar
+        self.transits_mask = transits_mask
+
+
+class FovProcessInput:
+    def __init__(self, save_dir, mission, tic, cadence, ra, dec, sectors, source, apertures, tpf_source, target_title):
+        self.save_dir = save_dir
+        self.mission = mission
+        self.tic = tic
+        self.cadence = cadence
+        self.ra = ra
+        self.dec = dec
+        self.sectors = sectors
+        self.source = source
+        self.apertures = apertures
+        self.tpf_source = tpf_source
+        self.target_title = target_title
 
 
 class Watson:
@@ -309,20 +346,14 @@ class Watson:
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                     {'metric': [cadence + '_snr'], 'score': [snr], 'passed': [int(snr > 3)]},
                     orient='columns')], ignore_index=True)
-        snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02 = \
+        snr_p_t0, secondary_snr, odd_even_correlation = \
             self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p_t0'], 'score': [snr_p_t0], 'passed': [int(snr_p_t0 > 3)]}, orient='columns')], ignore_index=True)
+            {'metric': ['snr'], 'score': [snr_p_t0], 'passed': [int(snr_p_t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p_2t0'], 'score': [snr_p_2t0], 'passed': [int(snr_p_2t0 < 3)]}, orient='columns')], ignore_index=True)
+            {'metric': ['secondary_snr'], 'score': [secondary_snr], 'passed': [int(secondary_snr < 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_2p_t0'], 'score': [snr_2p_t0], 'passed': [int(snr_2p_t0 > 3)]}, orient='columns')], ignore_index=True)
-        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_2p_2t0'], 'score': [snr_2p_2t0], 'passed': [int(snr_2p_2t0 > 3)]}, orient='columns')], ignore_index=True)
-        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p2_t0'], 'score': [snr_p2_t0], 'passed': [int(snr_p2_t0 < 3)]}, orient='columns')], ignore_index=True)
-        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['snr_p2_t02'], 'score': [snr_p2_t02], 'passed': [int(snr_p2_t02 < 3)]}, orient='columns')], ignore_index=True)
+            {'metric': ['odd_even_correlation'], 'score': [odd_even_correlation], 'passed': [1 if odd_even_correlation > 0.9 else (0 if odd_even_correlation < 0.8 else np.nan)]}, orient='columns')], ignore_index=True)
         if ra_fov is not None and dec_fov is not None:
             if tpfs is not None and len(tpfs) > 0:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
@@ -416,15 +447,12 @@ class Watson:
                              "several curves with different exposure times. The transit shape has to be consistent among " + \
                              "the three possible curves. One or two of the three curves might be missing due to lack of " + \
                              "data and the missing ones should be ignored in those cases." + \
-                             " Image 2 show 6 plots. 1) Top-left is the folded curve with the candidate's period " + \
-                             "focused on the transit epoch. 2) Top-right is folded with the candidate's period focused on " + \
-                             "the epoch + period/2  3) Middle-left is folded with doble the period focused on the candidate's " + \
-                             "epoch 4) Middle-right is folded with doble the period focused on the candidate's epoch + period " + \
-                             "5) Bottom-left has the candidate transits masked, is folded with half the period and focused on " + \
-                             "the transit epoch 6) Bottom-right has the candidate transits masked, folded with half the period " + \
-                             "and focused on the candidate's epoch + period / 4. Whenever plot 2 shows a transit dip instead of " + \
-                             "a baseline, or the transit depth of plot 3 differs from transit depth on plot 4, or figure 5 " + \
-                             "or 6 show a transit dip instead of a baseline, the candidate would be a false positive." + \
+                             " Image 2 show 3 plots. 1) Top is the folded curve with the candidate's period " + \
+                             "focused on the transit epoch. 2) Middle is the folded curve at the secondary event epoch, with the same " + \
+                             "period. That is, a possible occultation of the object. 3) Bottom, the odd / even folded curve where their subtraction" + \
+                             " is plotted. " + \
+                             "Whenever Image 2, plot 2 shows a transit dip instead of " + \
+                             "a baseline, or there is a significant transit depth in Image 2, plot 3, the candidate is a false positive. " +\
                              "Image 3 plots a target pixel file of a star where a transit candidate signal was found. " + \
                              "The image shows a top panel where a blue star where the target is located, a red dot which " + \
                              "points to the place where the signal is spotted in the field of view, rounded by an orange " + \
@@ -790,41 +818,87 @@ class Watson:
         @param depth: the transit depth
         """
         duration = duration / 60 / 24
-        figsize = (16, 16)  # x,y
+        figsize = (10, 16)  # x,y
         rows = 3
-        cols = 2
+        cols = 1
         fig, axs = plt.subplots(rows, cols, figsize=figsize, constrained_layout=True)
         logging.info("Preparing folded light curves for target")
         #TODO bins = None for FFI
         bins = 100
         plot_period = period
         result_axs, bin_centers, bin_means, bin_stds, snr_p_t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[0][0], lc, plot_period, epoch, depth, duration, rp_rstar,
+            Watson.compute_phased_values_and_fill_plot(id, axs[0], lc, plot_period, epoch, depth, duration, rp_rstar,
                                                        a_rstar, bins=bins)
-        result_axs, bin_centers, bin_means, bin_stds, snr_p_2t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[0][1], lc, plot_period, epoch + plot_period / 2, depth, duration,
-                                                   rp_rstar, a_rstar, bins=bins)
-        plot_period = period * 2
-        result_axs, bin_centers, bin_means, bin_stds, snr_2p_t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[1][0], lc, plot_period, epoch, depth, duration, rp_rstar,
-                                                       a_rstar, bins=bins)
-        result_axs, bin_centers, bin_means, bin_stds, snr_2p_2t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[1][1], lc, plot_period, epoch + plot_period / 2, depth, duration,
-                                                   rp_rstar, a_rstar, bins=bins)
-        plot_period = period / 2
-        time_masked, flux_masked, flux_err_masked = \
-            LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, period, duration * 5, epoch, lc.flux_err.value)
+        time_masked, flux_masked, flux_err_masked = (
+            LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, period, duration * 5, epoch,
+                                          lc.flux_err.value))
         lc_masked = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
-        result_axs, bin_centers, bin_means, bin_stds, snr_p2_t0 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[2][0], lc_masked, plot_period, epoch, depth, duration, rp_rstar,
-                                                       a_rstar, bins=bins)
-        result_axs, bin_centers, bin_means, bin_stds, snr_p2_t02 = \
-            Watson.compute_phased_values_and_fill_plot(id, axs[2][1], lc_masked, plot_period, epoch + plot_period / 2, depth, duration,
-                                                   rp_rstar, a_rstar, bins=bins)
+        time, folded_y, folded_y_err, bin_centers, bin_means, bin_stds, bin_width, half_duration_phase = (
+            Watson.compute_phased_values(lc_masked, period, epoch + period / 2, duration, bins=bins))
+        axs[1].scatter(time, folded_y, 2, color="blue", alpha=0.3)
+        if bins is not None and len(folded_y) > bins:
+            axs[1].errorbar(bin_centers, bin_means, yerr=bin_stds / 2,
+                            xerr=bin_width / 2, marker='o', markersize=2,
+                            color='darkorange', alpha=1, linestyle='none')
+        bls = BoxLeastSquares(time_masked, flux_masked, flux_err_masked)
+        result = bls.power([period], np.linspace(duration / 2, duration * 1.5, 10))
+        model = np.ones(100)
+        if not np.isnan(result.depth) and result.depth > 0 and not np.isnan(result.duration):
+            snr_p_2t0 = Watson.compute_snr(lc.time.value, lc.flux.value, result.duration[0], period, epoch + period / 2)
+            it_indexes = np.argwhere(
+                (bin_centers > 0.5 - result.duration[0] / 2) & (bin_centers < 0.5 + result.duration[0] / 2)).flatten()
+            model[it_indexes] = 1 - result.depth[0]
+        else:
+            snr_p_2t0 = 0.001
+        axs[1].plot(bin_centers, model, color="red")
+        axs[1].set_xlabel("Time (d)")
+        axs[1].set_ylabel("Flux norm.")
+        if len(folded_y) > 0 and np.any(~np.isnan(folded_y)):
+            axs[1].set_ylim(np.nanmin(folded_y), np.nanmax(folded_y))
+        time_masked, flux_masked, flux_err_masked = (
+            LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, period * 2, duration * 5, epoch + period, lc.flux_err.value))
+        lc_masked_0 = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
+        time_0, folded_y_0, folded_y_err_0, bin_centers_0, bin_means_0, bin_stds_0, bin_width_0, half_duration_phase_0 = (
+            Watson.compute_phased_values(lc_masked_0, period, epoch, duration, bins=bins))
+        time_masked, flux_masked, flux_err_masked = (
+            LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, period * 2, duration * 5, epoch,
+                                          lc.flux_err.value))
+        lc_masked_1 = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
+        time_1, folded_y_1, folded_y_err_1, bin_centers_1, bin_means_1, bin_stds_1, bin_width_1, half_duration_phase_1 = (
+            Watson.compute_phased_values(lc_masked_1, period, epoch, duration, bins=bins))
+        axs[2].scatter(time_0, folded_y_0, 2, color="blue", alpha=0.3)
+        axs[2].scatter(time_1, folded_y_1, 2, color="red", alpha=0.3)
+        bins_avg = 1 - (bin_means_0 - bin_means_1)
+        bins_stds_avg = (bin_stds_0 + bin_stds_1) / 2
+        if bins is not None and len(folded_y_0) > bins:
+            axs[2].errorbar(bin_centers_0, bins_avg, yerr=bins_stds_avg / 2,
+                         xerr=bin_width_0 / 2, marker='o', markersize=2,
+                         color='darkorange', alpha=1, linestyle='none')
+        bls = BoxLeastSquares(bin_centers_0, bins_avg, bins_stds_avg)
+        result = bls.power([1], np.linspace(duration / period / 2, duration / period * 1.5, 10))
+        model = np.ones(100)
+        it_indexes = np.argwhere((bin_centers_0 > 0.5 - result.duration[0] / 2) & (bin_centers_0 < 0.5 + result.duration / 2)).flatten()
+        model[it_indexes] = 1 - result.depth[0]
+        axs[2].plot(bin_centers_0, model, color="red")
+        axs[2].set_xlabel("Time (d)")
+        axs[2].set_ylabel("Flux norm.")
+        if len(folded_y_0) > 0 and np.any(~np.isnan(folded_y_0)):
+            axs[2].set_ylim(np.nanmin(folded_y_0), np.nanmax(folded_y_0))
+        # plot_period = period / 2
+        # time_masked, flux_masked, flux_err_masked = \
+        #     LcbuilderHelper.mask_transits(lc.time.value, lc.flux.value, period, duration * 5, epoch, lc.flux_err.value)
+        # lc_masked = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
+        # result_axs, bin_centers, bin_means, bin_stds, snr_p2_t0 = \
+        #     Watson.compute_phased_values_and_fill_plot(id, axs[2][0], lc_masked, plot_period, epoch, depth, duration, rp_rstar,
+        #                                                a_rstar, bins=bins)
+        # result_axs, bin_centers, bin_means, bin_stds, snr_p2_t02 = \
+        #     Watson.compute_phased_values_and_fill_plot(id, axs[2][1], lc_masked, plot_period, epoch + plot_period / 2, depth, duration,
+        #                                            rp_rstar, a_rstar, bins=bins)
         plt.savefig(file_dir + "/odd_even_folded_curves.png", dpi=200)
         fig.clf()
         plt.close(fig)
-        return snr_p_t0, snr_p_2t0, snr_2p_t0, snr_2p_2t0, snr_p2_t0, snr_p2_t02
+        correlation, p_value = pearsonr(bin_means_0, bin_means_1)
+        return snr_p_t0, snr_p_2t0, correlation
 
     @staticmethod
     def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth, rp_rstar,
@@ -947,7 +1021,7 @@ class Watson:
                 lc_df['time_folded'] > 0.5 - duration_to_period * oot_range / 2)) |
                        ((lc_df['time_folded'] > 0.5 + duration_to_period) & (
                                lc_df['time_folded'] < 0.5 + duration_to_period * oot_range / 2))]
-        snr = (1 - lc_it['flux'].median()) * np.sqrt(len(lc_it)) / lc_oot['flux'].std()
+        snr = (1 - lc_it['flux'].mean()) * np.sqrt(len(lc_it)) / lc_oot['flux'].std()
         return snr
 
     @staticmethod
@@ -1674,6 +1748,39 @@ class Watson:
         return
 
     @staticmethod
+    def compute_phased_values(lc, period, epoch, duration, range=5, bins=None):
+        """
+        Phase-folds the input light curve and plots it centered in the given epoch
+        @param id: the candidate name
+        @param lc: the lightkurve object containing the data
+        @param period: the period for the phase-folding
+        @param epoch: the epoch to center the fold
+        @param depth: the transit depth
+        @param duration: the transit duration
+        @param range: the range to be used from the midtransit time in half-duration units.
+        @param bins: the number of bins
+        @params bin_err_mode: either 'bin' or 'flux_err' for flux_err std.
+        @return: the drawn axis and the computed bins
+        """
+        time = foldedleastsquares.core.fold(lc.time.value, period, epoch + period / 2)
+        sort_args = np.argsort(time)
+        time = time[sort_args]
+        flux = lc.flux.value[sort_args]
+        flux_err = lc.flux_err.value[sort_args]
+        half_duration_phase = duration / 2 / period
+        folded_plot_range = half_duration_phase * range
+        folded_plot_range = folded_plot_range if folded_plot_range < 0.5 else 0.5
+        folded_phase_zoom_mask = np.where((time > 0.5 - folded_plot_range) &
+                                          (time < 0.5 + folded_plot_range))
+        folded_phase = time[folded_phase_zoom_mask]
+        folded_y = flux[folded_phase_zoom_mask]
+        folded_y_err = flux_err[folded_phase_zoom_mask]
+        folded_time = time[folded_phase_zoom_mask]
+        # TODO if FFI no binning
+        bin_centers, bin_means, bin_width, bin_stds = LcbuilderHelper.bin(folded_phase, folded_y, bins, values_err=folded_y_err)
+        return folded_time, folded_y, folded_y_err, bin_centers, bin_means, bin_stds, bin_width, half_duration_phase
+
+    @staticmethod
     def compute_phased_values_and_fill_plot(id, axs, lc, period, epoch, depth, duration, rp_rstar, a_rstar, range=5,
                                             bins=None, bin_err_mode="flux_err"):
         """
@@ -1690,23 +1797,9 @@ class Watson:
         @params bin_err_mode: either 'bin' or 'flux_err' for flux_err std.
         @return: the drawn axis and the computed bins
         """
-        time = foldedleastsquares.core.fold(lc.time.value, period, epoch + period / 2)
-        axs.scatter(time, lc.flux.value, 2, color="blue", alpha=0.1)
-        sort_args = np.argsort(time)
-        time = time[sort_args]
-        flux = lc.flux.value[sort_args]
-        flux_err = lc.flux_err.value[sort_args]
-        half_duration_phase = duration / 2 / period
-        folded_plot_range = half_duration_phase * range
-        folded_plot_range = folded_plot_range if folded_plot_range < 0.5 else 0.5
-        folded_phase_zoom_mask = np.where((time > 0.5 - folded_plot_range) &
-                                          (time < 0.5 + folded_plot_range))
-        folded_phase = time[folded_phase_zoom_mask]
-        folded_y = flux[folded_phase_zoom_mask]
-        folded_y_err = flux_err[folded_phase_zoom_mask]
-        axs.set_xlim([0.5 - folded_plot_range, 0.5 + folded_plot_range])
-        # TODO if FFI no binning
-        bin_centers, bin_means, bin_width, bin_stds = LcbuilderHelper.bin(folded_phase, folded_y, bins, values_err=folded_y_err)
+        time, folded_y, folded_y_err, bin_centers, bin_means, bin_stds, bin_width, half_duration_phase = (
+            Watson.compute_phased_values(lc, period, epoch, duration, range=range, bins=bins))
+        axs.scatter(time, folded_y, 2, color="blue", alpha=0.1)
         if bins is not None and len(folded_y) > bins:
             axs.errorbar(bin_centers, bin_means, yerr=bin_stds / 2, xerr=bin_width / 2, marker='o', markersize=2,
                          color='darkorange', alpha=1, linestyle='none')
@@ -1716,7 +1809,6 @@ class Watson:
         snr = Watson.compute_snr(lc.time.value, lc.flux.value, duration, period, epoch)
         snr = snr if snr > 0 else 0.001
         axs.plot(model_time, model_flux, color="red")
-        axs.set_title(str(id) + " Folded Curve with P={:.2f}d and T0={:.2f}. SNR={:.2f}".format(period, epoch, snr))
         axs.set_xlabel("Time (d)")
         axs.set_ylabel("Flux norm.")
         if len(folded_y) > 0 and np.any(~np.isnan(folded_y)):
@@ -1780,107 +1872,24 @@ class Watson:
                 pixel_list.append(lc)
 
     @staticmethod
-    def vetting_field_of_view_single(fov_process_input):
+    def vetting_field_of_view_single(fov_process_input: FovProcessInput):
         """
         Plots FOV for one sector data. To be called by a multiprocessing queue.
         :param fov_process_input: wrapper for the sector data
         """
-        maglim = 6
-        search_radius = 40
         try:
             tpf = fov_process_input.tpf_source.download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
             row = tpf.row
             column = tpf.column
             plt.close()
-            fig = plt.figure(figsize=(6.93, 5.5))
-            gs = gridspec.GridSpec(1, 3, height_ratios=[1], width_ratios=[1, 0.05, 0.01])
-            gs.update(left=0.05, right=0.95, bottom=0.12, top=0.95, wspace=0.01, hspace=0.03)
-            ax1 = plt.subplot(gs[0, 0])
-            # TPF plot
-            mean_tpf = np.mean(tpf.flux.value, axis=0)
-            nx, ny = np.shape(mean_tpf)
-            norm = ImageNormalize(stretch=stretching.LogStretch())
-            division = int(np.log10(np.nanmax(tpf.flux.value)))
-            splot = plt.imshow(np.nanmean(tpf.flux.value, axis=0) / 10 ** division, norm=norm, cmap="viridis", \
-                               extent=[column, column + ny, row, row + nx], origin='lower', zorder=0)
             aperture = fov_process_input.apertures[tpf.sector]
             aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
             aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, tpf.shape[2],
                                                                              tpf.shape[1])
             Watson.plot_tpf(tpf, tpf.sector, aperture_boolean, fov_process_input.save_dir)
-            maskcolor = 'salmon'
-            logging.info("    --> Using SHERLOCK aperture for sector %s...", tpf.sector)
-            if aperture is not None:
-                for pixels in aperture:
-                    ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
-                                                    1, 1, color=maskcolor, fill=True, alpha=0.4))
-                    ax1.add_patch(patches.Rectangle((pixels[0], pixels[1]),
-                                                    1, 1, color=maskcolor, fill=False, alpha=1, lw=2))
-            # Gaia sources
-            gaia_id, mag = tpfplotter.get_gaia_data(fov_process_input.ra, fov_process_input.dec,
-                                                    search_radius=search_radius)
-            r, res = tpfplotter.add_gaia_figure_elements(tpf, magnitude_limit=mag + float(maglim), targ_mag=mag)
-            x, y, gaiamags = r
-            x, y, gaiamags = np.array(x) + 0.5, np.array(y) + 0.5, np.array(gaiamags)
-            size = 128.0 / 2 ** ((gaiamags - mag))
-            plt.scatter(x, y, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10)
-            # Gaia source for the target
-            this = np.where(np.array(res['Source']) == int(gaia_id))[0]
-            plt.scatter(x[this], y[this], marker='x', c='white', s=32, zorder=11)
-            # Legend
-            add = 0
-            if int(maglim) % 2 != 0:
-                add = 1
-            maxmag = int(maglim) + add
-            legend_mags = np.linspace(-2, maxmag, int((maxmag + 2) / 2 + 1))
-            fake_sizes = mag + legend_mags  # np.array([mag-2,mag,mag+2,mag+5, mag+8])
-            for f in fake_sizes:
-                size = 128.0 / 2 ** ((f - mag))
-                plt.scatter(0, 0, s=size, c='red', alpha=0.6, edgecolor=None, zorder=10,
-                            label=r'$\Delta m=$ ' + str(int(f - mag)))
-            ax1.legend(fancybox=True, framealpha=0.7)
-            # Source labels
-            dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
-            dsort = np.argsort(dist)
-            for d, elem in enumerate(dsort):
-                if dist[elem] < 6:
-                    plt.text(x[elem] + 0.1, y[elem] + 0.1, str(d + 1), color='white', zorder=100)
-            # Orientation arrows
-            tpfplotter.plot_orientation(tpf)
-            # Labels and titles
-            plt.xlim(column, column + ny)
-            plt.ylim(row, row + nx)
-            plt.xlabel('Pixel Column Number', fontsize=16)
-            plt.ylabel('Pixel Row Number', fontsize=16)
-            plt.title('Coordinates ' + fov_process_input.target_title + ' - Sector ' + str(tpf.sector),
-                      fontsize=16)  # + ' - Camera '+str(tpf.camera))  #
-            # Colorbar
-            cbax = plt.subplot(gs[0, 1])  # Place it where it should be.
-            pos1 = cbax.get_position()  # get the original position
-            pos2 = [pos1.x0 - 0.05, pos1.y0, pos1.width, pos1.height]
-            cbax.set_position(pos2)  # set a new position
-            cb = Colorbar(ax=cbax, cmap="viridis", mappable=splot, orientation='vertical', ticklocation='right')
-            plt.xticks(fontsize=14)
-            exponent = r'$\times 10^' + str(division) + '$'
-            cb.set_label(r'Flux ' + exponent + r' (e$^-$)', labelpad=10, fontsize=16)
-            plt.savefig(fov_process_input.save_dir + '/fov_TPF_Gaia_' + fov_process_input.target_title + '_S' +
-                        str(tpf.sector) + '.png')
-            # Save Gaia sources info
-            dist = np.sqrt((x - x[this]) ** 2 + (y - y[this]) ** 2)
-            GaiaID = np.array(res['Source'])
-            srt = np.argsort(dist)
-            x, y, gaiamags, dist, GaiaID = x[srt], y[srt], gaiamags[srt], dist[srt], GaiaID[srt]
-            IDs = np.arange(len(x)) + 1
-            inside = np.zeros(len(x))
-            for pixels in aperture:
-                xtpf, ytpf = pixels[0], pixels[1]
-                _inside = np.where((x > xtpf) & (x < xtpf + 1) &
-                                   (y > ytpf) & (y < ytpf + 1))[0]
-                inside[_inside] = 1
-            data = Table([IDs, GaiaID, x, y, dist, dist * 21., gaiamags, inside.astype('int')],
-                         names=['# ID', 'GaiaID', 'x', 'y', 'Dist_pix', 'Dist_arcsec', 'Gmag', 'InAper'])
-            ascii.write(data, fov_process_input.save_dir + '/fov_Gaia_' + fov_process_input.target_title + '_S' +
-                        str(tpf.sector) + '.dat', overwrite=True)
+            triceratops_target = target(fov_process_input.tic, [tpf.sector], mission=fov_process_input.mission,
+                                        ra=fov_process_input.ra, dec=fov_process_input.dec)
+            triceratops_target.plot_field(tpf.sector, save=True, fname=f'{fov_process_input.save_dir}/fov_sector_{tpf.sector}')
         except SystemExit:
             logging.exception("Field Of View generation tried to exit.")
         except Exception as e:
@@ -1903,6 +1912,7 @@ class Watson:
         :param cpus: cores to be used
         :return: the directory where resulting data is stored
         """
+        cpus = 1
         try:
             sectors = [sectors] if isinstance(sectors, int) else sectors
             sectors_search = None if sectors is not None and len(sectors) == 0 else sectors
@@ -1938,35 +1948,3 @@ class Watson:
             logging.exception("Field Of View generation tried to exit.")
         except Exception as e:
             logging.exception("Exception found when generating Field Of View plots")
-
-class SingleTransitProcessInput:
-    def __init__(self, data_dir, id, index, lc_file, lc_data_file, tpfs_dir, apertures,
-                                         transit_times, depth, duration, period, rp_rstar, a_rstar, transits_mask):
-        self.data_dir = data_dir
-        self.id = id
-        self.index = index
-        self.lc_file = lc_file
-        self.lc_data_file = lc_data_file
-        self.tpfs_dir = tpfs_dir
-        self.apertures = apertures
-        self.transit_times = transit_times
-        self.depth = depth
-        self.duration = duration
-        self.period = period
-        self.rp_rstar = rp_rstar
-        self.a_rstar = a_rstar
-        self.transits_mask = transits_mask
-
-class FovProcessInput:
-    def __init__(self, save_dir, mission, tic, cadence, ra, dec, sectors, source, apertures, tpf_source, target_title):
-        self.save_dir = save_dir
-        self.mission = mission
-        self.tic = tic
-        self.cadence = cadence
-        self.ra = ra
-        self.dec = dec
-        self.sectors = sectors
-        self.source = source
-        self.apertures = apertures
-        self.tpf_source = tpf_source
-        self.target_title = target_title
