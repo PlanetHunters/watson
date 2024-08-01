@@ -22,7 +22,7 @@ corner==2.2.2
 cryptography==43.0.0
 cycler==0.12.1
 Cython==3.0.6
-dearwatson==0.11.0
+dearwatson==0.11.1
 Deprecated==1.2.14
 distro==1.9.0
 dm-tree==0.1.8
