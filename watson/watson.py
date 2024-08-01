@@ -1889,7 +1889,7 @@ class Watson:
             Watson.plot_tpf(tpf, tpf.sector, aperture_boolean, fov_process_input.save_dir)
             triceratops_target = target(fov_process_input.tic, [tpf.sector], mission=fov_process_input.mission,
                                         ra=fov_process_input.ra, dec=fov_process_input.dec)
-            triceratops_target.plot_field(tpf.sector, save=True, fname=f'{fov_process_input.save_dir}/fov_sector_{tpf.sector}')
+            triceratops_target.plot_field(tpf.sector, save=True, fname=f'{fov_process_input.save_dir}/fov_sector_{tpf.sector}', ap_pixels=aperture)
         except SystemExit:
             logging.exception("Field Of View generation tried to exit.")
         except Exception as e:
