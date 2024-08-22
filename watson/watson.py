@@ -26,7 +26,6 @@ from lightkurve import MPLSTYLE
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-import wotan
 import yaml
 from astropy.timeseries.periodograms import BoxLeastSquares
 from astropy.wcs import WCS
@@ -741,12 +740,12 @@ class Watson:
                 axs[3].set_xlim([transit_time - plot_range, transit_time + plot_range])
                 axs[3].set_xlabel("Time (d)")
                 axs[3].set_ylabel("Flux norm.")
-                chosen_aperture_lc.flux = wotan.flatten(chosen_aperture_lc.time.value,
-                                                        chosen_aperture_lc.flux.value, window_length=0.75,
-                                                        return_trend=False, method="biweight", break_tolerance=0.5)
-                smaller_aperture_lc.flux = wotan.flatten(smaller_aperture_lc.time.value,
-                                                         smaller_aperture_lc.flux.value, window_length=0.75,
-                                                         return_trend=False, method="biweight", break_tolerance=0.5)
+                chosen_aperture_lc.flux, _ = LcbuilderHelper.detrend(chosen_aperture_lc.time.value,
+                                                                  chosen_aperture_lc.flux.value, 0.75,
+                                                                  check_cadence=True, method="biweight")
+                smaller_aperture_lc.flux, _ = LcbuilderHelper.detrend(smaller_aperture_lc.time.value,
+                                                                  smaller_aperture_lc.flux.value, 0.75,
+                                                                  check_cadence=True, method="biweight")
                 chosen_aperture_lc = chosen_aperture_lc[
                     (chosen_aperture_lc.time.value - plot_range < transit_time) &
                     (chosen_aperture_lc.time.value + plot_range > transit_time)]
@@ -871,15 +870,17 @@ class Watson:
         bins_avg = 1 - (bin_means_0 - bin_means_1)
         bins_stds_avg = (bin_stds_0 + bin_stds_1) / 2
         if bins is not None and len(folded_y_0) > bins:
+            axs[2].scatter(bin_centers_0, bin_means_0, 8, marker='o', color='blue', alpha=1)
+            axs[2].scatter(bin_centers_1, bin_means_1, 8, marker='o', color='red', alpha=1)
             axs[2].errorbar(bin_centers_0, bins_avg, yerr=bins_stds_avg / 2,
                          xerr=bin_width_0 / 2, marker='o', markersize=2,
                          color='darkorange', alpha=1, linestyle='none')
-        bls = BoxLeastSquares(bin_centers_0, bins_avg, bins_stds_avg)
-        result = bls.power([1], np.linspace(duration / period / 2, duration / period * 1.5, 10))
-        model = np.ones(100)
-        it_indexes = np.argwhere((bin_centers_0 > 0.5 - result.duration[0] / 2) & (bin_centers_0 < 0.5 + result.duration / 2)).flatten()
-        model[it_indexes] = 1 - result.depth[0]
-        axs[2].plot(bin_centers_0, model, color="red")
+        # bls = BoxLeastSquares(bin_centers_0, bins_avg, bins_stds_avg)
+        # result = bls.power([1], np.linspace(duration / period / 2, duration / period * 1.5, 10))
+        # model = np.ones(100)
+        # it_indexes = np.argwhere((bin_centers_0 > 0.5 - result.duration[0] / 2) & (bin_centers_0 < 0.5 + result.duration / 2)).flatten()
+        # model[it_indexes] = 1 - result.depth[0]
+        # axs[2].plot(bin_centers_0, model, color="red")
         axs[2].set_xlabel("Time (d)")
         axs[2].set_ylabel("Flux norm.")
         if len(folded_y_0) > 0 and np.any(~np.isnan(folded_y_0)):
@@ -978,7 +979,7 @@ class Watson:
             lc = lc.remove_outliers(sigma_lower=float('inf'), sigma_upper=3)
             if mission == lcbuilder.constants.MISSION_K2:
                 lc = lc.to_corrector("sff").correct(windows=20)
-            lc.flux = wotan.flatten(lc.time.value, lc.flux.value, window_length=duration * 4, method="biweight")
+            lc.flux, _ = LcbuilderHelper.detrend(lc.time.value, lc.flux.value, duration * 4, check_cadence=True, method="biweight")
             lc = LcbuilderHelper.mask_transits_dict(lc, transits_mask)
             snr = Watson.compute_snr(lc.time.value, lc.flux.value, duration, period, epoch)
             snrs[cadence] = snr
@@ -1162,7 +1163,7 @@ class Watson:
                 if len(time) > 0:
                     folded_time = foldedleastsquares.core.fold(time, period, epoch + period / 2)
                     pixel_flux = pixel_flux[~mask_nans]
-                    pixel_flux = wotan.flatten(time, pixel_flux, duration * 4, method='biweight')
+                    pixel_flux, _ = LcbuilderHelper.detrend(time, pixel_flux, duration * 4, check_cadence=True, method="biweight")
                     lc_df = pd.DataFrame(columns=['time', 'flux', 'time_folded'])
                     lc_df['time'] = time
                     lc_df['time_folded'] = folded_time
@@ -1201,12 +1202,12 @@ class Watson:
                     if halo_aperture[i, j]:
                         halo_flux = halo_flux + pixel_flux
         core_flux = core_flux / len(np.argwhere(aperture == True))
-        core_flux = wotan.flatten(tpf.time.value, core_flux, duration * 4, method='biweight')
+        core_flux, _ = LcbuilderHelper.detrend(tpf.time.value, core_flux, duration * 4, check_cadence=True, method="biweight")
         halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
         if len(np.argwhere(~np.isnan(halo_flux))) == 0:
             halo_flux = core_flux
         else:
-            halo_flux = wotan.flatten(tpf.time.value, halo_flux, duration * 4, method='biweight')
+            halo_flux, _ = LcbuilderHelper.detrend(tpf.time.value, halo_flux, duration * 4, check_cadence=True, method="biweight")
         return (tpf.time.value, core_flux, halo_flux)
 
     @staticmethod
@@ -1527,7 +1528,7 @@ class Watson:
                 lc = tpf.to_lightcurve(aperture_mask=masks[j])
                 lc = corrector_func(lc)
                 if len(lc) > 0:
-                    lc.flux = wotan.flatten(lc.time.value, lc.flux.value, duration * 4, method='biweight')
+                    lc.flux, _ = LcbuilderHelper.detrend(lc.time.value, lc.flux.value, duration * 4, check_cadence=True, method="biweight")
                 if period is not None:
                     duration_to_period = duration / period
                     lc_df = pd.DataFrame(columns=['time', 'time_folded', 'flux', 'flux_err'])
