@@ -22,7 +22,7 @@ corner==2.2.2
 cryptography==43.0.0
 cycler==0.12.1
 Cython==3.0.6
-dearwatson==0.11.7
+dearwatson==0.11.8
 Deprecated==1.2.14
 distro==1.9.0
 dm-tree==0.1.8
@@ -30,7 +30,7 @@ ellc==1.8.8
 emcee==3.1.6
 everest-pipeline==2.0.12
 exceptiongroup==1.2.2
-exoml==0.1.23
+exoml==0.1.24
 extension-helpers==0.1
 fbpca==1.0
 filelock==3.15.4
@@ -68,7 +68,7 @@ keras-core==0.1.7
 keras-nlp==0.8.1
 keyring==25.3.0
 kiwisolver==1.4.5
-lcbuilder==0.20.3
+lcbuilder==0.20.4
 ldtk==1.8.4
 libclang==18.1.1
 lightkurve==2.4.2
