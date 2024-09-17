@@ -30,7 +30,7 @@ class TestsWatson(unittest.TestCase):
                                                     6.082, [1, 2], 0.07571, cadence=120,
                                                     cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert len(files_in_dir) == 35
+            self.assertEqual(len(files_in_dir), 35)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -39,14 +39,15 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
         try:
-            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, [1, 2], 0.07571,
+            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 8.32, 1327.51, 199, 6.082, [1, 2], 0.07571,
                                        a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
+                                       star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2, clean=False, only_summary=True)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEquals(len(files_in_dir), 9)
+            self.assertEqual(len(files_in_dir), 9)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -64,7 +65,7 @@ class TestsWatson(unittest.TestCase):
                                                                       -69.226593, [1, 2], "tpf", apertures,
                                                                       1)
                 files_in_dir = os.listdir(fov_dir)
-                assert len(files_in_dir) == 4
+                self.assertEqual(len(files_in_dir), 4)
         finally:
             if os.path.exists(fov_dir):
                 shutil.rmtree(fov_dir, ignore_errors=False)
@@ -78,10 +79,11 @@ class TestsWatson(unittest.TestCase):
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
+                                       star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
                                        cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            assert self.assertEquals(len(files_in_dir), 36)
+            self.assertEqual(len(files_in_dir), 36)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -97,6 +99,7 @@ class TestsWatson(unittest.TestCase):
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
+                                       star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2,
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
                                        dec=-69.226822697583, clean=False)
@@ -118,7 +121,7 @@ class TestsWatson(unittest.TestCase):
         Watson(vetting_dir, vetting_dir).report("TIC 25155310", 63.3739396231274, -69.226822697583, 1327.51, 3.2899, 199, 6.082,
                                    transits_list, [2, 5, 7], None, None, None, None)
         files_in_dir = os.listdir(vetting_dir)
-        assert len(files_in_dir) == 20
+        self.assertEqual(len(files_in_dir), 20)
 
     @staticmethod
     def get_path(path):
