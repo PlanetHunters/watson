@@ -1964,10 +1964,10 @@ class Watson:
         period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, period / 2 if period / 2 >= 0.4 else 0.4, period * 1.5, 1, star_info, 1)
         bls = BoxLeastSquares(time, flux, flux_err)
         result = bls.power(period_grid, np.linspace(duration / 2, duration * 1.5, 10))
-        power = result.power / np.nanmedian(result.power)
+        signal_spectra = result.power / np.nanmedian(result.power)
         diff = np.abs(period_grid - period)
         period_index = np.argmin(diff)
-        signal_power = power[period_index]
+        signal_power = signal_spectra[period_index]
         bootstrap_max_powers = []
         indices = np.arange(len(flux))
         for i in range(bootstrap_scenarios):
@@ -1978,4 +1978,4 @@ class Watson:
             bootstrap_max_powers.append(np.nanmax(power))
         bootstrap_max_powers = np.array(bootstrap_max_powers)
         fap_bootstrap = np.sum(bootstrap_max_powers >= signal_power) / bootstrap_scenarios
-        return fap_bootstrap
+        return fap_bootstrap, signal_spectra
