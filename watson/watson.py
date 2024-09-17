@@ -9,6 +9,8 @@ import zipfile
 import io
 from exoml.iatson.IATSON_planet import IATSON_planet
 from exoml.ml.model.base_model import HyperParams
+from foldedleastsquares.stats import spectra
+from lcbuilder.star.starinfo import StarInfo
 from openai import OpenAI
 from triceratops import triceratops
 from triceratops.triceratops import target
@@ -311,6 +313,7 @@ class Watson:
         logging.info("Running Transit Plots")
         lc, lc_data, lc_data_norm, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
                                                           transits_mask=transits_mask)
+        star_df = pd.read_csv(star_file)
         apertures = None
         sectors = None
         if os.path.exists(apertures_file):
@@ -338,6 +341,11 @@ class Watson:
             transit_t0s_list = LcbuilderHelper.compute_t0s(lc.time.value, period, t0, duration / 60 / 24)
         mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
+        bootstrap_fap = Watson.compute_bootstrap_fap(lc.time.value, lc.flux.value, period, duration / 60 / 24,
+                                     StarInfo(radius=star_df.iloc[0]['radius'], mass=star_df.iloc[0]['mass']),
+                                     lc.flux_err.value, bootstrap_scenarios=100)
+        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+            {'metric': ['bootstrap_fap'], 'score': [bootstrap_fap], 'passed': [int(bootstrap_fap <= 0.1)]}, orient='columns')], ignore_index=True)
         snrs = Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period,
                                                t0, duration, depth / 1000, rp_rstar, a_rstar, transits_mask, cpus)
         if len(snrs.values()) > 0:
@@ -1949,3 +1957,25 @@ class Watson:
             logging.exception("Field Of View generation tried to exit.")
         except Exception as e:
             logging.exception("Exception found when generating Field Of View plots")
+
+    @staticmethod
+    def compute_bootstrap_fap(time, flux, period, duration, star_info, flux_err=None, bootstrap_scenarios=100):
+        flux_err = flux_err if flux_err is not None else np.full(len(flux), np.nanstd(flux))
+        period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, period / 2 if period / 2 >= 0.4 else 0.4, period * 1.5, 1, star_info, 1)
+        bls = BoxLeastSquares(time, flux, flux_err)
+        result = bls.power(period_grid, np.linspace(duration / 2, duration * 1.5, 10))
+        power = result.power / np.nanmedian(result.power)
+        diff = np.abs(period_grid - period)
+        period_index = np.argmin(diff)
+        signal_power = power[period_index]
+        bootstrap_max_powers = []
+        indices = np.arange(len(flux))
+        for i in range(bootstrap_scenarios):
+            bootstrap_indices = np.random.choice(indices, size=len(flux), replace=True)
+            bls = BoxLeastSquares(time[bootstrap_indices], flux[bootstrap_indices], flux_err[bootstrap_indices])
+            result = bls.power(period_grid, np.linspace(duration / 2, duration * 1.5, 10))
+            power = result.power / np.nanmedian(result.power)
+            bootstrap_max_powers.append(np.nanmax(power))
+        bootstrap_max_powers = np.array(bootstrap_max_powers)
+        fap_bootstrap = np.sum(bootstrap_max_powers >= signal_power) / bootstrap_scenarios
+        return fap_bootstrap
