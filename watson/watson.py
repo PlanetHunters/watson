@@ -372,10 +372,10 @@ class Watson:
                 pixel_size_degrees = pixel_size / 3600
                 offset_test = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2) < pixel_size / 3600
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['transit_offset_ra'], 'score': [offset_ra], 'passed': [int(np.abs(offset_ra - ra_fov) < pixel_size_degrees)]}, orient='columns')],
+                    {'metric': ['transit_offset_ra'], 'score': [offset_ra], 'passed': [np.nan]}, orient='columns')],
                                        ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                    {'metric': ['transit_offset_dec'], 'score': [offset_dec], 'passed': [int(np.abs(offset_dec - dec_fov) < pixel_size_degrees)]}, orient='columns')], ignore_index=True)
+                    {'metric': ['transit_offset_dec'], 'score': [offset_dec], 'passed': [np.nan]}, orient='columns')], ignore_index=True)
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                     {'metric': ['transit_offset_err'], 'score': [offset_err], 'passed': [1 if offset_err < pixel_size * 3 / 3600 else np.nan]}, orient='columns')], ignore_index=True)
                 target_dist = np.sqrt((offset_ra - ra_fov) ** 2 + (offset_dec - dec_fov) ** 2)
@@ -857,7 +857,8 @@ class Watson:
             model[it_indexes] = 1 - result.depth[0]
         else:
             snr_p_2t0 = 0.001
-        axs[1].plot(bin_centers, model, color="red")
+        if len(bin_centers) == len(model):
+            axs[1].plot(bin_centers, model, color="red")
         axs[1].set_xlabel("Time (d)")
         axs[1].set_ylabel("Flux norm.")
         if len(folded_y) > 0 and np.any(~np.isnan(folded_y)):
@@ -875,14 +876,15 @@ class Watson:
             Watson.compute_phased_values(lc_masked_1, period, epoch, duration, bins=bins))
         axs[2].scatter(time_0, folded_y_0, 2, color="blue", alpha=0.3)
         axs[2].scatter(time_1, folded_y_1, 2, color="red", alpha=0.3)
-        bins_avg = 1 - (bin_means_0 - bin_means_1)
-        bins_stds_avg = (bin_stds_0 + bin_stds_1) / 2
         if bins is not None and len(folded_y_0) > bins:
             axs[2].scatter(bin_centers_0, bin_means_0, 8, marker='o', color='blue', alpha=1)
             axs[2].scatter(bin_centers_1, bin_means_1, 8, marker='o', color='red', alpha=1)
-            axs[2].errorbar(bin_centers_0, bins_avg, yerr=bins_stds_avg / 2,
-                         xerr=bin_width_0 / 2, marker='o', markersize=2,
-                         color='darkorange', alpha=1, linestyle='none')
+            if len(bin_means_0) == len(bin_means_1):
+                bins_avg = 1 - (bin_means_0 - bin_means_1)
+                bins_stds_avg = (bin_stds_0 + bin_stds_1) / 2
+                axs[2].errorbar(bin_centers_0, bins_avg, yerr=bins_stds_avg / 2,
+                                xerr=bin_width_0 / 2, marker='o', markersize=2,
+                                color='darkorange', alpha=1, linestyle='none')
         # bls = BoxLeastSquares(bin_centers_0, bins_avg, bins_stds_avg)
         # result = bls.power([1], np.linspace(duration / period / 2, duration / period * 1.5, 10))
         # model = np.ones(100)
