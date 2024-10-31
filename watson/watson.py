@@ -1963,7 +1963,7 @@ class Watson:
     @staticmethod
     def compute_bootstrap_fap(time, flux, period, duration, star_info, flux_err=None, bootstrap_scenarios=100):
         flux_err = flux_err if flux_err is not None else np.full(len(flux), np.nanstd(flux))
-        period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, period / 2 if period / 2 >= 0.4 else 0.4, period * 1.5, 1, star_info, 1)
+        period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, period / 2, period * 1.5, 1, star_info, 1)
         bls = BoxLeastSquares(time, flux, flux_err)
         result = bls.power(period_grid, np.linspace(duration / 2, duration * 1.5, 10))
         power = result.power / np.nanmedian(result.power)
