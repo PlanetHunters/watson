@@ -178,7 +178,7 @@ class Watson:
         if a_rstar is None and lc_build is None:
             raise ValueError("You need to define a_rstar if you are providing the lc_file and lc_data_file")
         if a_rstar is None:
-            a_rstar = HabitabilityCalculator().calculate_semi_major_axis(period, lc_build.star_info.mass)
+            a_rstar = HabitabilityCalculator().calculate_semi_major_axis(period, 0, 0, lc_build.star_info.mass, 0, 0)[0]
         if tpfs_dir is None:
             tpfs_dir = self.object_dir + "/tpfs/"
         if apertures_file is None:
