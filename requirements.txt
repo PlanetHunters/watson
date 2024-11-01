@@ -22,7 +22,7 @@ corner==2.2.2
 cryptography==43.0.3
 cycler==0.12.1
 Cython==3.0.6
-dearwatson==0.12.5
+dearwatson==0.12.6
 Deprecated==1.2.14
 distro==1.9.0
 dm-tree==0.1.8
@@ -143,7 +143,7 @@ regex==2024.9.11
 reportlab==4.0.7
 requests==2.32.3
 requests-oauthlib==2.0.0
-rich==13.9.3
+rich==13.9.4
 rsa==4.9
 ruamel.yaml==0.17.32
 ruamel.yaml.clib==0.2.12
@@ -183,7 +183,7 @@ typing_extensions==4.7.1
 uncertainties==3.2.2
 urllib3==2.2.3
 webencodings==0.5.1
-Werkzeug==3.1.0
+Werkzeug==3.1.1
 wheel==0.44.0
 wotan==1.9
 wrapt==1.14.1
