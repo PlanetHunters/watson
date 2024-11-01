@@ -1969,7 +1969,7 @@ class Watson:
         if np.nanmax(duration_grid) >= min_period:
             duration_grid = np.linspace(min_period / 4, 2 * min_period / 3, num=10)
         bls = BoxLeastSquares(time, flux, flux_err)
-        result = bls.power(period_grid, np.linspace(duration / 2, duration * 1.5, 10))
+        result = bls.power(period_grid, duration_grid)
         power = result.power / np.nanmedian(result.power)
         diff = np.abs(period_grid - period)
         period_index = np.argmin(diff)
