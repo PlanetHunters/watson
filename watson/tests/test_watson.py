@@ -7,6 +7,7 @@ import numpy
 import pandas as pd
 import pkg_resources
 import yaml
+from lcbuilder.star.starinfo import StarInfo
 
 from watson.watson import Watson
 
@@ -122,6 +123,14 @@ class TestsWatson(unittest.TestCase):
                                    transits_list, [2, 5, 7], None, None, None, None)
         files_in_dir = os.listdir(vetting_dir)
         self.assertEqual(len(files_in_dir), 20)
+
+    def test_compute_bootstrap_fap(self):
+        vetting_dir = TestsWatson.get_path("vetting_report_test/")
+        fap = (Watson(vetting_dir, vetting_dir)
+         .compute_bootstrap_fap(numpy.linspace(0, 100, 100),
+                                numpy.ones(100), 0.05, 0.05,
+                                StarInfo(radius=1, mass=1)))
+        self.assertAlmostEqual(fap, 0.00, places=2)
 
     @staticmethod
     def get_path(path):

@@ -1979,7 +1979,7 @@ class Watson:
         for i in range(bootstrap_scenarios):
             bootstrap_indices = np.random.choice(indices, size=len(flux), replace=True)
             bls = BoxLeastSquares(time[bootstrap_indices], flux[bootstrap_indices], flux_err[bootstrap_indices])
-            result = bls.power(period_grid, np.linspace(duration / 2, duration * 1.5, 10))
+            result = bls.power(period_grid, duration_grid)
             power = result.power / np.nanmedian(result.power)
             bootstrap_max_powers.append(np.nanmax(power))
         bootstrap_max_powers = np.array(bootstrap_max_powers)
