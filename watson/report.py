@@ -190,30 +190,41 @@ class Report:
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
         metrics_file = self.data_dir + "/metrics.csv"
-        iatson_file = self.data_dir + "/iatson.csv"
+        iatson_original_predictions_file = f'{self.data_dir}/iatson_predictions.csv'
+        iatson_averages_file = f'{self.data_dir}/iatson_averages.csv'
+        iatson_branches_file = f'{self.data_dir}/iatson_explain_branches.csv'
+        iatson_values_file = f'{self.data_dir}/iatson_explain_values.csv'
         gpt_file = self.data_dir + '/gpt.csv'
         table_data = [['Metric', 'Value']]
+        explainability_branches_table_data = [['Metric', 'Value']]
+        explainability_values_table_data = [['Metric', 'Value']]
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
-        if os.path.exists(iatson_file):
-            iatson_df = pd.read_csv(iatson_file)
-            score_median = iatson_df['prediction'].mean(skipna=True)
-            score_uncertainty = iatson_df['prediction'].std(skipna=True)
-            if score_median > 0.99:
+        if os.path.exists(iatson_original_predictions_file):
+            averages_df = pd.read_csv(iatson_averages_file)
+            branches_df = pd.read_csv(iatson_branches_file)
+            values_df = pd.read_csv(iatson_values_file)
+            score_average = averages_df.loc['prediction_value_cal_mean'].iloc[0]
+            score_std = averages_df.loc['prediction_value_cal_std'].iloc[0]
+            if score_average > 0.961:
                 passed = True
-            elif score_median > 0.5:
+            elif score_average > 0.646:
                 passed = np.nan
             else:
                 passed = False
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                {"metric": ["WATSON-NET"], 'score': [round(score_median, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
-            if score_uncertainty < 0.015:
+                {"metric": ["WATSON-NET"], 'score': [round(score_average, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+            if score_std < 0.015:
                 passed = True
-            elif score_uncertainty < 0.1:
+            elif score_std < 0.1:
                 passed = np.nan
             else:
                 passed = False
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-                {"metric": ["WATSON-NET err"], 'score': [round(score_uncertainty, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+                {"metric": ["WATSON-NET err"], 'score': [round(score_std, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+            for index, row in branches_df.iterrows():
+                explainability_branches_table_data.append([row['object_id'], round(row['prediction_value_cal_mean'], 3)])
+            for index, row in values_df.iterrows():
+                explainability_values_table_data.append([row['object_id'], round(row['prediction_value_cal_mean'], 3)])
         if os.path.exists(gpt_file):
             gpt_df = pd.read_csv(gpt_file)
             score_gpt = gpt_df.loc[0, 'prediction']
@@ -244,6 +255,31 @@ class Report:
             table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
                                 + 'The results of the numerical tests. Green cells mean acceptable values. Yellow means ' \
                                 + 'inconclusive. Red represents problematic metrics.</font>'
+            story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+        if os.path.exists(iatson_original_predictions_file):
+            table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
+            table_number_rows = len(explainability_branches_table_data)
+            table = Table(explainability_branches_table_data, table_colwidth, table_number_rows * [0.5 * cm])
+            table.setStyle(table_style)
+            story.append(table)
+            story.append(Spacer(1, 5))
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 4: </strong>' \
+                                + ('Impact of each WATSON-Net neural network branch on the final predictions. A positive'
+                                   'value means that the branch data helps to classify the signal as a transiting planet, '
+                                   'whilst a negative value means that the branch is inducing a negative classification.</font>')
+            story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
+            table_number_rows = len(explainability_values_table_data)
+            table = Table(explainability_values_table_data, table_colwidth, table_number_rows * [0.5 * cm])
+            table.setStyle(table_style)
+            story.append(table)
+            story.append(Spacer(1, 5))
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 5: </strong>' \
+                                + ('Impact of the variation of the single metrics in the WATSON-Net predictions. A positive'
+                                   'value means that the used value improves the prediction in comparison to the original '
+                                   'one, making it closer to a transiting planet classification.</font>')
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
         if os.path.exists(gpt_file):

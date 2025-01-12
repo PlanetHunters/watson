@@ -473,14 +473,13 @@ class Watson:
             if not os.path.exists(iatson_store_dir):
                 os.mkdir(iatson_store_dir)
             try:
-                predictions, predictions_cal = self.run_iatson(id, period, duration, t0, depth, self.data_dir, star_file,
-                                                               lc_file, transits_mask, plot_inputs=iatson_inputs_save)
-                iatson_df = pd.DataFrame(columns=['prediction', 'prediction_calibrated'])
-                for index, prediction in enumerate(predictions):
-                    iatson_df = pd.concat([iatson_df, pd.DataFrame.from_dict(
-                        {'prediction': [prediction], 'prediction_calibrated': [predictions_cal[index]]}, orient='columns')],
-                                           ignore_index=True)
-                iatson_df.to_csv(self.data_dir + '/iatson.csv')
+                predictions_df, original_df, branches_df, values_df = (
+                    self.run_iatson(id, period, duration, t0, depth, self.data_dir, star_file,
+                                    lc_file, transits_mask, plot_inputs=iatson_inputs_save))
+                predictions_df.to_csv(f'{self.data_dir}/iatson_predictions.csv')
+                original_df.to_csv(f'{self.data_dir}/iatson_averages.csv')
+                branches_df.to_csv(f'{self.data_dir}/iatson_explain_branches.csv')
+                values_df.to_csv(f'{self.data_dir}/iatson_explain_values.csv')
             except Exception as e:
                 logging.exception("A problem was found when running WATSON-NET.")
         if gpt_enabled:
@@ -590,7 +589,7 @@ class Watson:
         first_row_df = result_df.iloc[:1]
         branches_results_df = branches_results_df.sort_values(by='prediction_value_cal_mean', ascending=True)
         values_results_df = values_results_df.sort_values(by='prediction_value_cal_mean', ascending=True)
-        return first_row_df, branches_results_df, values_results_df
+        return predictions_df, first_row_df, branches_results_df, values_results_df
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir, transits_mask=None):
