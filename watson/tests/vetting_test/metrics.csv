@@ -16,3 +16,7 @@
 14,og_score,0.10986299721385198,True
 15,centroids_ra_snr,5.358798290292458,False
 16,centroids_dec_snr,-6.068110195604955,False
+16,bootstrap_fap,0.01,True
+16,temp_stat,0.01,True
+16,albedo_stat,0.01,True
+
