@@ -14,6 +14,7 @@ from lcbuilder.star.starinfo import StarInfo
 from openai import OpenAI
 from triceratops import triceratops
 from triceratops.triceratops import target
+from uncertainties import ufloat
 
 from watson.data_validation_report.DvrPreparer import DvrPreparer
 
@@ -344,8 +345,67 @@ class Watson:
         bootstrap_fap = Watson.compute_bootstrap_fap(lc.time.value, lc.flux.value, period, duration / 60 / 24,
                                      StarInfo(radius=star_df.iloc[0]['radius'], mass=star_df.iloc[0]['mass']),
                                      lc.flux_err.value, bootstrap_scenarios=100)
+        habitability_calculator = HabitabilityCalculator()
+        duration_to_period = duration / 60 / 24 / period
+        lc_df = pd.DataFrame(columns=['time', 'flux', 'flux_err', 'time_folded', 'time_folded_sec'])
+        lc_df['time'] = lc.time.value
+        lc_df['flux'] = lc.flux.value
+        lc_df['flux_err'] = lc.flux_err.value
+        lc_df['time_folded'] = foldedleastsquares.fold(lc_df['#time'].to_numpy(), period, t0 + period / 2)
+        lc_df['time_folded_sec'] = foldedleastsquares.fold(lc_df['#time'].to_numpy(), period, t0)
+        lc_df_it = lc_df[(lc_df['time_folded'] > 0.5 - duration_to_period / 2) & (
+                    lc_df['time_folded'] < 0.5 + duration_to_period / 2)]
+        lc_df_it = lc_df_it.sort_values(by=['time_folded'])
+        lc_df_secit = lc_df[(lc_df['time_folded_sec'] > 0.5 - duration_to_period / 2) & (
+                    lc_df['time_folded_sec'] < 0.5 + duration_to_period / 2)]
+        lc_df_secit = lc_df_secit.sort_values(by=['time_folded_sec'])
+        sec_depth = 1 - lc_df_secit['flux_0'].dropna().median()
+        sec_depth_err = lc_df_secit['flux_0'].dropna().std()
+        depth = 1 - lc_df_it['flux_0'].dropna().median()
+        depth_err = lc_df_it['flux_0'].dropna().std()
+        if depth <= 0:
+            depth = 1 - lc_df_it['flux_0'].dropna().min()
+        if sec_depth <= 0:
+            sec_depth = 1 - lc_df_secit['flux_0'].dropna().min()
+        rad_p = (ufloat(depth, depth_err) * (ufloat(star_df.iloc[0]['R_star'], np.nanmax(
+            [star_df.iloc[0]['R_star_uerr'], star_df.iloc[0]['R_star_lerr']])) ** 2)) ** 0.5
+        rp = rad_p.n
+        rp_err = rad_p.s
+        rp = LcbuilderHelper.convert_from_to(rp, u.R_sun, u.R_earth)
+        # obj_id, ra, dec, R_star, R_star_lerr, R_star_uerr, M_star, M_star_lerr, M_star_uerr, Teff_star,
+        # Teff_star_lerr, Teff_star_uerr, ld_a, ld_b, logg, logg_err, feh, feh_err, v, v_err, j, j_err, k, k_err, h,
+        # h_err, kp
+        planet_eq_temp, planet_eq_temp_low_err, planet_eq_temp_up_err = (
+            habitability_calculator.calculate_teq(star_df.iloc[0]['M_star'], star_df.iloc[0]['M_star_lerr'],
+                                                  star_df.iloc[0]['M_star_uerr'],
+                                                  star_df.iloc[0]['R_star'], star_df.iloc[0]['R_star_lerr'],
+                                                  star_df.iloc[0]['R_star_uerr'],
+                                                  period, 0.0001, 0.0001,
+                                                  star_df.iloc[0]['Teff_star'], star_df.iloc[0]['Teff_star_lerr'],
+                                                  star_df.iloc[0]['Teff_star_uerr'],
+                                                  albedo=0.3))
+        planet_eff_temp, planet_eff_temp_low_err, planet_eff_temp_up_err = (
+            habitability_calculator.calculate_teff(star_df.iloc[0]['Teff_star'], star_df.iloc[0]['Teff_star_lerr'],
+                                                   star_df.iloc[0]['Teff_star_uerr'],
+                                                   sec_depth, sec_depth_err, sec_depth_err, depth, depth_err,
+                                                   depth_err))
+        albedo, albedo_low_err, albedo_up_err = (
+            habitability_calculator.calculate_albedo(sec_depth, sec_depth_err, sec_depth_err,
+                                                     period, 0.0001, 0.0001,
+                                                     star_df.iloc[0]['M_star'], star_df.iloc[0]['M_star_lerr'],
+                                                     star_df.iloc[0]['M_star_uerr'],
+                                                     rp, rp_err, rp_err))
+        temp_stat = habitability_calculator.calculate_planet_temperature_stat(
+            planet_eq_temp, planet_eq_temp_low_err, planet_eq_temp_up_err,
+            planet_eff_temp, planet_eff_temp_low_err, planet_eff_temp_up_err
+        )
+        albedo_stat = habitability_calculator.calculate_albedo_stat(albedo, albedo_low_err, albedo_up_err)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
             {'metric': ['bootstrap_fap'], 'score': [bootstrap_fap], 'passed': [int(bootstrap_fap <= 0.1)]}, orient='columns')], ignore_index=True)
+        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+            {'metric': ['temp_stat'], 'score': [temp_stat], 'passed': [int(temp_stat <= 3)]}, orient='columns')], ignore_index=True)
+        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+            {'metric': ['albedo_stat'], 'score': [albedo_stat], 'passed': [int(albedo_stat <= 3)]}, orient='columns')], ignore_index=True)
         snrs = Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period,
                                                t0, duration, depth / 1000, rp_rstar, a_rstar, transits_mask, cpus)
         if len(snrs.values()) > 0:
@@ -492,12 +552,12 @@ class Watson:
         iatson_dir = watson_dir + '/iatson'
         if not os.path.exists(iatson_dir):
             os.mkdir(iatson_dir)
-        iatson_model_root_path = f'{home_path}/0.0.4'
+        iatson_model_root_path = f'{home_path}/1.0.0'
         if not os.path.exists(iatson_model_root_path) or len(os.listdir(iatson_model_root_path)) != 13:
-            r = requests.get("https://www.dropbox.com/scl/fi/gayjdc00m9g5xreyq3is0/0.0.4.zip?rlkey=aebck4dluccnpjtyink183j38&dl=1")
+            r = requests.get("https://www.dropbox.com/scl/fi/h3j28eg4qmoyifkegnbu0/1.0.0.zip?rlkey=ba1090njjpv02y78c53y0jzih&st=txaflz68&dl=1")
             z = zipfile.ZipFile(io.BytesIO(r.content))
             z.extractall(f'{iatson_model_root_path}/')
-        calibrated_model_path = f'{iatson_model_root_path}/IATSON_planet_model_cal_isotonic.pkl'
+        calibrated_model_path = 'IATSON_planet_cal_isotonic.pkl'
         iatson = IATSON_planet({0: 'planet_transit', 1: 'planet', 2: 'fp', 3: 'fa', 4: 'tce', 5: 'tce_secondary',
                                 6: 'tce_centroids_offset', 7: 'tce_source_offset', 8: 'tce_og', 9: 'tce_odd_even',
                                 10: 'none', 11: 'EB', 12: 'bckEB'},
@@ -511,12 +571,26 @@ class Watson:
                                 'EB': [0], 'bckEB': [0], 'candidate': [0], 'tce_candidate': [0]}, HyperParams(),
                                mode="all") \
             .build(use_transformers=False, transformer_blocks=1, transformer_heads=2)
-        predictions, predictions_cal = iatson.predict_watson(target_id, period, duration / 60, epoch, depth_ppt, watson_dir,
+        predictions_df = iatson.predict_watson(target_id, period, duration / 60, epoch, depth_ppt, watson_dir,
                                                              star_filename, lc_filename, transits_mask=transits_mask,
                                                              cv_dir=f"{iatson_model_root_path}",
                                                              plot_inputs=plot_inputs,
-                                                             calibrator_path=f'{calibrated_model_path}')
-        return predictions, predictions_cal
+                                                             calibrator_path=f'{calibrated_model_path}', explain=True)
+        result_df = predictions_df.groupby(['object_id'])[['prediction_value', 'prediction_value_cal']].agg(['mean', 'std'])
+        result_df.columns = ['_'.join(col) for col in result_df.columns]
+        result_df = result_df.reset_index()
+        original_prediction_value = result_df.loc[result_df['object_id'] == target_id, 'prediction_value_mean'].iloc[0]
+        original_prediction_value_cal = result_df.loc[result_df['object_id'] == target_id, 'prediction_value_cal_mean'].iloc[0]
+        branches_results_df = result_df.loc[(result_df['object_id'] != target_id) & (result_df['object_id'].str.contains('branch'))]
+        values_results_df = result_df.loc[(result_df['object_id'] != target_id) & (result_df['object_id'].str.contains('value'))]
+        branches_results_df.loc[:, 'prediction_value_mean'] = original_prediction_value - branches_results_df.loc[:, 'prediction_value_mean']
+        values_results_df.loc[:, 'prediction_value_mean'] = values_results_df.loc[:, 'prediction_value_mean'] - original_prediction_value
+        branches_results_df.loc[:, 'prediction_value_cal_mean'] = original_prediction_value_cal - branches_results_df.loc[:, 'prediction_value_cal_mean']
+        values_results_df.loc[:, 'prediction_value_cal_mean'] = values_results_df.loc[:, 'prediction_value_cal_mean'] - original_prediction_value_cal
+        first_row_df = result_df.iloc[:1]
+        branches_results_df = branches_results_df.sort_values(by='prediction_value_cal_mean', ascending=True)
+        values_results_df = values_results_df.sort_values(by='prediction_value_cal_mean', ascending=True)
+        return first_row_df, branches_results_df, values_results_df
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir, transits_mask=None):

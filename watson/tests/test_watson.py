@@ -13,15 +13,15 @@ from watson.watson import Watson
 
 
 class TestsWatson(unittest.TestCase):
-    # def test_iatson(self):
-    #     object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
-    #     vetting_dir = TestsWatson.get_path("vetting_test")
-    #     predictions, predictions_cal = Watson.run_iatson("TIC 25155310", 3.2899, 199, 1327.51, 6.082,
-    #                       vetting_dir, object_dir + '/params_star.csv', object_dir + '/lc.csv', transits_mask=None, plot_inputs=False)
-    #     self.assertAlmostEqual(numpy.nanmean(predictions), 0.1954, 3)
-    #     self.assertAlmostEqual(numpy.nanstd(predictions), 0.18934455039188502, 3)
-    #     self.assertAlmostEqual(numpy.nanmean(predictions_cal), 0.0925005359807983, 3)
-    #     self.assertAlmostEqual(numpy.nanstd(predictions_cal), 0.10950608490582747, 3)
+    def test_iatson(self):
+        object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
+        vetting_dir = TestsWatson.get_path("vetting_test")
+        result_df, branches_df, values_df = Watson.run_iatson("TIC 25155310", 3.2899, 199, 1327.51, 6.082,
+                          vetting_dir, object_dir + '/params_star.csv', object_dir + '/lc.csv', transits_mask=None, plot_inputs=False)
+        self.assertAlmostEqual(result_df['prediction_value'], 0.1954, 3)
+        self.assertAlmostEqual(result_df['prediction_value'], 0.18934455039188502, 3)
+        self.assertAlmostEqual(result_df['prediction_value_cal'], 0.0925005359807983, 3)
+        self.assertAlmostEqual(result_df['prediction_value_cal'], 0.10950608490582747, 3)
 
     def test_vetting_by_params(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
