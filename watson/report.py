@@ -287,16 +287,7 @@ class Report:
             for gpt_explanation_paragraph in content_gpt.split('\n'):
                 story.append(Paragraph('<font name="HELVETICA" size="9">' + gpt_explanation_paragraph + '</font>', styles["ParagraphAlignJustify"]))
             story.append(Spacer(1, 30))
-        cadences_file = self.data_dir + "/folded_cadences.png"
         figure = 1
-        if os.path.exists(cadences_file):
-            story.append(Image(cadences_file, width=16 * cm, height=20 * cm))
-            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
-                                                                                            'Folded curve for all available cadences.</font>'
-            story.append(Spacer(1, 5))
-            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
-            story.append(Spacer(1, 15))
-            figure = figure + 1
         # neighbours_file_index = 0
         # neighbours_file = self.data_dir + "/star_nb_" + (neighbours_file_index) + ".png"
         # figure = 1
