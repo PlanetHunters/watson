@@ -109,7 +109,7 @@ class Watson:
             logging.root = logging.RootLogger(logging.INFO)
 
     def vetting(self, id, period, t0, duration, depth, sectors, rp_rstar=None, a_rstar=None, cpus=None,
-                cadence=None, lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
+                cadence=[], author=[], lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
                 star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None,
@@ -126,6 +126,7 @@ class Watson:
         :param a_rstar: Semi-major axis / Rstar
         :param cpus: number of cpus to be used
         :param cadence: the cadence to be used to download data, in seconds
+        :param author: the list of authors
         :param lc_file: the file containing the curve
         :param lc_data_file: the file containing the raw curve and the motion, centroids and quality flags
         :param tpfs_dir: the directory containing the tpf files
@@ -171,8 +172,9 @@ class Watson:
             rp_rstar = np.sqrt(depth / 1000)
         lc_build = None
         if lc_file is None or lc_data_file is None:
-            lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence, high_rms_enabled=False,
-                                                          initial_transit_mask=transits_mask), self.data_dir)
+            lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence, author=author,
+                                                          high_rms_enabled=False, initial_transit_mask=transits_mask),
+                                        self.data_dir)
             lc_build.lc_data.to_csv(self.object_dir + "/lc_data.csv")
             lc_file = self.object_dir + "/lc.csv"
             lc_data_file = self.object_dir + "/lc_data.csv"
