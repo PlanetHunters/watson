@@ -25,7 +25,7 @@ setuptools.setup(
                         "bokeh==2.4.2", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "extension-helpers==0.1",
-                        "exoml==1.0.2",
+                        "exoml==1.1.2",
                         "imageio==2.9.0",
                         "openai==1.30.1",
                         'pyparsing==2.4.7', # Matplotlib dependency
