@@ -10,6 +10,7 @@ import io
 from exoml.iatson.IATSON_planet import IATSON_planet
 from exoml.ml.model.base_model import HyperParams
 from foldedleastsquares.stats import spectra
+from lcbuilder.objectinfo.preparer.mission_data_preparer import MissionDataPreparer
 from lcbuilder.star.starinfo import StarInfo
 from openai import OpenAI
 from triceratops import triceratops
@@ -38,24 +39,17 @@ from lcbuilder.constants import CUTOUT_SIZE, LIGHTKURVE_CACHE_DIR
 from lcbuilder.helper import LcbuilderHelper
 from lcbuilder.lcbuilder_class import LcBuilder
 from lcbuilder.objectinfo.MissionObjectInfo import MissionObjectInfo
-from lcbuilder.objectinfo.preparer.MissionLightcurveBuilder import MissionLightcurveBuilder
 from lcbuilder.photometry.aperture_extractor import ApertureExtractor
 from lcbuilder.star.EpicStarCatalog import EpicStarCatalog
 from lcbuilder.star.HabitabilityCalculator import HabitabilityCalculator
 from lcbuilder.star.KicStarCatalog import KicStarCatalog
 from lcbuilder.star.TicStarCatalog import TicStarCatalog
 from lightkurve import TessLightCurve, TessTargetPixelFile, KeplerTargetPixelFile
-from matplotlib.colorbar import Colorbar
 from matplotlib import patches
-from astropy.visualization.mpl_normalize import ImageNormalize
-from astropy.table import Table
-from astropy.io import ascii
-import astropy.visualization as stretching
 from scipy import stats, ndimage
 from scipy.stats import pearsonr
 
 from watson import constants
-import watson.tpfplotterSub.tpfplotter as tpfplotter
 import pandas as pd
 import os
 
@@ -187,7 +181,7 @@ class Watson:
         if apertures_file is None:
             apertures_file = self.object_dir + "/apertures.yaml"
         if star_file is None:
-            mission, mission_prefix, _ = MissionLightcurveBuilder().parse_object_id(id)
+            mission, mission_prefix, _ = MissionDataPreparer.parse_object_id(id)
             pixel_size = LcbuilderHelper.mission_pixel_size(mission)
             star_file = create_star_csv(CreateStarCsvInput(lc_file, mission, id, pixel_size, 50,
                                                None, KicStarCatalog() if 'KIC' in id else TicStarCatalog(),
@@ -342,7 +336,7 @@ class Watson:
                 summary_t0s_indexes = np.append(summary_t0s_indexes, np.argmin(closest_depths_to_mean))
         else:
             transit_t0s_list = LcbuilderHelper.compute_t0s(lc.time.value, period, t0, duration / 60 / 24)
-        mission, mission_prefix, target_id = MissionLightcurveBuilder().parse_object_id(id)
+        mission, mission_prefix, target_id = MissionDataPreparer.parse_object_id(id)
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
         bootstrap_fap = Watson.compute_bootstrap_fap(lc.time.value, lc.flux.value, period, duration / 60 / 24,
                                      StarInfo(radius=star_df.iloc[0]['radius'], mass=star_df.iloc[0]['mass']),
@@ -353,8 +347,8 @@ class Watson:
         lc_df['time'] = lc.time.value
         lc_df['flux'] = lc.flux.value
         lc_df['flux_err'] = lc.flux_err.value
-        lc_df['time_folded'] = foldedleastsquares.fold(lc_df['#time'].to_numpy(), period, t0 + period / 2)
-        lc_df['time_folded_sec'] = foldedleastsquares.fold(lc_df['#time'].to_numpy(), period, t0)
+        lc_df['time_folded'] = foldedleastsquares.fold(lc_df['time'].to_numpy(), period, t0 + period / 2)
+        lc_df['time_folded_sec'] = foldedleastsquares.fold(lc_df['time'].to_numpy(), period, t0)
         lc_df_it = lc_df[(lc_df['time_folded'] > 0.5 - duration_to_period / 2) & (
                     lc_df['time_folded'] < 0.5 + duration_to_period / 2)]
         lc_df_it = lc_df_it.sort_values(by=['time_folded'])
@@ -606,7 +600,7 @@ class Watson:
             lc_data_norm = Watson.normalize_lc_data(lc_data)
             if 'quality' in lc_data.columns:
                 lc_data = lc_data.drop('quality', axis='columns')
-        time, flux, flux_err = lc["#time"].values, lc["flux"].values, lc["flux_err"].values
+        time, flux, flux_err = lc["time"].values, lc["flux"].values, lc["flux_err"].values
         for transit_mask in transits_mask:
             logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
                          transit_mask["T0"], transit_mask["D"])
@@ -1396,9 +1390,9 @@ class Watson:
         halo_flux_snr = Watson.compute_snr_folded(og_halo_time, og_halo_flux, duration, period)
         og_score = halo_flux_snr / core_flux_snr
         bin_centers_0, bin_means_0, bin_width_0, bin_stds_0 = \
-            LcbuilderHelper.bin(og_core_time, og_core_flux, 40)
+            LcbuilderHelper.bin(og_core_time, og_core_flux, 40, bin_err_mode='values_snr')
         bin_centers_1, bin_means_1, bin_width_1, bin_stds_1 = \
-            LcbuilderHelper.bin(og_halo_time, og_halo_flux, 40)
+            LcbuilderHelper.bin(og_halo_time, og_halo_flux, 40, bin_err_mode='values_snr')
         fig, axs = plt.subplots(1, 2, figsize=(8, 3))
         axs[0].set_title("Optical ghost diagnostic core flux. SNR=" + str(np.round(core_flux_snr, 2)), fontsize=10)
         axs[0].axhline(y=1, color='r', linestyle='-', alpha=0.4)
@@ -1442,9 +1436,9 @@ class Watson:
         centroids_dec_snr = Watson.compute_snr_folded(centroids_dec_time, centroids_dec + 1,
                                                duration, period, epoch)
         bin_centers_0, bin_means_0, bin_width_0, bin_stds_0 = \
-            LcbuilderHelper.bin(centroids_ra_time, centroids_ra, 40)
+            LcbuilderHelper.bin(centroids_ra_time, centroids_ra, 40, bin_err_mode='values_snr')
         bin_centers_1, bin_means_1, bin_width_1, bin_stds_1 = \
-            LcbuilderHelper.bin(centroids_dec_time, centroids_dec, 40)
+            LcbuilderHelper.bin(centroids_dec_time, centroids_dec, 40, bin_err_mode='values_snr')
         fig, axs = plt.subplots(1, 2, figsize=(8, 3))
         axs[0].set_title("Right Ascension centroid shift - SNR=" + str(np.round(centroids_ra_snr, 2)), fontsize=10)
         axs[0].axhline(y=0, color='r', linestyle='-', alpha=0.4)
@@ -1834,7 +1828,7 @@ class Watson:
         return
 
     @staticmethod
-    def compute_phased_values(lc, period, epoch, duration, range=5, bins=None):
+    def compute_phased_values(lc, period, epoch, duration, range=5, bins=None, bin_err_mode='flux_err'):
         """
         Phase-folds the input light curve and plots it centered in the given epoch
         @param id: the candidate name
@@ -1863,7 +1857,9 @@ class Watson:
         folded_y_err = flux_err[folded_phase_zoom_mask]
         folded_time = time[folded_phase_zoom_mask]
         # TODO if FFI no binning
-        bin_centers, bin_means, bin_width, bin_stds = LcbuilderHelper.bin(folded_phase, folded_y, bins, values_err=folded_y_err)
+        bin_centers, bin_means, bin_width, bin_stds = LcbuilderHelper.bin(folded_phase, folded_y, bins,
+                                                                          values_err=folded_y_err,
+                                                                          bin_err_mode=bin_err_mode)
         return folded_time, folded_y, folded_y_err, bin_centers, bin_means, bin_stds, bin_width, half_duration_phase
 
     @staticmethod
@@ -1884,7 +1880,8 @@ class Watson:
         @return: the drawn axis and the computed bins
         """
         time, folded_y, folded_y_err, bin_centers, bin_means, bin_stds, bin_width, half_duration_phase = (
-            Watson.compute_phased_values(lc, period, epoch, duration, range=range, bins=bins))
+            Watson.compute_phased_values(lc, period, epoch, duration, range=range, bins=bins,
+                                         bin_err_mode=bin_err_mode))
         axs.scatter(time, folded_y, 2, color="blue", alpha=0.1)
         if bins is not None and len(folded_y) > bins:
             axs.errorbar(bin_centers, bin_means, yerr=bin_stds / 2, xerr=bin_width / 2, marker='o', markersize=2,
