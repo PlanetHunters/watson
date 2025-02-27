@@ -2,6 +2,9 @@ import os
 
 import lcbuilder.eleanor
 import sys
+
+from lcbuilder.objectinfo.preparer.mission_data_preparer import MissionDataPreparer
+
 sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
 import eleanor
 from lcbuilder.eleanor.targetdata import TargetData
@@ -16,8 +19,6 @@ from astropy.coordinates import SkyCoord
 from astroquery.mast import Catalogs
 from astropy import units as u
 from lcbuilder.constants import LIGHTKURVE_CACHE_DIR, ELEANOR_CACHE_DIR, CUTOUT_SIZE
-from lcbuilder.objectinfo.preparer.MissionLightcurveBuilder import MissionLightcurveBuilder
-from scipy.integrate import dblquad
 
 
 def create_star_csv(create_star_input):
@@ -26,7 +27,7 @@ def create_star_csv(create_star_input):
     mission_id = None
     while tries < 3:
         try:
-            mission, mission_prefix, id_int = MissionLightcurveBuilder().parse_object_id(create_star_input.id)
+            mission, mission_prefix, id_int = MissionDataPreparer.parse_object_id(create_star_input.id)
             star_info = create_star_input.star_catalog.catalog_info(id_int)
             star_df = pd.DataFrame(
                 columns=['id', 'ra', 'dec', 'ld_a', 'ld_b', 'Teff', 'lum', 'logg', 'radius', 'mass', 'v', 'j', 'h',
