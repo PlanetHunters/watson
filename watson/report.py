@@ -203,8 +203,8 @@ class Report:
             averages_df = pd.read_csv(iatson_averages_file)
             branches_df = pd.read_csv(iatson_branches_file)
             values_df = pd.read_csv(iatson_values_file)
-            score_average = averages_df.loc['prediction_value_cal_mean'].iloc[0]
-            score_std = averages_df.loc['prediction_value_cal_std'].iloc[0]
+            score_average = averages_df.loc[0, 'prediction_value_cal_mean']
+            score_std = averages_df.loc[0, 'prediction_value_cal_std']
             if score_average > 0.961:
                 passed = True
             elif score_average > 0.646:
@@ -224,7 +224,7 @@ class Report:
             for index, row in branches_df.iterrows():
                 explainability_branches_table_data.append([row['object_id'], round(row['prediction_value_cal_mean'], 3)])
             for index, row in values_df.iterrows():
-                explainability_values_table_data.append([row['object_id'], round(row['prediction_value_cal_mean'], 3)])
+                explainability_values_table_data.append([row['object_id'], round(row['prediction_value_cal_mean'], 6)])
         if os.path.exists(gpt_file):
             gpt_df = pd.read_csv(gpt_file)
             score_gpt = gpt_df.loc[0, 'prediction']
@@ -258,7 +258,7 @@ class Report:
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
         if os.path.exists(iatson_original_predictions_file):
-            table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
+            table_colwidth = [9 * cm, 4 * cm, 3.5 * cm]
             table_number_rows = len(explainability_branches_table_data)
             table = Table(explainability_branches_table_data, table_colwidth, table_number_rows * [0.5 * cm])
             table.setStyle(table_style)
@@ -270,7 +270,7 @@ class Report:
                                    'whilst a negative value means that the branch is inducing a negative classification.</font>')
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
-            table_colwidth = [4 * cm, 4 * cm, 3.5 * cm]
+            table_colwidth = [9 * cm, 4 * cm, 3.5 * cm]
             table_number_rows = len(explainability_values_table_data)
             table = Table(explainability_values_table_data, table_colwidth, table_number_rows * [0.5 * cm])
             table.setStyle(table_style)
