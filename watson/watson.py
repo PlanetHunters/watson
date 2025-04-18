@@ -355,14 +355,14 @@ class Watson:
         lc_df_secit = lc_df[(lc_df['time_folded_sec'] > 0.5 - duration_to_period / 2) & (
                     lc_df['time_folded_sec'] < 0.5 + duration_to_period / 2)]
         lc_df_secit = lc_df_secit.sort_values(by=['time_folded_sec'])
-        sec_depth = 1 - lc_df_secit['flux_0'].dropna().median()
-        sec_depth_err = lc_df_secit['flux_0'].dropna().std()
-        depth = 1 - lc_df_it['flux_0'].dropna().median()
-        depth_err = lc_df_it['flux_0'].dropna().std()
+        sec_depth = 1 - lc_df_secit['flux'].dropna().median()
+        sec_depth_err = lc_df_secit['flux'].dropna().std()
+        depth = 1 - lc_df_it['flux'].dropna().median()
+        depth_err = lc_df_it['flux'].dropna().std()
         if depth <= 0:
-            depth = 1 - lc_df_it['flux_0'].dropna().min()
+            depth = 1 - lc_df_it['flux'].dropna().min()
         if sec_depth <= 0:
-            sec_depth = 1 - lc_df_secit['flux_0'].dropna().min()
+            sec_depth = 1 - lc_df_secit['flux'].dropna().min()
         rad_p = (ufloat(depth, depth_err) * (ufloat(star_df.iloc[0]['R_star'], np.nanmax(
             [star_df.iloc[0]['R_star_uerr'], star_df.iloc[0]['R_star_lerr']])) ** 2)) ** 0.5
         rp = rad_p.n
@@ -566,7 +566,7 @@ class Watson:
                                 'EB': [0], 'bckEB': [0], 'candidate': [0], 'tce_candidate': [0]}, HyperParams(),
                                mode="all") \
             .build(use_transformers=False, transformer_blocks=1, transformer_heads=2)
-        predictions_df = iatson.predict_watson(target_id, period, duration / 60, epoch, depth_ppt, watson_dir,
+        predictions_df, injected_objects_df = iatson.predict_watson(target_id, period, duration / 60, epoch, depth_ppt, watson_dir,
                                                              star_filename, lc_filename, transits_mask=transits_mask,
                                                              cv_dir=f"{iatson_model_root_path}",
                                                              plot_inputs=plot_inputs,
@@ -1090,6 +1090,20 @@ class Watson:
         return snr
 
     @staticmethod
+    def get_aperture_for_sector(apertures, sector, author=None, cadence=None):
+        aperture = apertures[sector]
+        if isinstance(aperture, dict):
+            if author is not None:
+                aperture = aperture[author]
+            else:
+                aperture = list(aperture.values())[0]
+            if cadence is not None:
+                aperture = aperture[cadence]
+            else:
+                aperture = list(aperture.values())[0]
+        return aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
+
+    @staticmethod
     def compute_snr_folded(folded_time, folded_flux, duration, period, oot_range=5):
         duration_to_period = duration / period
         lc_df = pd.DataFrame(columns=['time_folded', 'flux'])
@@ -1133,7 +1147,7 @@ class Watson:
         sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
         sector = sector[0]
         if apertures is not None:
-            aperture = apertures[sector]
+            aperture = Watson.get_aperture_for_sector(apertures, sector)
             aperture = \
                 ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
         else:
@@ -1965,8 +1979,7 @@ class Watson:
             row = tpf.row
             column = tpf.column
             plt.close()
-            aperture = fov_process_input.apertures[tpf.sector]
-            aperture = aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
+            aperture = Watson.get_aperture_for_sector(fov_process_input.apertures, tpf.sector)
             aperture_boolean = ApertureExtractor.from_pixels_to_boolean_mask(aperture, column, row, tpf.shape[2],
                                                                              tpf.shape[1])
             Watson.plot_tpf(tpf, tpf.sector, aperture_boolean, fov_process_input.save_dir)
