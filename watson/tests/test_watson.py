@@ -7,6 +7,7 @@ import numpy
 import pandas as pd
 import pkg_resources
 import yaml
+from lcbuilder import constants
 from lcbuilder.star.starinfo import StarInfo
 
 from watson.watson import Watson
