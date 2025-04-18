@@ -172,6 +172,8 @@ class Watson:
             lc_build.lc_data.to_csv(self.object_dir + "/lc_data.csv")
             lc_file = self.object_dir + "/lc.csv"
             lc_data_file = self.object_dir + "/lc_data.csv"
+            if star_file is None:
+                star_file = self.object_dir + '/params_star.csv'
         if a_rstar is None and lc_build is None:
             raise ValueError("You need to define a_rstar if you are providing the lc_file and lc_data_file")
         if a_rstar is None:
@@ -180,12 +182,12 @@ class Watson:
             tpfs_dir = self.object_dir + "/tpfs/"
         if apertures_file is None:
             apertures_file = self.object_dir + "/apertures.yaml"
-        if star_file is None:
-            mission, mission_prefix, _ = MissionDataPreparer.parse_object_id(id)
-            pixel_size = LcbuilderHelper.mission_pixel_size(mission)
-            star_file = create_star_csv(CreateStarCsvInput(lc_file, mission, id, pixel_size, 50,
-                                               None, KicStarCatalog() if 'KIC' in id else TicStarCatalog(),
-                                               self.data_dir))
+        # if star_file is None:
+        #     mission, mission_prefix, _ = MissionDataPreparer.parse_object_id(id)
+        #     pixel_size = LcbuilderHelper.mission_pixel_size(mission)
+        #     star_file = create_star_csv(CreateStarCsvInput(lc_file, mission, id, pixel_size, 50,
+        #                                        None, KicStarCatalog() if 'KIC' in id else TicStarCatalog(),
+        #                                        self.data_dir))
         try:
             if sectors is not None:
                 DvrPreparer().retrieve(id, sectors, self.data_dir)
@@ -314,7 +316,8 @@ class Watson:
         apertures = None
         sectors = None
         if os.path.exists(apertures_file):
-            apertures = yaml.load(open(apertures_file), yaml.SafeLoader)
+            with open(apertures_file) as apertures_io:
+                apertures = yaml.load(apertures_io, yaml.SafeLoader)
             apertures = apertures["sectors"]
             sectors = [sector for sector in apertures.keys()]
             mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
