@@ -746,8 +746,10 @@ class Watson:
                         smaller_aperture_lc = lc
                         aperture_mask = [[]]
                     else:
+                        author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
+                        aperture = Watson.get_aperture_for_sector(single_transit_process_input.apertures, sector, author, cadence)
                         aperture_mask = ApertureExtractor.from_pixels_to_boolean_mask(
-                            single_transit_process_input.apertures[sector], tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
+                            aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
                         eroded_aperture_mask = ndimage.binary_erosion(aperture_mask)
                         chosen_aperture_lc = tpf.to_lightcurve(aperture_mask=aperture_mask)
                     if True in eroded_aperture_mask:
@@ -1101,7 +1103,10 @@ class Watson:
             else:
                 aperture = list(aperture.values())[0]
             if cadence is not None:
-                aperture = aperture[cadence]
+                if cadence in aperture:
+                    aperture = aperture[cadence]
+                else:
+                    aperture = aperture[int(cadence)]
             else:
                 aperture = list(aperture.values())[0]
         return aperture if isinstance(aperture, np.ndarray) else np.array(aperture)
@@ -1120,6 +1125,14 @@ class Watson:
                                lc_df['time_folded'] < 0.5 + duration_to_period * oot_range / 2))]
         snr = (1 - lc_it['flux'].mean()) * np.sqrt(len(lc_it)) / lc_oot['flux'].std()
         return snr
+
+    @staticmethod
+    def get_author_cadence_from_tpf_name(tpf):
+        tpf_file = os.path.basename(tpf.path)
+        tpf_file = tpf_file.split('_')
+        author = tpf_file[0]
+        cadence = tpf_file[1]
+        return author, cadence
 
     @staticmethod
     def plot_folded_tpf(fold_tpf_input):
@@ -1144,13 +1157,14 @@ class Watson:
                                                                         lc_data_file, tpfs_dir,
                                                                         transits_mask=transits_mask)
         tpf = tpfs[fold_tpf_input['index']]
+        author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
         pixel_values_i = np.array(range(tpf[0].shape[1]))
         pixel_values_j = np.array(range(tpf[0].shape[2]))
         tpf_lc_data = lc_data[(lc_data['time'] >= tpf.time.value[0]) & (lc_data['time'] <= tpf.time.value[-1])].dropna()
         sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
         sector = sector[0]
         if apertures is not None:
-            aperture = Watson.get_aperture_for_sector(apertures, sector)
+            aperture = Watson.get_aperture_for_sector(apertures, sector, author, cadence)
             aperture = \
                 ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
         else:
@@ -1522,7 +1536,8 @@ class Watson:
         target_pixels = wcs.all_world2pix(ra, dec, 0)
         sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
         sector = sector[0]
-        aperture = apertures[sector]
+        author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
+        aperture = Watson.get_aperture_for_sector(apertures, sector, author=author, cadence=cadence)
         aperture = ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
         ax = tpf.plot(aperture_mask=aperture)
         ax.plot([tpf.column + target_pixels[0]], [tpf.row + target_pixels[1]], marker="*", markersize=14,
