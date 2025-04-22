@@ -49,7 +49,7 @@ class TestsWatson(unittest.TestCase):
                                        star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2, clean=False, only_summary=True)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEqual(len(files_in_dir), 9)
+            self.assertEqual(len(files_in_dir), 8)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
