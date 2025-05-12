@@ -23,10 +23,10 @@ if ! [[ -z ${tests_results} ]]; then
   rm -r watson-reqs
   conda remove -n watson-reqs --all -y
   set -e
-  conda create -n watson-reqs python=3.10 -y
+  conda create -n watson-reqs python=3.13 -y
   conda activate watson-reqs
   python3 -m pip install pip -U
-  python3 -m pip install numpy==1.23.5
+  python3 -m pip install numpy==2.2.4
   git_tag=$1
   sed -i '6s/.*/version = "'${git_tag}'"/' setup.py
   sed -i '1s/.*/__version__ = "'${git_tag}'"/' watson/__init__.py
