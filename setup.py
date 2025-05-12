@@ -31,7 +31,7 @@ setuptools.setup(
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==6.0.1",
                         "pillow==11.2.1",
-                        "reportlab==4.0.7",
+                        "reportlab==4.4.0",
                         'setuptools>=41.0.0',
                         'triceratops==1.0.18'
     ]
