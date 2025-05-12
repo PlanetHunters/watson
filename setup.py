@@ -30,7 +30,7 @@ setuptools.setup(
                         "openai==1.30.1",
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==6.0.1",
-                        "pillow==9.5.0",
+                        "pillow==11.2.1",
                         "reportlab==4.0.7",
                         'setuptools>=41.0.0',
                         'triceratops==1.0.18'
