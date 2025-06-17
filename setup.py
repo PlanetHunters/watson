@@ -20,12 +20,12 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires='>=3.13',
+    python_requires='>=3.11',
     install_requires=[
                         "bokeh==2.4.2", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "extension-helpers==0.1",
-                        "exoml==1.1.7",
+                        "exoml==1.2.0",
                         "imageio==2.9.0",
                         "openai==1.30.1",
                         'pyparsing==2.4.7', # Matplotlib dependency
@@ -33,6 +33,6 @@ setuptools.setup(
                         "pillow==11.2.1",
                         "reportlab==4.4.0",
                         'setuptools>=41.0.0',
-                        'triceratops==1.0.18'
+                        'triceratops==1.0.19'
     ]
 )
