@@ -552,7 +552,7 @@ class Watson:
             os.mkdir(iatson_dir)
         iatson_model_root_path = f'{home_path}/'
         if not os.path.exists(iatson_model_root_path) or len(os.listdir(iatson_model_root_path)) != 13:
-            r = requests.get("https://www.dropbox.com/scl/fi/h3j28eg4qmoyifkegnbu0/1.0.1.zip?rlkey=ba1090njjpv02y78c53y0jzih&st=txaflz68&dl=1")
+            r = requests.get("https://www.dropbox.com/scl/fi/2p0h5sep23jtie3pvggnf/1.0.1.zip?rlkey=aw5krm0rlla7hmk2auwkh9sa5&st=slxvhk4v&dl=1")
             z = zipfile.ZipFile(io.BytesIO(r.content))
             z.extractall(f'{iatson_model_root_path}/')
         calibrated_model_path = 'IATSON_planet_cal_isotonic.pkl'
