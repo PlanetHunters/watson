@@ -543,16 +543,16 @@ class Watson:
 
     @staticmethod
     def run_iatson(target_id, period, duration, epoch, depth_ppt, watson_dir, star_filename, lc_filename, transits_mask,
-                   plot_inputs=False):
+                   plot_inputs=False, batch_size=1):
         home_path = f'{os.path.expanduser("~")}/.watson'
         if not os.path.exists(home_path):
             os.mkdir(home_path)
         iatson_dir = watson_dir + '/iatson'
         if not os.path.exists(iatson_dir):
             os.mkdir(iatson_dir)
-        iatson_model_root_path = f'{home_path}/'
+        iatson_model_root_path = f'{home_path}/1.0.1/'
         if not os.path.exists(iatson_model_root_path) or len(os.listdir(iatson_model_root_path)) != 13:
-            r = requests.get("https://www.dropbox.com/scl/fi/2p0h5sep23jtie3pvggnf/1.0.1.zip?rlkey=aw5krm0rlla7hmk2auwkh9sa5&st=slxvhk4v&dl=1")
+            r = requests.get("https://www.dropbox.com/scl/fi/1vjkqnffgj886nuyvepfs/1.0.1.zip?rlkey=5zxisxu4g5b8s0kgv3jnqte8j&st=cm1ycf1x&dl=1")
             z = zipfile.ZipFile(io.BytesIO(r.content))
             z.extractall(f'{iatson_model_root_path}/')
         calibrated_model_path = 'IATSON_planet_cal_isotonic.pkl'
@@ -573,7 +573,8 @@ class Watson:
                                                              star_filename, lc_filename, transits_mask=transits_mask,
                                                              cv_dir=f"{iatson_model_root_path}",
                                                              plot_inputs=plot_inputs,
-                                                             calibrator_path=f'{calibrated_model_path}', explain=True)
+                                                             calibrator_path=f'{calibrated_model_path}',
+                                                             batch_size=batch_size, explain=True)
         result_df = predictions_df.groupby(['object_id'])[['prediction_value', 'prediction_value_cal']].agg(['mean', 'std'])
         result_df.columns = ['_'.join(col) for col in result_df.columns]
         result_df = result_df.reset_index()
