@@ -13,6 +13,10 @@ from foldedleastsquares.stats import spectra
 from lcbuilder.objectinfo.preparer.mission_data_preparer import MissionDataPreparer
 from lcbuilder.star.starinfo import StarInfo
 from openai import OpenAI
+import numpy as np
+np.int = int
+import scipy.integrate
+scipy.integrate.trapz = np.trapz
 from triceratops import triceratops
 from triceratops.triceratops import target
 from uncertainties import ufloat
@@ -102,12 +106,12 @@ class Watson:
         if not isinstance(logging.root, logging.RootLogger):
             logging.root = logging.RootLogger(logging.INFO)
 
-    def vetting(self, id, period, t0, duration, depth, sectors, rp_rstar=None, a_rstar=None, cpus=None,
+    def vetting(self, id, period, t0, duration, depth, depth_err,sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=[], author=[], lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
                 star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None,
-                only_summary=False):
+                only_summary=False, bootstrap_scenarios=100):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -142,6 +146,7 @@ class Watson:
         :param gpt_enabled: whether gpt analysis should be done
         :param gpt_api_key: gpt api key
         :param only_summary: whether only summary report should be created
+        :param bootstrap_scenarios: number of bootstrap scenarios
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -150,7 +155,7 @@ class Watson:
         logging.info("Period (d): %.2f", period)
         logging.info("Epoch (d): %.2f", t0)
         logging.info("Duration (min): %.2f", duration)
-        logging.info("Depth (ppt): %.2f", depth)
+        logging.info("Depth (ppt): %.2f +- %.2f", depth, depth_err)
         if rp_rstar is not None:
             logging.info("Rp_Rstar: %.4f", rp_rstar)
         if a_rstar is not None:
@@ -165,12 +170,13 @@ class Watson:
         if rp_rstar is None:
             rp_rstar = np.sqrt(depth / 1000)
         lc_build = None
+        original_lc_file = self.object_dir + "/lc.csv"
         if lc_file is None or lc_data_file is None:
             lc_build = lc_builder.build(MissionObjectInfo(sectors, id, cadence=cadence, author=author,
                                                           high_rms_enabled=False, initial_transit_mask=transits_mask),
                                         self.data_dir)
             lc_build.lc_data.to_csv(self.object_dir + "/lc_data.csv")
-            lc_file = self.object_dir + "/lc.csv"
+            lc_file = original_lc_file
             lc_data_file = self.object_dir + "/lc_data.csv"
             if star_file is None:
                 star_file = self.object_dir + '/params_star.csv'
@@ -191,14 +197,15 @@ class Watson:
         try:
             if sectors is not None:
                 DvrPreparer().retrieve(id, sectors, self.data_dir)
-            transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, rp_rstar, a_rstar,
+            transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, depth_err, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
                                                                  dec, transits_list, transits_mask,
                                                                  star_file=star_file, iatson_enabled=iatson_enabled,
                                                                  iatson_inputs_save=iatson_inputs_save,
                                                                  gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
-                                                                         only_summary=only_summary)
+                                                                         only_summary=only_summary,
+                                                                         bootstrap_scenarios=bootstrap_scenarios)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir), only_summary=only_summary)
             if clean:
@@ -253,6 +260,7 @@ class Watson:
         a_rstar = df['a'] / star["R_star"] * constants.AU_TO_RSUN
         duration = df['duration']
         depth = df['depth']
+        depth_err = df['depth_err']
         run = int(df['number'])
         curve = int(df['curve'])
         sectors = df['sectors']
@@ -267,7 +275,7 @@ class Watson:
         tpfs_dir = self.object_dir + "/tpfs"
         apertures_file = self.object_dir + "/apertures.yaml"
         try:
-            self.vetting(id, period, t0, duration, depth, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
+            self.vetting(id, period, t0, duration, depth, depth_err, sectors, rp_rstar=rp_rstar, a_rstar=a_rstar, cpus=cpus,
                          lc_file=lc_file, lc_data_file=lc_data_file, tpfs_dir=tpfs_dir, apertures_file=apertures_file,
                          create_fov_plots=create_fov_plots, cadence_fov=cadence_fov, ra=star["ra"],
                          dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
@@ -277,10 +285,11 @@ class Watson:
         except Exception as e:
             traceback.print_exc()
 
-    def __process(self, id, period, t0, duration, depth, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
+    def __process(self, id, period, t0, duration, depth, depth_err, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
                   transits_list=None, transits_mask=None, star_file=None, iatson_enabled=False,
-                  iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None, only_summary=False):
+                  iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None, only_summary=False,
+                  bootstrap_scenarios=100):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -308,6 +317,7 @@ class Watson:
         :param gpt_enabled: whether gpt analysis should be done
         :param gpt_api_key: gpt api key
         :param only_summary: whether only the summary report should be created
+        :param bootstrap_scenarios: number of bootstrap scenarios
         """
         logging.info("Running Transit Plots")
         lc, lc_data, lc_data_norm, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
@@ -341,9 +351,6 @@ class Watson:
             transit_t0s_list = LcbuilderHelper.compute_t0s(lc.time.value, period, t0, duration / 60 / 24)
         mission, mission_prefix, target_id = MissionDataPreparer.parse_object_id(id)
         metrics_df = pd.DataFrame(columns=['metric', 'score', 'passed'])
-        bootstrap_fap = Watson.compute_bootstrap_fap(lc.time.value, lc.flux.value, period, duration / 60 / 24,
-                                     StarInfo(radius=star_df.iloc[0]['radius'], mass=star_df.iloc[0]['mass']),
-                                     lc.flux_err.value, bootstrap_scenarios=100)
         habitability_calculator = HabitabilityCalculator()
         duration_to_period = duration / 60 / 24 / period
         lc_df = pd.DataFrame(columns=['time', 'flux', 'flux_err', 'time_folded', 'time_folded_sec'])
@@ -360,13 +367,11 @@ class Watson:
         lc_df_secit = lc_df_secit.sort_values(by=['time_folded_sec'])
         sec_depth = 1 - lc_df_secit['flux'].dropna().median()
         sec_depth_err = lc_df_secit['flux'].dropna().std()
-        depth = 1 - lc_df_it['flux'].dropna().median()
-        depth_err = lc_df_it['flux'].dropna().std()
-        if depth <= 0:
-            depth = 1 - lc_df_it['flux'].dropna().min()
+        primary_depth = depth / 1000
+        primary_depth_err = depth_err / 1000
         if sec_depth <= 0:
-            sec_depth = 1 - lc_df_secit['flux'].dropna().min()
-        rad_p = (ufloat(depth, depth_err) * (ufloat(star_df.iloc[0]['R_star'], np.nanmax(
+            sec_depth = 1e-6
+        rad_p = (ufloat(primary_depth, primary_depth_err) * (ufloat(star_df.iloc[0]['R_star'], np.nanmax(
             [star_df.iloc[0]['R_star_uerr'], star_df.iloc[0]['R_star_lerr']])) ** 2)) ** 0.5
         rp = rad_p.n
         rp_err = rad_p.s
@@ -386,8 +391,8 @@ class Watson:
         planet_eff_temp, planet_eff_temp_low_err, planet_eff_temp_up_err = (
             habitability_calculator.calculate_teff(star_df.iloc[0]['Teff_star'], star_df.iloc[0]['Teff_star_lerr'],
                                                    star_df.iloc[0]['Teff_star_uerr'],
-                                                   sec_depth, sec_depth_err, sec_depth_err, depth, depth_err,
-                                                   depth_err))
+                                                   sec_depth, sec_depth_err, sec_depth_err, primary_depth, primary_depth_err,
+                                                   primary_depth_err))
         albedo, albedo_low_err, albedo_up_err = (
             habitability_calculator.calculate_albedo(sec_depth, sec_depth_err, sec_depth_err,
                                                      period, 0.0001, 0.0001,
@@ -400,20 +405,18 @@ class Watson:
         )
         albedo_stat = habitability_calculator.calculate_albedo_stat(albedo, albedo_low_err, albedo_up_err)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['bootstrap_fap'], 'score': [bootstrap_fap], 'passed': [int(bootstrap_fap <= 0.1)]}, orient='columns')], ignore_index=True)
-        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
             {'metric': ['temp_stat'], 'score': [temp_stat], 'passed': [int(temp_stat <= 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['albedo_stat'], 'score': [albedo_stat], 'passed': [int(albedo_stat <= 3)]}, orient='columns')], ignore_index=True)
+            {'metric': ['albedo_stat'], 'score': [albedo_stat], 'passed': [int(albedo_stat >= 3)]}, orient='columns')], ignore_index=True)
         snrs = Watson.plot_all_folded_cadences(self.data_dir, mission_prefix, mission, target_id, lc, sectors, period,
-                                               t0, duration, depth / 1000, rp_rstar, a_rstar, transits_mask, cpus)
+                                               t0, duration, primary_depth, rp_rstar, a_rstar, transits_mask, cpus)
         if len(snrs.values()) > 0:
             for cadence, snr in snrs.items():
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                     {'metric': [cadence + '_snr'], 'score': [snr], 'passed': [int(snr > 3)]},
                     orient='columns')], ignore_index=True)
         snr_p_t0, secondary_snr, odd_even_correlation = \
-            self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, depth / 1000, rp_rstar, a_rstar)
+            self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, primary_depth, rp_rstar, a_rstar)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
             {'metric': ['snr'], 'score': [snr_p_t0], 'passed': [int(snr_p_t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
@@ -425,7 +428,7 @@ class Watson:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
                 centroids_ra_snr, centroids_dec_snr =\
                     Watson.plot_folded_tpfs(self.data_dir, mission_prefix, mission, target_id, ra_fov, dec_fov, lc, lc_data,
-                                        tpfs, lc_file, lc_data_file, tpfs_dir, sectors, period, t0, duration, depth / 1000,
+                                        tpfs, lc_file, lc_data_file, tpfs_dir, sectors, period, t0, duration, primary_depth,
                                         rp_rstar, a_rstar, transits_mask, transit_t0s_list, apertures, cpus)
                 pixel_size = LcbuilderHelper.mission_pixel_size(mission)
                 pixel_size_degrees = pixel_size / 3600
@@ -456,13 +459,19 @@ class Watson:
                 metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                     {'metric': ['centroids_dec_snr'], 'score': [centroids_dec_snr], 'passed': [int(np.abs(centroids_dec_snr) < 3)] }, orient='columns')],
                                        ignore_index=True)
+        bootstrap_fap = Watson.compute_bootstrap_fap(lc.time.value, lc.flux.value, period, duration / 60 / 24,
+                                     StarInfo(radius=star_df.iloc[0]['radius'], mass=star_df.iloc[0]['mass']),
+                                     lc.flux_err.value, bootstrap_scenarios=bootstrap_scenarios)
+        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+            {'metric': ['bootstrap_fap'], 'score': [bootstrap_fap], 'passed': [int(bootstrap_fap <= 0.1)]},
+            orient='columns')], ignore_index=True)
         metrics_df.to_csv(self.data_dir + '/metrics.csv')
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
         if not only_summary:
             plot_transits_inputs = []
             for index, transit_times in enumerate(transit_t0s_list):
                 plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,
-                                                                      tpfs_dir, apertures, transit_times, depth / 1000,
+                                                                      tpfs_dir, apertures, transit_times, primary_depth,
                                                                       duration, period, rp_rstar, a_rstar, transits_mask))
             with multiprocessing.Pool(processes=cpus) as pool:
                 pool.map(Watson.plot_single_transit, plot_transits_inputs)
@@ -619,7 +628,9 @@ class Watson:
                 for transit_mask in transits_mask:
                     mask = foldedleastsquares.transit_mask(tpf.time.value, transit_mask["P"], transit_mask["D"] / 60 / 24,
                                                            transit_mask["T0"])
-                    tpf = tpf[~mask]
+                    new_tpf = tpf[~mask]
+                    new_tpf.path = tpf.path
+                    tpf = new_tpf
                 tpfs.append(tpf)
         return lc, lc_data, lc_data_norm, tpfs
 
@@ -1158,7 +1169,11 @@ class Watson:
                                                                         lc_data_file, tpfs_dir,
                                                                         transits_mask=transits_mask)
         tpf = tpfs[fold_tpf_input['index']]
-        author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
+        try:
+            author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
+        except Exception as e:
+            logging.exception("Error when retrieving author and cadence")
+            return None, None, None, None
         pixel_values_i = np.array(range(tpf[0].shape[1]))
         pixel_values_j = np.array(range(tpf[0].shape[2]))
         tpf_lc_data = lc_data[(lc_data['time'] >= tpf.time.value[0]) & (lc_data['time'] <= tpf.time.value[-1])].dropna()
@@ -1251,7 +1266,7 @@ class Watson:
         imgs = [PIL.Image.open(i) for i in images_list]
         imgs[0] = imgs[0].resize((imgs[1].size[0],
                                   int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
-                                 PIL.Image.ANTIALIAS)
+                                 PIL.Image.Resampling.LANCZOS)
         img_merge = np.vstack([np.asarray(i) for i in imgs])
         img_merge = PIL.Image.fromarray(img_merge)
         img_merge.save(tpf_bls_file, quality=95, optimize=True)
@@ -1563,10 +1578,10 @@ class Watson:
         plt.savefig(offsets_file, dpi=200, bbox_inches='tight')
         images_list = [offsets_file, centroids_file, og_file]
         imgs = [PIL.Image.open(i) for i in images_list]
-        imgs[1] = imgs[1].resize((imgs[2].size[0], imgs[2].size[1]), PIL.Image.ANTIALIAS)
+        imgs[1] = imgs[1].resize((imgs[2].size[0], imgs[2].size[1]), PIL.Image.Resampling.LANCZOS)
         imgs[0] = imgs[0].resize((imgs[1].size[0],
                                   int(imgs[1].size[0] / imgs[0].size[0] * imgs[0].size[1])),
-                                 PIL.Image.ANTIALIAS)
+                                 PIL.Image.Resampling.LANCZOS)
         img_merge = np.vstack([np.asarray(i) for i in imgs])
         img_merge = PIL.Image.fromarray(img_merge)
         img_merge.save(offsets_file, quality=95, optimize=True)
@@ -2066,8 +2081,9 @@ class Watson:
 
     @staticmethod
     def compute_bootstrap_fap(time, flux, period, duration, star_info, flux_err=None, bootstrap_scenarios=100):
+        logging.info("Computing bootstrap FAP")
         flux_err = flux_err if flux_err is not None else np.full(len(flux), np.nanstd(flux))
-        period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, period / 2, period * 1.5, 1, star_info, 1)
+        period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, 5 * period / 6, period * 1.15, 1, star_info, 1)
         duration_grid = np.linspace(duration / 2, duration * 1.5, num=10)
         min_period = np.nanmin(period_grid)
         if np.nanmax(duration_grid) >= min_period:
@@ -2081,9 +2097,13 @@ class Watson:
         bootstrap_max_powers = []
         indices = np.arange(len(flux))
         for i in range(bootstrap_scenarios):
+            logging.info(f"Computing bootstrap FAP scenario no {i}")
             bootstrap_indices = np.random.choice(indices, size=len(flux), replace=True)
+            err = flux_err[bootstrap_indices]
+            if np.all(np.isnan(flux_err)):
+                flux_err = None
             bls = BoxLeastSquares(time[bootstrap_indices], flux[bootstrap_indices], flux_err[bootstrap_indices])
-            result = bls.power(period_grid, duration_grid)
+            result = bls.power([period], duration_grid)
             power = result.power / np.nanmedian(result.power)
             bootstrap_max_powers.append(np.nanmax(power))
         bootstrap_max_powers = np.array(bootstrap_max_powers)

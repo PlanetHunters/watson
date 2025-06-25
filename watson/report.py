@@ -205,20 +205,20 @@ class Report:
             values_df = pd.read_csv(iatson_values_file)
             score_average = averages_df.loc[0, 'prediction_value_cal_mean']
             score_std = averages_df.loc[0, 'prediction_value_cal_std']
-            if score_average > 0.961:
+            # if score_average + score_std > 0.961:
+            #     passed = True
+            if score_average + score_std >= 0.646:
                 passed = True
-            elif score_average > 0.646:
-                passed = np.nan
-            else:
+            elif score_average + score_std <= 0.056:
                 passed = False
+            else:
+                passed = np.nan
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {"metric": ["WATSON-NET"], 'score': [round(score_average, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
             if score_std < 0.015:
                 passed = True
             elif score_std < 0.1:
                 passed = np.nan
-            else:
-                passed = False
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {"metric": ["WATSON-NET err"], 'score': [round(score_std, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
             for index, row in branches_df.iterrows():
@@ -265,9 +265,8 @@ class Report:
             story.append(table)
             story.append(Spacer(1, 5))
             table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 4: </strong>' \
-                                + ('Impact of each WATSON-Net neural network branch on the final predictions. A positive'
-                                   'value means that the branch data helps to classify the signal as a transiting planet, '
-                                   'whilst a negative value means that the branch is inducing a negative classification.</font>')
+                                + ('Impact of each WATSON-Net neural network branch on the final predictions. A positive '
+                                   'value means that the scenario helps to classify the signal as a transiting planet.</font>')
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
             table_colwidth = [9 * cm, 4 * cm, 3.5 * cm]
@@ -277,7 +276,7 @@ class Report:
             story.append(table)
             story.append(Spacer(1, 5))
             table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 5: </strong>' \
-                                + ('Impact of the variation of the single metrics in the WATSON-Net predictions. A positive'
+                                + ('Impact of the variation of the single metrics in the WATSON-Net predictions. A positive '
                                    'value means that the used value improves the prediction in comparison to the original '
                                    'one, making it closer to a transiting planet classification.</font>')
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
