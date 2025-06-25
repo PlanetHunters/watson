@@ -2101,8 +2101,8 @@ class Watson:
             bootstrap_indices = np.random.choice(indices, size=len(flux), replace=True)
             err = flux_err[bootstrap_indices]
             if np.all(np.isnan(flux_err)):
-                flux_err = None
-            bls = BoxLeastSquares(time[bootstrap_indices], flux[bootstrap_indices], flux_err[bootstrap_indices])
+                err = None
+            bls = BoxLeastSquares(time[bootstrap_indices], flux[bootstrap_indices], err)
             result = bls.power([period], duration_grid)
             power = result.power / np.nanmedian(result.power)
             bootstrap_max_powers.append(np.nanmax(power))
