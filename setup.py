@@ -22,6 +22,7 @@ setuptools.setup(
     ],
     python_requires='>=3.11',
     install_requires=[
+                        'arviz==0.21.0', # Validation required (pytransit, from triceratops)
                         "bokeh==3.7.3", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "extension-helpers==0.1",
