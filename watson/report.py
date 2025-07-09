@@ -15,6 +15,8 @@ from os import path
 from astropy import units as u
 import pandas as pd
 import numpy as np
+from pdf2image import pdf2image
+
 
 width, height = A4
 resources_dir = path.join(path.dirname(__file__))
@@ -141,8 +143,16 @@ class Report:
                                   ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
                                   ('FONTSIZE', (0, 0), (-1, -1), 10),
                                   ])
+        table_style_small = TableStyle([('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+                                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                                        ('INNERGRID', (0, 0), (-1, -1), 0.25, colors.black),
+                                        ('BOX', (0, 0), (-1, -1), 0.25, colors.black),
+                                        ('FONTSIZE', (0, 0), (-1, -1), 8),
+                                        ])
         # Content:
         story = [Spacer(1, 75)]
+        section = 1
+        story.append(Paragraph("Section " + str(section) + ": Introduction", styles["Heading1"]))
         introduction = '<font name="HELVETICA" size="9">This document is created by the WATSON report generator (' \
                        '<a href="https://github.com/PlanetHunters/watson" color="blue">https://github.com/PlanetHunters/watson</a>) ' \
                        'and focuses on the target star %s.</font>' % self.object_id
@@ -167,7 +177,8 @@ class Report:
         # Le damos el estilo alternando colores de filas:
         Report.row_colors(tabla1_data, tabla1)
         story.append(tabla1)
-        table1_descripcion = '<font name="HELVETICA" size="9"><strong>Table 1: </strong>\
+        table_no = 1
+        table1_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>\
                         The proposed target parameters.</font>'
         story.append(Spacer(1, 5))
         story.append(Paragraph(table1_descripcion, styles["ParagraphAlignCenter"]))
@@ -185,7 +196,8 @@ class Report:
         Report.row_colors(tabla2_data, tabla2)
         story.append(tabla2)
         story.append(Spacer(1, 5))
-        table2_descripcion = '<font name="HELVETICA" size="9"><strong>Table 2: </strong>' \
+        table_no = table_no + 1
+        table2_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>' \
                              'The candidate parameters.</font>'
         story.append(Paragraph(table2_descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
@@ -195,6 +207,7 @@ class Report:
         iatson_branches_file = f'{self.data_dir}/iatson_explain_branches.csv'
         iatson_values_file = f'{self.data_dir}/iatson_explain_values.csv'
         gpt_file = self.data_dir + '/gpt.csv'
+        triceratops_validation_file = self.data_dir + '/triceratops/validation.csv'
         table_data = [['Metric', 'Value']]
         explainability_branches_table_data = [['Metric', 'Value']]
         explainability_values_table_data = [['Metric', 'Value']]
@@ -238,6 +251,32 @@ class Report:
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {"metric": ["GPT"], 'score': [score_gpt], 'passed': [passed]},
                 orient='columns')], ignore_index=True)
+        if os.path.exists(triceratops_validation_file):
+            validation_df = pd.read_csv(triceratops_validation_file)
+            validation_mean_scenario_df = validation_df.loc[validation_df['scenario'] == 'MEAN']
+            mean_fpp = validation_mean_scenario_df.reset_index().loc[0, 'FPP']
+            if mean_fpp <= 0.015:
+                passed = True
+            elif mean_fpp <= 0.5:
+                passed = np.nan
+            else:
+                passed = False
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["Triceratops_FPP"], 'score': [mean_fpp], 'passed': [passed]},
+                orient='columns')], ignore_index=True)
+            mean_nfpp = validation_mean_scenario_df.reset_index().loc[0, 'NFPP']
+            if mean_nfpp <= 0.001:
+                passed = True
+            elif mean_nfpp <= 0.1:
+                passed = np.nan
+            else:
+                passed = False
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["Triceratops_NFPP"], 'score': [mean_nfpp], 'passed': [passed]},
+                orient='columns')], ignore_index=True)
+        story.append(PageBreak())
+        section = section + 1
+        story.append(Paragraph("Section " + str(section) + ": Metrics summary", styles["Heading1"]))
         if os.path.exists(metrics_file):
             metrics_df = pd.concat([metrics_df, pd.read_csv(metrics_file)], ignore_index=True)
             metrics_df['passed'] = metrics_df['passed'].replace({'True': 1, 'False': 0})
@@ -252,19 +291,24 @@ class Report:
             Report.metrics_row_colors(metrics_df, table)
             story.append(table)
             story.append(Spacer(1, 5))
-            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 3: </strong>' \
+            table_no = table_no + 1
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>' \
                                 + 'The results of the numerical tests. Green cells mean acceptable values. Yellow means ' \
                                 + 'inconclusive. Red represents problematic metrics.</font>'
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
         if os.path.exists(iatson_original_predictions_file):
+            story.append(PageBreak())
+            section = section + 1
+            story.append(Paragraph("Section " + str(section) + ": WATSON-Net explainability", styles["Heading1"]))
             table_colwidth = [9 * cm, 4 * cm, 3.5 * cm]
             table_number_rows = len(explainability_branches_table_data)
             table = Table(explainability_branches_table_data, table_colwidth, table_number_rows * [0.5 * cm])
             table.setStyle(table_style)
             story.append(table)
             story.append(Spacer(1, 5))
-            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 4: </strong>' \
+            table_no = table_no + 1
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>' \
                                 + ('Impact of each WATSON-Net neural network branch on the final predictions. A positive '
                                    'value means that the scenario helps to classify the signal as a transiting planet.</font>')
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
@@ -275,18 +319,139 @@ class Report:
             table.setStyle(table_style)
             story.append(table)
             story.append(Spacer(1, 5))
-            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table 5: </strong>' \
+            table_no = table_no + 1
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>' \
                                 + ('Impact of the variation of the single metrics in the WATSON-Net predictions. A positive '
                                    'value means that the used value improves the prediction in comparison to the original '
                                    'one, making it closer to a transiting planet classification.</font>')
             story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
             story.append(Spacer(1, 15))
         if os.path.exists(gpt_file):
+            story.append(PageBreak())
+            section = section + 1
+            story.append(Paragraph("Section " + str(section) + ": WATSON-Net explainability", styles["Heading1"]))
             story.append(Paragraph('<font name="HELVETICA" size="9">GPT has been enabled to analyze this report. Its output is:</font>', styles["ParagraphAlignJustify"]))
             for gpt_explanation_paragraph in content_gpt.split('\n'):
                 story.append(Paragraph('<font name="HELVETICA" size="9">' + gpt_explanation_paragraph + '</font>', styles["ParagraphAlignJustify"]))
             story.append(Spacer(1, 30))
         figure = 1
+        # TRICERATOPS
+        triceratops_base_path = self.data_dir + '/triceratops/'
+        if os.path.exists(triceratops_base_path):
+            story.append(PageBreak())
+            section = section + 1
+            story.append(Paragraph("Section " + str(section) + ": TRICERATOPS results", styles["Heading1"]))
+        contrast_curve_file = triceratops_base_path + "contrast_curve.png"
+        if os.path.exists(contrast_curve_file):
+            story.append(Image(contrast_curve_file, width=16 * cm, height=10 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(
+                figure) + ': </strong>Contrast curve for target.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+        all_files = os.listdir(triceratops_base_path)
+        fov_file = triceratops_base_path + '/fov.png'
+        for file in all_files:
+            if file.startswith('field_'):
+                images = pdf2image.convert_from_path(triceratops_base_path + '/' + file)
+                for i in range(len(images)):
+                    # Save pages as images in the pdf
+                    images[i].save(fov_file, 'PNG')
+                break
+        story.append(Image(fov_file, width=16 * cm, height=7 * cm))
+        descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(
+            figure) + ': </strong>Nearby stars for target and its aperture</font>'
+        story.append(Spacer(1, 5))
+        story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+        story.append(Spacer(1, 15))
+        figure = figure + 1
+        validation_file = triceratops_base_path + "/validation_scenarios.csv"
+        if os.path.exists(validation_file):
+            table_data = [['ID', 'scenario', 'M_s', 'R_s', 'P_orb', 'inc', 'b', 'ecc', 'w', 'R_p', 'M_EB', 'R_EB',
+                           'prob']]
+            metrics_df = pd.read_csv(validation_file)
+            for index, metric_row in metrics_df.iterrows():
+                table_data.append([str(metric_row['ID']),
+                                   metric_row['scenario'],
+                                   round(metric_row['M_s'], 2),
+                                   round(metric_row['R_s'], 2),
+                                   round(metric_row['P_orb'], 2),
+                                   round(metric_row['inc'], 2),
+                                   round(metric_row['b'], 2),
+                                   round(metric_row['ecc'], 2),
+                                   round(metric_row['w'], 2),
+                                   round(metric_row['R_p'], 2),
+                                   round(metric_row['M_EB'], 2),
+                                   round(metric_row['R_EB'], 2),
+                                   round(metric_row['prob'], 6)])
+            table_colwidth = [2.3 * cm, 2 * cm, 1 * cm, 1 * cm, 1 * cm, 1 * cm, 1 * cm, 1 * cm, 1 * cm, 1 * cm,
+                              1 * cm, 1 * cm, 2.5 * cm]
+            table_number_rows = len(table_data)
+            table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
+            table.setStyle(table_style_small)
+            Report.row_colors(metrics_df, table)
+            story.append(table)
+            story.append(Spacer(1, 5))
+            table_no = table_no + 1
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>' \
+                                'TRICERATOPS scenarios attributes and probabilities.</font>'
+            story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+        validation_file = triceratops_base_path + "/validation.csv"
+        if os.path.exists(validation_file):
+            table_data = [['Scenario', 'FPP', 'FPP2', 'FPP3+', 'FPP sys', 'FPP2 sys', 'FPP3+ sys', 'NFPP']]
+            metrics_df = pd.read_csv(validation_file)
+            for index, metric_row in metrics_df.iterrows():
+                table_data.append([metric_row['scenario'],
+                                   round(metric_row['FPP'], 6),
+                                   round(metric_row['FPP2'], 6),
+                                   round(metric_row['FPP3+'], 6),
+                                   round(metric_row['FPP_sys'], 6),
+                                   round(metric_row['FPP2_sys'], 6),
+                                   round(metric_row['FPP3+_sys'], 6),
+                                   round(metric_row['NFPP'], 6)])
+            table_colwidth = [2.5 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm, 2.5 * cm]
+            table_number_rows = len(table_data)
+            table = Table(table_data, table_colwidth, table_number_rows * [0.5 * cm])
+            table.setStyle(table_style)
+            Report.row_colors(metrics_df, table)
+            story.append(table)
+            story.append(Spacer(1, 5))
+            table_no = table_no + 1
+            table_descripcion = '<font name="HELVETICA" size="9"><strong>Table ' + str(table_no) + ': </strong>' \
+                                'TRICERATOPS validation results.</font>'
+            story.append(Paragraph(table_descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+        result_map_file = triceratops_base_path + "/triceratops_map.png"
+        if os.path.exists(result_map_file):
+            story.append(Image(result_map_file, width=9 * cm, height=9 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(
+                figure) + ': </strong>TRICERATOPS validation map for the mean scenario.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+        scenario = 0
+        scenarios_file = triceratops_base_path + "/scenario_" + str(scenario) + "_fits.pdf"
+        scenarios_png_file = triceratops_base_path + "/scenario_" + str(scenario) + "_fits.png"
+        while os.path.exists(scenarios_file):
+            images = pdf2image.convert_from_path(scenarios_file)
+            for i in range(len(images)):
+                # Save pages as images in the pdf
+                images[i].save(scenarios_png_file, 'PNG')
+            story.append(Image(scenarios_png_file, width=16 * cm, height=20 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(
+                figure) + ': </strong>TRICERATOPS best fits for scenario no. ' + str(scenario) + '.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+            scenario = scenario + 1
+            scenarios_file = triceratops_base_path + "/scenario_" + str(scenario) + "_fits.pdf"
+            scenarios_png_file = triceratops_base_path + "/scenario_" + str(scenario) + "_fits.png"
+
+        # OFFSETS
         # neighbours_file_index = 0
         # neighbours_file = self.data_dir + "/star_nb_" + (neighbours_file_index) + ".png"
         # figure = 1
@@ -300,6 +465,9 @@ class Report:
         #     neighbours_file_index = neighbours_file_index + 1
         #     neighbours_file = self.data_dir + "/star_nb_" + str(neighbours_file_index) + ".png"
         #     figure = figure + 1
+        story.append(PageBreak())
+        section = section + 1
+        story.append(Paragraph("Section " + str(section) + ": Vetting information", styles["Heading1"]))
         transit_depths_file = self.data_dir + "/transit_depths.png"
         if os.path.exists(transit_depths_file):
             story.append(Image(transit_depths_file, width=14 * cm, height=8 * cm))

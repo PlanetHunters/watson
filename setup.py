@@ -28,9 +28,11 @@ setuptools.setup(
                         "exoml==1.2.5",
                         "imageio==2.9.0",
                         "openai==1.30.1",
+                        'pdf2image==1.16.2', #Triceratops
                         'pyparsing==2.4.7', # Matplotlib dependency
                         "pyyaml==6.0.1",
                         "pillow==11.2.1",
+                        'pytransit==2.6.14', #Triceratops
                         "reportlab==4.4.0",
                         'setuptools>=41.0.0',
                         'triceratops==1.0.19'

@@ -1,5 +1,6 @@
 # from __future__ import print_function, absolute_import, division
 import base64
+import copy
 import logging
 import multiprocessing
 import shutil
@@ -7,6 +8,8 @@ import traceback
 import requests
 import zipfile
 import io
+
+from astroquery.mast import TesscutClass
 from exoml.iatson.IATSON_planet import IATSON_planet
 from exoml.ml.model.base_model import HyperParams
 from foldedleastsquares.stats import spectra
@@ -17,7 +20,7 @@ import numpy as np
 np.int = int
 import scipy.integrate
 scipy.integrate.trapz = np.trapz
-from triceratops import triceratops
+import triceratops.triceratops as tr
 from triceratops.triceratops import target
 from uncertainties import ufloat
 
@@ -30,7 +33,7 @@ import batman
 import foldedleastsquares
 import lcbuilder
 import lightkurve
-from lightkurve import MPLSTYLE
+from lightkurve import MPLSTYLE, KeplerLightCurve
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
@@ -111,7 +114,9 @@ class Watson:
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
                 star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None,
-                only_summary=False, bootstrap_scenarios=100):
+                only_summary=False, bootstrap_scenarios=100, triceratops_bins=100, triceratops_scenarios=5,
+                triceratops_contrast_curve_file=None, triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
+                triceratops_ignore_ebs=False, triceratops_resolved_companion=None, triceratops_ignore_background_stars=False):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -197,6 +202,16 @@ class Watson:
         try:
             if sectors is not None:
                 DvrPreparer().retrieve(id, sectors, self.data_dir)
+            try:
+                self.execute_triceratops(cpus, self.data_dir, id, sectors, lc_file, depth,
+                                         period, t0, duration, rp_rstar, a_rstar, triceratops_bins,
+                                         triceratops_scenarios, triceratops_sigma_mode,
+                                         triceratops_contrast_curve_file, triceratops_additional_stars_file, transits_mask=transits_mask,
+                                         star_file=star_file,
+                                         ignore_ebs=triceratops_ignore_ebs, resolved_companion=triceratops_resolved_companion,
+                                         ignore_background_stars=triceratops_ignore_background_stars)
+            except Exception as e:
+                traceback.print_exc()
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, depth_err, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
@@ -215,6 +230,357 @@ class Watson:
 
         except Exception as e:
             traceback.print_exc()
+
+    def execute_triceratops(self, cpus, indir, object_id, sectors, lc_file, transit_depth, period, t0,
+                            transit_duration, rp_rstar, a_rstar, bins, scenarios, sigma_mode, contrast_curve_file,
+                            additional_stars_file, transits_mask, star_file, ignore_ebs, resolved_companion,
+                            ignore_background_stars):
+        """ Calculates probabilities of the signal being caused by any of the following astrophysical sources:
+        TP No unresolved companion. Transiting planet with Porb around target star. (i, Rp)
+        EB No unresolved companion. Eclipsing binary with Porb around target star. (i, qshort)
+        EBx2P No unresolved companion. Eclipsing binary with 2 × Porb around target star. (i, qshort)
+        PTP Unresolved bound companion. Transiting planet with Porb around primary star. (i, Rp, qlong)
+        PEB Unresolved bound companion. Eclipsing binary with Porb around primary star. (i, qshort, qlong)
+        PEBx2P Unresolved bound companion. Eclipsing binary with 2 × Porb around primary star. (i, qshort, qlong)
+        STP Unresolved bound companion. Transiting planet with Porb around secondary star. (i, Rp, qlong)
+        SEB Unresolved bound companion. Eclipsing binary with Porb around secondary star. (i, qshort, qlong)
+        SEBx2P Unresolved bound companion. Eclipsing binary with 2 × Porb around secondary star. (i, qshort, qlong)
+        DTP Unresolved background star. Transiting planet with Porb around target star. (i, Rp, simulated star)
+        DEB Unresolved background star. Eclipsing binary with Porb around target star. (i, qshort, simulated star)
+        DEBx2P Unresolved background star. Eclipsing binary with 2 × Porb around target star. (i, qshort, simulated star)
+        BTP Unresolved background star. Transiting planet with Porb around background star. (i, Rp, simulated star)
+        BEB Unresolved background star. Eclipsing binary with Porb around background star. (i, qshort, simulated star)
+        BEBx2P Unresolved background star. Eclipsing binary with 2 × Porb around background star. (i, qshort, simulated star)
+        NTP No unresolved companion. Transiting planet with Porb around nearby star. (i, Rp)
+        NEB No unresolved companion. Eclipsing binary with Porb around nearby star. (i, qshort)
+        NEBx2P No unresolved companion. Eclipsing binary with 2 × Porb around nearby star. (i, qshort)
+        FPP = 1 - (TP + PTP + DTP)
+        NFPP = NTP + NEB + NEBx2P
+        Giacalone & Dressing (2020) define validated planets as TOIs with NFPP < 10−3 and FPP < 0.015 (or FPP ≤ 0.01,
+        when rounding to the nearest percent)
+
+        :param cpus: number of cpus to be used
+        :param indir: root directory to store the results
+        :param id_int: the object id for which the analysis will be run
+        :param sectors: the sectors of the tic
+        :param lc_file: the light curve source file
+        :param transit_depth: the depth of the transit signal (ppts)
+        :param period: the period of the transit signal (days)
+        :param t0: the t0 of the transit signal (days)
+        :param transit_duration: the duration of the transit signal (minutes)
+        :param rp_rstar: radius of planet divided by radius of star
+        :param a_rstar: semimajor axis divided by radius of star
+        :param bins: the number of bins to average the folded curve
+        :param scenarios: the number of scenarios to validate
+        :param sigma_mode: the way to calculate the sigma for the validation ['flux_err' | 'binning']
+        :param contrast_curve_file: the auxiliary contrast curve file to give more information to the validation engine
+        :param additional_stars_file: the additional stars to be appended to triceratops dataframe
+        :param transits_mask: the mask of the transits
+        :param star_df: the star dataframe containing the host parameters
+        :param ignore_ebs: whether EB scenarios should be ignored
+        :param resolved_companion: whether a resolved companion can be ensured or discarded
+        :param ignore_background_stars: whether background star scenarios should be ignored
+        :return str: the directory where the results are stored
+        """
+        save_dir = indir + "/triceratops"
+        if os.path.exists(save_dir):
+            shutil.rmtree(save_dir, ignore_errors=True)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        star_df = pd.read_csv(star_file)
+        duration = transit_duration / 60 / 24
+        logging.info("----------------------")
+        logging.info("Validation procedures")
+        logging.info("----------------------")
+        logging.info("Pre-processing sectors")
+        mission, mission_prefix, id_int = LcBuilder().parse_object_info(object_id)
+        sectors = np.array(sectors)
+        if mission == "TESS":
+            sectors_cut = TesscutClass().get_sectors(objectname="TIC " + str(id_int))
+            sectors_cut = np.array([sector_row["sector"] for sector_row in sectors_cut])
+            if len(sectors) == 0:
+                logging.warning("WARN: Sherlock sectors are empty, using TESSCUT sectors")
+                sectors = sectors_cut
+            else:
+                if len(sectors) != len(sectors_cut):
+                    logging.warning("WARN: Some sectors were not found in TESSCUT")
+                    logging.warning("WARN: Sherlock sectors were: " + str(sectors))
+                    logging.warning("WARN: TESSCUT sectors were: " + str(sectors_cut))
+                sectors = np.intersect1d(sectors, sectors_cut)
+            if len(sectors) == 0:
+                logging.warning("There are no available sectors to be validated, skipping TRICERATOPS.")
+                return save_dir, None, None
+        logging.info("Will execute validation for sectors: " + str(sectors))
+        lc = pd.read_csv(lc_file, header=0)
+        time, flux, flux_err = lc["time"].values, lc["flux"].values, lc["flux_err"].values
+        for transit_mask in transits_mask:
+            logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
+                         transit_mask["T0"], transit_mask["D"])
+            time, flux, flux_err = LcbuilderHelper.mask_transits(time, flux,  transit_mask["P"],
+                                                                 transit_mask["D"] / 60 / 24, transit_mask["T0"])
+        if contrast_curve_file is not None:
+            logging.info("Reading contrast curve %s", contrast_curve_file)
+            plt.clf()
+            cc = pd.read_csv(contrast_curve_file, header=None)
+            sep, dmag = cc[0].values, cc[1].values
+            plt.plot(sep, dmag, 'k-')
+            plt.ylim(9, 0)
+            plt.ylabel("$\\Delta K_s$", fontsize=20)
+            plt.xlabel("separation ('')", fontsize=20)
+            plt.savefig(save_dir + "/contrast_curve.png")
+            plt.clf()
+            shutil.copy(contrast_curve_file, save_dir + "/cc_" + os.path.basename(contrast_curve_file))
+        additional_stars_df = None
+        if additional_stars_file is not None:
+            logging.info("Reading additional stars file %s", additional_stars_file)
+            additional_stars_df = pd.read_csv(additional_stars_file, index_col=False)
+        logging.info("Preparing validation light curve for target")
+        lc_len = len(time)
+        zeros_lc = np.zeros(lc_len)
+        depth = transit_depth / 1000
+        if mission == "TESS":
+            lc = TessLightCurve(time=time, flux=flux, flux_err=flux_err, quality=zeros_lc)
+        else:
+            lc = KeplerLightCurve(time=time, flux=flux, flux_err=flux_err, quality=zeros_lc)
+        lc.extra_columns = []
+        fig, axs = plt.subplots(1, 1, figsize=(8, 4), constrained_layout=True)
+        axs, bin_centers, bin_means, bin_stds, snr = \
+            Watson.compute_phased_values_and_fill_plot(object_id, axs, lc, period, t0, depth, duration, rp_rstar,
+                                                       a_rstar, bins=bins,
+                                                       bin_err_mode='bin' if sigma_mode == 'binning' else 'flux_err')
+        bin_centers = (bin_centers - 0.5) * period
+        plt.savefig(save_dir + "/folded_curve.png")
+        plt.clf()
+        logging.info("Sigma mode is %s", sigma_mode)
+        sigma = np.nanmean(bin_stds)
+        logging.info("Flux err (ppm) = %s", sigma * 1000000)
+        logging.info("Acquiring triceratops target")
+        target = tr.target(ID=id_int, mission=mission, sectors=sectors)
+        if additional_stars_df is not None:
+            for row_index, row in additional_stars_df.iterrows():
+                target_id = row['obj_id'].removeprefix('TIC ')
+                if len(target.stars.loc[target.stars['ID'] == target_id]) == 0:
+                    logging.info("Appending star with id %s", row['obj_id'])
+                    target.add_star(row['obj_id'], row['tess_mag'], row['bound'])
+                else:
+                    logging.info("Overwriting star with id %s", row['obj_id'])
+                if row['tess_mag'] != None and not np.isnan(row['tess_mag']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'Tmag'] = row['tess_mag']
+                if row['j'] != None and not np.isnan(row['j']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'Jmag'] = row['j']
+                if row['h'] != None and not np.isnan(row['h']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'Hmag'] = row['h']
+                if row['k'] != None and not np.isnan(row['k']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'Kmag'] = row['k']
+                if row['ra'] != None and not np.isnan(row['ra']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'ra'] = row['ra']
+                if row['dec'] != None and not np.isnan(row['dec']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'dec'] = row['dec']
+                if row['M_star'] != None and not np.isnan(row['M_star']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'mass'] = row['M_star']
+                if row['R_star'] != None and not np.isnan(row['R_star']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'rad'] = row['R_star']
+                if row['Teff_star'] != None and not np.isnan(row['Teff_star']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'Teff'] = row['Teff_star']
+                if row['sep_arsec'] != None and not np.isnan(row['sep_arsec']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'sep (arcsec)'] = row['sep_arsec']
+                if row['PA'] != None and not np.isnan(row['PA']):
+                    target.stars.loc[target.stars['ID'] == target_id, 'PA (E of N)'] = row['PA']
+        # TODO allow user input apertures
+        logging.info("Reading apertures from directory")
+        with open(self.object_dir + "/apertures.yaml") as f:
+            apertures = yaml.load(f, yaml.SafeLoader)
+        apertures = apertures["sectors"]
+        valid_apertures = {}
+        for sector, aperture in apertures.items():
+            if sector in sectors:
+                aperture = Watson.get_aperture_for_sector(apertures, sector)
+                valid_apertures[sector] = aperture
+                target.plot_field(save=True, fname=save_dir + "/field_S" + str(sector), sector=sector,
+                                  ap_pixels=aperture)
+        valid_apertures = np.array([aperture for sector, aperture in valid_apertures.items()], dtype=object)
+        logging.info("Calculating validation closest stars depths")
+        target.calc_depths(depth, valid_apertures)
+        target.stars.to_csv(save_dir + "/stars.csv", index=False)
+        if np.isnan(target.stars.loc[0, 'mass']):
+            target.stars.loc[0, 'mass'] = star_df['M_star']
+        if np.isnan(target.stars.loc[0, 'rad']):
+            target.stars.loc[0, 'rad'] = star_df['R_star']
+        if np.isnan(target.stars.loc[0, 'Teff']):
+            target.stars.loc[0, 'Teff'] = star_df['Teff']
+        bound_stars = additional_stars_df.loc[additional_stars_df['bound'] == True, 'obj_id'].tolist() if additional_stars_df is not None else []
+        logging.info("Preparing validation processes inputs")
+        input_n_times = [ValidatorInput(save_dir, copy.deepcopy(target), bin_centers, bin_means, sigma, period, depth,
+                                        valid_apertures, value, contrast_curve_file, ignore_ebs=ignore_ebs,
+                                        resolved_companion=resolved_companion,
+                                        ignore_background_stars=ignore_background_stars,
+                                        bound_stars=bound_stars)
+                         for value in range(0, scenarios)]
+        logging.info("Start validation processes")
+        #TODO fix usage of cpus returning same value for all executions
+        validation_results = []
+        for i in range(0, scenarios):
+            validation_results.append(TriceratopsThreadValidator.validate(input_n_times[i]))
+        # with Pool(processes=1) as pool:
+        #     validation_results = pool.map(TriceratopsThreadValidator.validate, input_n_times)
+        logging.info("Finished validation processes")
+        fpp_sum = 0
+        fpp2_sum = 0
+        fpp3_sum = 0
+        fpp_system_sum = 0
+        fpp2_system_sum = 0
+        fpp3_system_sum = 0
+        nfpp_sum = 0
+        probs_total_df = None
+        scenarios_num = len(validation_results[0][7])
+        star_num = np.zeros((5, scenarios_num))
+        u1 = np.zeros((5, scenarios_num))
+        u2 = np.zeros((5, scenarios_num))
+        fluxratio_EB = np.zeros((5, scenarios_num))
+        fluxratio_comp = np.zeros((5, scenarios_num))
+        target = input_n_times[0].target
+        target.star_num = np.zeros(scenarios_num)
+        target.u1 = np.zeros(scenarios_num)
+        target.u2 = np.zeros(scenarios_num)
+        target.fluxratio_EB = np.zeros(scenarios_num)
+        target.fluxratio_comp = np.zeros(scenarios_num)
+        logging.info("Computing final probabilities from the %s scenarios", scenarios)
+        fpps = [validation_result[0] for validation_result in validation_results]
+        fpps_system = [validation_result[4] for validation_result in validation_results]
+        nfpps = [validation_result[1] for validation_result in validation_results]
+        fpp_err = np.std(fpps)
+        fpp_system_err = np.std(fpps_system)
+        nfpp_err = np.std(nfpps)
+        i = 0
+        with open(save_dir + "/validation.csv", 'w') as the_file:
+            the_file.write("scenario,FPP,FPP2,FPP3+,FPP_sys,FPP2_sys,FPP3+_sys,NFPP\n")
+            for fpp, nfpp, fpp2, fpp3, fpp_system, fpp2_system, fpp3_system, probs_df, star_num_arr, u1_arr, u2_arr, fluxratio_EB_arr, fluxratio_comp_arr \
+                    in validation_results:
+                if probs_total_df is None:
+                    probs_total_df = probs_df
+                else:
+                    probs_total_df = pd.concat((probs_total_df, probs_df))
+                fpp_sum = fpp_sum + fpp
+                fpp2_sum = fpp2_sum + fpp2
+                fpp3_sum = fpp3_sum + fpp3
+                fpp_system_sum = fpp_system_sum + fpp_system
+                fpp2_system_sum = fpp2_system_sum + fpp2_system
+                fpp3_system_sum = fpp3_system_sum + fpp3_system
+                nfpp_sum = nfpp_sum + nfpp
+                star_num[i] = star_num_arr
+                u1[i] = u1_arr
+                u2[i] = u2_arr
+                fluxratio_EB[i] = fluxratio_EB_arr
+                fluxratio_comp[i] = fluxratio_comp_arr
+                the_file.write(str(i) + "," + str(fpp) + "," + str(fpp2) + "," + str(fpp3) + "," + str(fpp_system) +
+                               "," + str(fpp2_system) + "," + str(fpp3_system) + "," + str(nfpp) + "\n")
+                i = i + 1
+            for i in range(0, scenarios_num):
+                target.u1[i] = np.mean(u1[:, i])
+                target.u2[i] = np.mean(u2[:, i])
+                target.fluxratio_EB[i] = np.mean(fluxratio_EB[:, i])
+                target.fluxratio_comp[i] = np.mean(fluxratio_comp[:, i])
+            fpp_sum = fpp_sum / scenarios
+            fpp2_sum = fpp2_sum / scenarios
+            fpp3_sum = fpp3_sum / scenarios
+            fpp_system_sum = fpp_system_sum / scenarios
+            fpp2_system_sum = fpp2_system_sum / scenarios
+            fpp3_system_sum = fpp3_system_sum / scenarios
+            nfpp_sum = nfpp_sum / scenarios
+            the_file.write("MEAN" + "," + str(fpp_sum) + "," + str(fpp2_sum) + "," +
+                           str(fpp3_sum) + "," + str(fpp_system_sum) + "," + str(fpp2_system_sum) +
+                           "," + str(fpp3_system_sum) + "," + str(nfpp_sum))
+        logging.info("Plotting mean scenario outputs")
+        if fpp_sum != fpp_system_sum:
+            Watson.plot_triceratops_output([fpp_sum, fpp_system_sum], [nfpp_sum] * 2,
+                                              [fpp_err, fpp_system_err], [nfpp_err] * 2, save_dir,
+                                              labels=['FPP', 'FPP_system'])
+        else:
+            Watson.plot_triceratops_output([fpp_sum], [nfpp_sum],
+                                              [fpp_err], [nfpp_err], save_dir)
+        probs_total_df = probs_total_df.groupby(["ID", "scenario"], as_index=False).mean()
+        target.probs = probs_total_df
+        probs_total_df["scenario"] = pd.Categorical(probs_total_df["scenario"], ["TP", "EB", "EBx2P", "PTP", "PEB",
+                                                                                 "PEBx2P", "STP", "SEB", "SEBx2P",
+                                                                                 "DTP", "DEB", "DEBx2P", "BTP", "BEB",
+                                                                                 "BEBx2P", "NTP", "NEB", "NEBx2P"])
+        probs_total_df = probs_total_df.sort_values("scenario")
+        probs_total_df.to_csv(save_dir + "/validation_scenarios.csv", index=False)
+        logging.info("---------------------------------")
+        logging.info("Final probabilities computed")
+        logging.info("---------------------------------")
+        logging.info("FPP=%s", fpp_sum)
+        logging.info("FPP2(Lissauer et al, 2012)=%s", fpp2_sum)
+        logging.info("FPP3+(Lissauer et al, 2012)=%s", fpp3_sum)
+        logging.info("FPP_system=%s", fpp_system_sum)
+        logging.info("FPP2_system(Lissauer et al, 2012)=%s", fpp2_system_sum)
+        logging.info("FPP3+_system(Lissauer et al, 2012)=%s", fpp3_system_sum)
+        logging.info("NFPP=%s", nfpp_sum)
+        return save_dir
+
+    @staticmethod
+    def plot_triceratops_output(fpps, nfpps, fpp_errs, nfpp_errs, target_dir, labels=None, legend_position='upper right'):
+        """
+        Given the TRICERATOPS informed FPP and NFPP, creates a plot with the information and the FP and Likely Planet
+        thresholds
+
+        :param fpp: the False Positive Probability
+        :param nfpp: the Nearby False Positive Probability
+        :param fpp_err: the False Positive Probability Error
+        :param nfpp_err: the Nearby False Positive Probability Error
+        :param target_dir: directory to store the plot
+        """
+        min_fpp = 0.000001
+        likely = (0.5, 0.001)
+        likely_nfpp = 0.1
+        fig, axs = plt.subplots(1, 1, figsize=(8, 8), constrained_layout=True)
+        for index, fpp in enumerate(fpps):
+            nfpp = nfpps[index] if nfpps[index] > min_fpp else min_fpp
+            fpp = fpp if fpp > min_fpp else min_fpp
+            axs.errorbar(fpp, nfpp, xerr=fpp_errs[index], yerr=nfpp_errs[index], marker="o", markersize=15,
+                         label=labels[index] if labels is not None else None)
+        #axs.set_xlim([0, 1])
+        #axs.set_ylim([0, 1])
+        axs.set_yscale('log', base=10)
+        #axs.set_yscale('log', base=10)
+        axs.set_title("FPP / NFPP Map", fontsize=25)
+        axs.set_xlabel('FPP', fontsize=25)
+        axs.set_ylabel('NFPP', fontsize=25)
+        axs.axhspan(0, likely[1], 0, likely[0], color="lightgreen", label="Likely Planet")
+        axs.axhspan(likely_nfpp, 1, color="gainsboro", label="Likely NFP")
+        axs.plot(min_fpp, min_fpp, markersize=0)
+        if labels is not None:
+            axs.legend(loc=legend_position, fontsize=20)
+        axs.text(0.77, 0.115, "Likely NFP", fontsize=20)
+        axs.text(0.23, 0.00057, "Likely Planet", fontsize=20)
+        axs.tick_params(axis='both', which='major', labelsize=15)
+        axs.set_xlim([0, 1])
+        fig.savefig(target_dir + "/triceratops_map.png")
+        fig.clf()
+
+    @staticmethod
+    def probs_without_scenarios(csv_file, no_scenarios):
+        """
+        Helper method to re-compute the probabilities removing the given scenarios
+
+        :param csv_file: the csv file with all the scenarios probabilities
+        :param no_scenarios: the scenarios to be removed from the calculation of probabilities
+        :return: the new fpp, nfpp, fpp2, fpp3 and the filtered scenarios dataframe
+        """
+        scenarios_df = pd.read_csv(csv_file)
+        scenarios_prob = scenarios_df['prob'].sum()
+        filtered_scenarios_df = scenarios_df.loc[~scenarios_df['scenario'].isin(no_scenarios)]
+        filtered_prob = filtered_scenarios_df['prob'].sum()
+        filtered_scenarios_df['prob'] = filtered_scenarios_df['prob'] * scenarios_prob / filtered_prob
+        filtered_prob_sum = filtered_scenarios_df['prob'].sum()
+        filtered_scenarios_df['prob'] = filtered_scenarios_df['prob'] / filtered_prob_sum
+        fpp = 1 - filtered_scenarios_df[filtered_scenarios_df['scenario'].isin(['TP', 'PTP', 'DTP'])]['prob'].sum()
+        fpp2 = 1 - 25 * (1 - fpp) / (25 * (1 - fpp) + fpp)
+        fpp3 = 1 - 50 * (1 - fpp) / (50 * (1 - fpp) + fpp)
+        nfpp = filtered_scenarios_df[filtered_scenarios_df['scenario'].isin(['NTP', 'NEB', 'NEBx2P'])]['prob'].sum()
+        print("Filtered scenarios " + str(no_scenarios) + " for file " + csv_file)
+        print("FPP: " + str(fpp) + "   FPP2: " + str(fpp2) + "   FPP3+: " + str(fpp3) + "   NFPP: " + str(nfpp))
+        return fpp, nfpp, fpp2, fpp3, filtered_scenarios_df
 
     def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k,
                with_tpfs=True, only_summary=False):
@@ -2109,3 +2475,97 @@ class Watson:
         bootstrap_max_powers = np.array(bootstrap_max_powers)
         fap_bootstrap = np.sum(bootstrap_max_powers >= signal_power) / bootstrap_scenarios
         return fap_bootstrap
+
+class TriceratopsThreadValidator:
+    """
+    Used to run a single scenario validation with TRICERATOPS
+    """
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def validate(input):
+        """
+        Computes the input scenario FPP and NFPP. In addition, FPP2 and FPP3+, from the probability boost proposed in
+        Lissauer et al. (2012) eq. 8 and 9 for systems where one or more planets have already been confirmed, are also
+        provided just in case they are useful so they don't need to be manually calculated
+
+        :param input: ValidatorInput
+        :return: the FPP values, the probabilities dataframe and additional target values
+        """
+        #input.target.calc_depths(tdepth=input.depth, all_ap_pixels=input.apertures)
+        input.target.stars.loc[0, 'plx'] = 0
+        input.target.calc_probs(time=input.time, flux_0=input.flux, flux_err_0=input.sigma, P_orb=float(input.period),
+                                contrast_curve_file=input.contrast_curve, parallel=True)
+        indexes = list(input.target.probs.index)
+        if input.ignore_ebs:
+            indexes = input.target.probs.loc[~input.target.probs['scenario'].str.contains('EB', na=False)].index
+            for index, row in input.target.probs.iloc[~indexes].iterrows():
+                logging.info(f"Ignore EBs is enabled. Ignoring scenario: Star {row['ID']}, scenario {row['scenario']}")
+        if input.resolved_companion == 'yes':
+            new_indexes = input.target.probs.loc[(~((input.target.probs['scenario'] == 'TP') |
+                                                 (input.target.probs['scenario'] == 'EB') |
+                                                 (input.target.probs['scenario'] == 'EBx2P'))) & ~((input.target.probs['ID'].isin([int(star) for star in input.bound_stars])) & ((input.target.probs['scenario'] == 'NTP') |
+                                                 (input.target.probs['scenario'] == 'NEB') |
+                                                 (input.target.probs['scenario'] == 'NEBx2P')))].index
+            for index, row in input.target.probs.iloc[~new_indexes].iterrows():
+                logging.info(f"Resolved companion is set to `yes`. Ignoring scenario: Star {row['ID']}, scenario {row['scenario']}")
+            indexes = list(set(indexes) & set(new_indexes))
+        if input.ignore_background_stars:
+            new_indexes = input.target.probs.loc[~((input.target.probs['scenario'] == 'DTP') |
+                                                 (input.target.probs['scenario'] == 'DEB') |
+                                                 (input.target.probs['scenario'] == 'DEBx2P') |
+                                                   (input.target.probs['scenario'] == 'BTP') |
+                                                   (input.target.probs['scenario'] == 'BEB') |
+                                                   (input.target.probs['scenario'] == 'BEBx2P')
+                                                   )].index
+            for index, row in input.target.probs.iloc[~new_indexes].iterrows():
+                logging.info(f"Ignore background stars is enabled: Star {row['ID']}, scenario {row['scenario']}")
+            indexes = list(set(indexes) & set(new_indexes))
+        #if input.resolved_companion == 'no':
+        probs = input.target.probs.loc[indexes]
+        star_num = input.target.star_num[indexes]
+        u1 = input.target.u1[indexes]
+        u2 = input.target.u2[indexes]
+        fluxratio_EB = input.target.fluxratio_EB[indexes]
+        fluxratio_comp = input.target.fluxratio_comp[indexes]
+        probs_sum = probs['prob'].sum()
+        probs.loc[:, 'prob'] = probs.loc[:, 'prob'] / probs_sum
+        fpp = 1 - probs.loc[(probs['scenario'].str.startswith("TP")) | (probs['scenario'].str.startswith("PTP")) |
+                            (probs['scenario'].str.startswith("DTP")), 'prob'].sum()
+        nfpp = probs.loc[
+            (probs['scenario'].str.startswith("NTP")) | (probs['scenario'].str.startswith("NEB")), 'prob'].sum()
+        fpp2 = 1 - 25 * (1 - fpp) / (25 * (1 - fpp) + fpp)
+        fpp3 = 1 - 50 * (1 - fpp) / (50 * (1 - fpp) + fpp)
+        fpp_system = 1 - probs.loc[(probs['scenario'].str.startswith("TP")) | (probs['scenario'].str.startswith("PTP")) |
+                            (probs['scenario'].str.startswith("DTP")) | (probs['scenario'].str.startswith("STP")), 'prob'].sum()
+        fpp2_system = 1 - 25 * (1 - fpp_system) / (25 * (1 - fpp_system) + fpp_system)
+        fpp3_system = 1 - 50 * (1 - fpp_system) / (50 * (1 - fpp_system) + fpp_system)
+        input.target.probs.to_csv(input.save_dir + "/validation_" + str(input.run) + "_scenarios_original.csv", index=False)
+        probs.to_csv(input.save_dir + "/validation_" + str(input.run) + "_scenarios.csv", index=False)
+        input.target.plot_fits(save=True, fname=input.save_dir + "/scenario_" + str(input.run) + "_fits",
+                               time=input.time, flux_0=input.flux, flux_err_0=input.sigma)
+        return fpp, nfpp, fpp2, fpp3, fpp_system, fpp2_system, fpp3_system, probs, star_num, u1, u2, fluxratio_EB, fluxratio_comp
+
+
+class ValidatorInput:
+    """
+    Wrapper class for input arguments of TriceratopsThreadValidator.
+    """
+    def __init__(self, save_dir, target, time, flux, sigma, period, depth, apertures, run, contrast_curve,
+                 ignore_ebs=False, resolved_companion=None, ignore_background_stars=False,
+                 bound_stars=[]):
+        self.save_dir = save_dir
+        self.target = target
+        self.time = time
+        self.flux = flux
+        self.sigma = sigma
+        self.period = period
+        self.depth = depth
+        self.apertures = apertures
+        self.run = run
+        self.contrast_curve = contrast_curve
+        self.ignore_ebs = ignore_ebs
+        self.resolved_companion = resolved_companion
+        self.ignore_background_stars = ignore_background_stars
+        self.bound_stars = bound_stars
