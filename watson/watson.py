@@ -599,7 +599,11 @@ class Watson:
 
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None,
                           transits_mask=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False,
-                          gpt_api_key=None, only_summary=False):
+                          gpt_api_key=None, only_summary=False, bootstrap_scenarios=100, triceratops_bins=100,
+                          triceratops_scenarios=5, triceratops_contrast_curve_file=None,
+                          triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
+                          triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
+                          triceratops_ignore_background_stars=False):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -647,7 +651,14 @@ class Watson:
                          dec=star["dec"], transits_list=None if transits_df is None else transits_df.to_dict("list"),
                          transits_mask=transits_mask, star_file=star_file, iatson_enabled=iatson_enabled,
                          iatson_inputs_save=iatson_inputs_save, gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
-                         only_summary=only_summary)
+                         only_summary=only_summary,  bootstrap_scenarios=bootstrap_scenarios,
+                         triceratops_bins=triceratops_bins, triceratops_scenarios=triceratops_scenarios,
+                         triceratops_contrast_curve_file=triceratops_contrast_curve_file,
+                         triceratops_additional_stars_file=triceratops_additional_stars_file,
+                         triceratops_sigma_mode=triceratops_sigma_mode,
+                         triceratops_ignore_ebs=triceratops_ignore_ebs,
+                         triceratops_resolved_companion=triceratops_resolved_companion,
+                         triceratops_ignore_background_stars=triceratops_ignore_background_stars)
         except Exception as e:
             traceback.print_exc()
 
