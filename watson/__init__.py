@@ -1,4 +1,4 @@
-__version__ = "0.15.3"
+__version__ = "0.16.0"
 
 # Patching all errors due to SSL certificates
 import requests
