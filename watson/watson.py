@@ -109,7 +109,7 @@ class Watson:
         if not isinstance(logging.root, logging.RootLogger):
             logging.root = logging.RootLogger(logging.INFO)
 
-    def vetting(self, id, period, t0, duration, depth, depth_err,sectors, rp_rstar=None, a_rstar=None, cpus=None,
+    def vetting(self, id, period, t0, duration, depth, depth_err, sectors, rp_rstar=None, a_rstar=None, cpus=None,
                 cadence=[], author=[], lc_file=None, lc_data_file=None, tpfs_dir=None, apertures_file=None,
                 create_fov_plots=False, cadence_fov=None, ra=None, dec=None, transits_list=None,
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
@@ -2499,6 +2499,26 @@ class TriceratopsThreadValidator:
                                 contrast_curve_file=input.contrast_curve, parallel=True)
         indexes = list(input.target.probs.index)
         if input.ignore_ebs:
+            """ 
+            TP No unresolved companion. Transiting planet with Porb around target star. (i, Rp)
+            EB No unresolved companion. Eclipsing binary with Porb around target star. (i, qshort)
+            EBx2P No unresolved companion. Eclipsing binary with 2 × Porb around target star. (i, qshort)
+            PTP Unresolved bound companion. Transiting planet with Porb around primary star. (i, Rp, qlong)
+            PEB Unresolved bound companion. Eclipsing binary with Porb around primary star. (i, qshort, qlong)
+            PEBx2P Unresolved bound companion. Eclipsing binary with 2 × Porb around primary star. (i, qshort, qlong)
+            STP Unresolved bound companion. Transiting planet with Porb around secondary star. (i, Rp, qlong)
+            SEB Unresolved bound companion. Eclipsing binary with Porb around secondary star. (i, qshort, qlong)
+            SEBx2P Unresolved bound companion. Eclipsing binary with 2 × Porb around secondary star. (i, qshort, qlong)
+            DTP Unresolved background star. Transiting planet with Porb around target star. (i, Rp, simulated star)
+            DEB Unresolved background star. Eclipsing binary with Porb around target star. (i, qshort, simulated star)
+            DEBx2P Unresolved background star. Eclipsing binary with 2 × Porb around target star. (i, qshort, simulated star)
+            BTP Unresolved background star. Transiting planet with Porb around background star. (i, Rp, simulated star)
+            BEB Unresolved background star. Eclipsing binary with Porb around background star. (i, qshort, simulated star)
+            BEBx2P Unresolved background star. Eclipsing binary with 2 × Porb around background star. (i, qshort, simulated star)
+            NTP No unresolved companion. Transiting planet with Porb around nearby star. (i, Rp)
+            NEB No unresolved companion. Eclipsing binary with Porb around nearby star. (i, qshort)
+            NEBx2P No unresolved companion. Eclipsing binary with 2 × Porb around nearby star. (i, qshort)
+            """
             indexes = input.target.probs.loc[~input.target.probs['scenario'].str.contains('EB', na=False)].index
             for index, row in input.target.probs.iloc[~indexes].iterrows():
                 logging.info(f"Ignore EBs is enabled. Ignoring scenario: Star {row['ID']}, scenario {row['scenario']}")
