@@ -230,6 +230,10 @@ class Watson:
                 for filename in os.listdir(self.data_dir):
                     if not os.path.isdir(self.data_dir + '/' + filename) and not filename.endswith(".pdf") and not filename.endswith(".csv"):
                         os.remove(self.data_dir + "/" + filename)
+                triceratops_dir = self.data_dir + '/triceratops/'
+                for filename in os.listdir(triceratops_dir):
+                    if not os.path.isdir(triceratops_dir + filename) and not filename.endswith(".csv"):
+                        os.remove(triceratops_dir + filename)
 
         except Exception as e:
             traceback.print_exc()
