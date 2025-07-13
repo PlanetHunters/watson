@@ -316,14 +316,16 @@ class Watson:
         logging.info("Will execute validation for sectors: " + str(sectors))
         lc = pd.read_csv(lc_file, header=0)
         time, flux, flux_err = lc["time"].values, lc["flux"].values, lc["flux_err"].values
-        for transit_mask in transits_mask:
-            logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
-                         transit_mask["T0"], transit_mask["D"])
-            time, flux, flux_err = LcbuilderHelper.mask_transits(time, flux,  transit_mask["P"],
-                                                                 transit_mask["D"] / 60 / 24, transit_mask["T0"])
+        if np.all(time > 0): # assuming the light curve is not phased
+            for transit_mask in transits_mask:
+                logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
+                             transit_mask["T0"], transit_mask["D"])
+                time, flux, flux_err = LcbuilderHelper.mask_transits(time, flux,  transit_mask["P"],
+                                                                     transit_mask["D"] / 60 / 24, transit_mask["T0"])
         if contrast_curve_file is not None:
             logging.info("Reading contrast curve %s", contrast_curve_file)
             plt.clf()
+            plt.close()
             cc = pd.read_csv(contrast_curve_file, header=None)
             sep, dmag = cc[0].values, cc[1].values
             plt.plot(sep, dmag, 'k-')
@@ -332,6 +334,7 @@ class Watson:
             plt.xlabel("separation ('')", fontsize=20)
             plt.savefig(save_dir + "/contrast_curve.png")
             plt.clf()
+            plt.close()
             shutil.copy(contrast_curve_file, save_dir + "/cc_" + os.path.basename(contrast_curve_file))
         additional_stars_df = None
         if additional_stars_file is not None:
@@ -347,13 +350,30 @@ class Watson:
             lc = KeplerLightCurve(time=time, flux=flux, flux_err=flux_err, quality=zeros_lc)
         lc.extra_columns = []
         fig, axs = plt.subplots(1, 1, figsize=(8, 4), constrained_layout=True)
-        axs, bin_centers, bin_means, bin_stds, snr = \
-            Watson.compute_phased_values_and_fill_plot(object_id, axs, lc, period, t0, depth, duration, rp_rstar,
-                                                       a_rstar, bins=bins,
-                                                       bin_err_mode='bin' if sigma_mode == 'binning' else 'flux_err')
-        bin_centers = (bin_centers - 0.5) * period
+        if np.all(time > 0):  # assuming the light curve is not phased
+            axs, bin_centers, bin_means, bin_stds, snr = \
+                Watson.compute_phased_values_and_fill_plot(object_id, axs, lc, period, t0, depth, duration, rp_rstar,
+                                                           a_rstar, bins=bins,
+                                                           bin_err_mode='bin' if sigma_mode == 'binning' else 'flux_err')
+
+            bin_centers = (bin_centers - 0.5) * period
+        else:
+            flux_plot = lc.flux.value
+            time_plot = lc.time.value
+            bin_centers, bin_means, bin_width, bin_stds = LcbuilderHelper.bin(time_plot, flux_plot, bins,
+                                                                              values_err=lc.flux_err.value,
+                                                                              bin_err_mode=sigma_mode)
+            axs.scatter(time_plot, flux_plot, 2, color="blue", alpha=0.1)
+            if bins is not None and len(flux_plot) > bins:
+                axs.errorbar(bin_centers, bin_means, yerr=bin_stds / 2, xerr=bin_width / 2, marker='o', markersize=2,
+                             color='darkorange', alpha=1, linestyle='none')
+            axs.set_xlabel("Time (d)")
+            axs.set_ylabel("Flux norm.")
+            if len(flux_plot) > 0 and np.any(~np.isnan(flux_plot)):
+                axs.set_ylim(np.nanmin(flux_plot), np.nanmax(flux_plot))
         plt.savefig(save_dir + "/folded_curve.png")
         plt.clf()
+        plt.close()
         logging.info("Sigma mode is %s", sigma_mode)
         sigma = np.nanmean(bin_stds)
         logging.info("Flux err (ppm) = %s", sigma * 1000000)
@@ -560,6 +580,7 @@ class Watson:
         axs.set_xlim([0, 1])
         fig.savefig(target_dir + "/triceratops_map.png")
         fig.clf()
+        plt.close()
 
     @staticmethod
     def probs_without_scenarios(csv_file, no_scenarios):
@@ -607,7 +628,7 @@ class Watson:
                           triceratops_contrast_curve_file=None,
                           triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
                           triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
-                          triceratops_ignore_background_stars=False):
+                          triceratops_ignore_background_stars=False, sectors=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -637,11 +658,12 @@ class Watson:
         depth_err = df['depth_err']
         run = int(df['number'])
         curve = int(df['curve'])
-        sectors = df['sectors']
+        sectors = df['sectors'] if sectors is None else sectors
         if isinstance(sectors, (int, np.integer)):
             sectors = [sectors]
         elif isinstance(sectors, (str)):
             sectors = sectors.split(',')
+            sectors = [int(x) for x in sectors]
         lc_file = "/lc_" + str(curve) + ".csv"
         lc_file = self.object_dir + lc_file
         lc_data_file = self.object_dir + "/lc_data.csv"
@@ -1467,8 +1489,8 @@ class Watson:
         file = file_dir + '/folded_cadences.png'
         plt.subplots_adjust(left=0.1, bottom=0.2, right=0.9, top=0.9, wspace=0.4, hspace=0.4)
         plt.savefig(file, dpi=200, bbox_inches='tight')
-        plt.close(fig)
         plt.clf()
+        plt.close()
         return snrs
 
     @staticmethod
@@ -1600,6 +1622,7 @@ class Watson:
         tpf_bls_file = file_dir + f'/folded_tpf_{sector}_{pid}.png'
         plt.savefig(tpf_bls_file, dpi=200, bbox_inches='tight')
         plt.clf()
+        plt.close()
         tpf_sub = Watson.compute_tpf_diff_image(tpf, period, epoch, duration)
         optical_ghost_data = Watson.compute_optical_ghost_data(tpf, aperture, period, epoch, duration)
         source_offset_px = Watson.light_centroid(snr_map, pixel_values_i, pixel_values_j)
@@ -1644,6 +1667,7 @@ class Watson:
         tpf_snr_file = file_dir + f'/snr_tpf_{sector}_{pid}.png'
         plt.savefig(tpf_snr_file, dpi=200, bbox_inches='tight')
         plt.clf()
+        plt.close()
         images_list = [tpf_bls_file, tpf_snr_file]
         imgs = [PIL.Image.open(i) for i in images_list]
         imgs[0] = imgs[0].resize((imgs[1].size[0],
@@ -1843,8 +1867,8 @@ class Watson:
         axs[1].set_ylabel("Norm. flux")
         og_file = file_dir + '/optical_ghost.png'
         plt.savefig(og_file, bbox_inches='tight')
-        plt.close(fig)
         plt.clf()
+        plt.close()
         # TODO we don't manage to get a nice plot from this
         centroid_coords_df = pd.DataFrame(columns=['time', 'time_folded', 'centroids_ra', 'centroids_dec'])
         centroid_coords_df['centroids_ra'] = list(chain.from_iterable(centroids_offsets_ra_list))
@@ -1885,8 +1909,8 @@ class Watson:
         axs[1].set_ylabel("DEC Centroid & Motion drift")
         centroids_file = file_dir + '/centroids.png'
         plt.savefig(centroids_file, bbox_inches='tight')
-        plt.close(fig)
         plt.clf()
+        plt.close()
         # phot_source_offset_ra = ra + (centroid_coords_df_oot['centroids_ra'].median() * ra / 3600 - \
         #                         (1 / depth - 1) * centroid_coords_df_it['centroids_ra'].median() * ra / 3600) * np.cos(np.deg2rad(dec))
         # phot_source_offset_dec = dec + (centroid_coords_df_oot['centroids_dec'].median() * dec / 3600 - \
@@ -2245,16 +2269,16 @@ class Watson:
             #axs[index // 4][index % 4].axhline(1 - depth, color="red")
             if index % (plot_grid_size * plot_grid_size) == 0 and index > 0:
                 plt.savefig(file, dpi=200)
-                plt.close(fig)
                 plt.clf()
+                plt.close()
                 file = file_dir + '/star_nb_' + str(page) + '.png'
                 if index + 1 < len(stars_df):
                     fig, axs = plt.subplots(plot_grid_size, plot_grid_size, figsize=(16, 16))
             page = index // (plot_grid_size * plot_grid_size)
         if index % (plot_grid_size * plot_grid_size) != 0:
             plt.savefig(file, dpi=200)
-            plt.close(fig)
             plt.clf()
+            plt.close()
         return
 
     @staticmethod
