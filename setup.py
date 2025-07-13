@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = "0.16.2"
+version = "0.16.3"
 setuptools.setup(
     name="dearwatson", # Replace with your own username
     version=version,
@@ -26,7 +26,7 @@ setuptools.setup(
                         "bokeh==3.7.3", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "extension-helpers==0.1",
-                        "exoml==1.2.5",
+                        "exoml==1.2.6",
                         "imageio==2.9.0",
                         "openai==1.30.1",
                         'pdf2image==1.16.2', #Triceratops
