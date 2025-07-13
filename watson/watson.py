@@ -115,8 +115,10 @@ class Watson:
                 v=None, j=None, h=None, k=None, clean=True, transits_mask=None,
                 star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None,
                 only_summary=False, bootstrap_scenarios=100, triceratops_bins=100, triceratops_scenarios=5,
-                triceratops_contrast_curve_file=None, triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
-                triceratops_ignore_ebs=False, triceratops_resolved_companion=None, triceratops_ignore_background_stars=False):
+                triceratops_curve_file=None, triceratops_contrast_curve_file=None,
+                triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
+                triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
+                triceratops_ignore_background_stars=False):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -203,7 +205,8 @@ class Watson:
             if sectors is not None:
                 DvrPreparer().retrieve(id, sectors, self.data_dir)
             try:
-                self.execute_triceratops(cpus, self.data_dir, id, sectors, lc_file, depth,
+                self.execute_triceratops(cpus, self.data_dir, id, sectors,
+                                         lc_file if triceratops_curve_file is None else triceratops_curve_file, depth,
                                          period, t0, duration, rp_rstar, a_rstar, triceratops_bins,
                                          triceratops_scenarios, triceratops_sigma_mode,
                                          triceratops_contrast_curve_file, triceratops_additional_stars_file, transits_mask=transits_mask,
@@ -600,7 +603,8 @@ class Watson:
     def vetting_with_data(self, candidate_df, star, transits_df, cpus, create_fov_plots=False, cadence_fov=None,
                           transits_mask=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False,
                           gpt_api_key=None, only_summary=False, bootstrap_scenarios=100, triceratops_bins=100,
-                          triceratops_scenarios=5, triceratops_contrast_curve_file=None,
+                          triceratops_scenarios=5, triceratops_curve_file=None,
+                          triceratops_contrast_curve_file=None,
                           triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
                           triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
                           triceratops_ignore_background_stars=False):
@@ -654,6 +658,7 @@ class Watson:
                          only_summary=only_summary,  bootstrap_scenarios=bootstrap_scenarios,
                          triceratops_bins=triceratops_bins, triceratops_scenarios=triceratops_scenarios,
                          triceratops_contrast_curve_file=triceratops_contrast_curve_file,
+                         triceratops_curve_file=triceratops_curve_file,
                          triceratops_additional_stars_file=triceratops_additional_stars_file,
                          triceratops_sigma_mode=triceratops_sigma_mode,
                          triceratops_ignore_ebs=triceratops_ignore_ebs,
