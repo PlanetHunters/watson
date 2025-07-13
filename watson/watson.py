@@ -320,7 +320,9 @@ class Watson:
         logging.info("Will execute validation for sectors: " + str(sectors))
         lc = pd.read_csv(lc_file, header=0)
         time, flux, flux_err = lc["time"].values, lc["flux"].values, lc["flux_err"].values
+        logging.info(f'lc file = {lc_file}')
         if np.all(time > 0): # assuming the light curve is not phased
+            logging.info("Using phased light curve")
             for transit_mask in transits_mask:
                 logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
                              transit_mask["T0"], transit_mask["D"])
