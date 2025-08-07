@@ -209,7 +209,8 @@ class Watson:
                                          lc_file if triceratops_curve_file is None else triceratops_curve_file, depth,
                                          period, t0, duration, rp_rstar, a_rstar, triceratops_bins,
                                          triceratops_scenarios, triceratops_sigma_mode,
-                                         triceratops_contrast_curve_file, triceratops_additional_stars_file, transits_mask=transits_mask,
+                                         triceratops_contrast_curve_file, triceratops_additional_stars_file,
+                                         transits_mask=transits_mask,
                                          star_file=star_file,
                                          ignore_ebs=triceratops_ignore_ebs, resolved_companion=triceratops_resolved_companion,
                                          ignore_background_stars=triceratops_ignore_background_stars)
@@ -327,7 +328,8 @@ class Watson:
                 logging.info('* Transit mask with P=%.2f d, T0=%.2f d, Dur=%.2f min *', transit_mask["P"],
                              transit_mask["T0"], transit_mask["D"])
                 time, flux, flux_err = LcbuilderHelper.mask_transits(time, flux,  transit_mask["P"],
-                                                                     transit_mask["D"] / 60 / 24, transit_mask["T0"])
+                                                                     transit_mask["D"] / 60 / 24, transit_mask["T0"],
+                                                                     flux_err)
         if contrast_curve_file is not None:
             logging.info("Reading contrast curve %s", contrast_curve_file)
             plt.clf()
