@@ -228,6 +228,7 @@ class Report:
                 passed = np.nan
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {"metric": ["WATSON-NET"], 'score': [round(score_average, 4)], 'passed': [passed]}, orient='columns')], ignore_index=True)
+            passed = False
             if score_std < 0.015:
                 passed = True
             elif score_std < 0.1:
