@@ -1057,7 +1057,7 @@ class Watson:
         previous_jump_index = 0
         for jumpIndex in jumps:
             token = lc_data_copy["centroids_x"][previous_jump_index:jumpIndex]
-            lc_data_copy.loc[previous_jump_index:jumpIndex, "motion_y"] = token - np.nanmedian(token)
+            lc_data_copy.loc[previous_jump_index:jumpIndex, "centroids_x"] = token - np.nanmedian(token)
             token = lc_data_copy["centroids_y"][previous_jump_index:jumpIndex]
             lc_data_copy.loc[previous_jump_index:jumpIndex, "centroids_y"] = token - np.nanmedian(token)
             token = lc_data_copy["motion_x"][previous_jump_index:jumpIndex]
@@ -1742,12 +1742,13 @@ class Watson:
                     if halo_aperture[i, j]:
                         halo_flux = halo_flux + pixel_flux
         core_flux = core_flux / len(np.argwhere(aperture == True))
-        core_flux, _ = LcbuilderHelper.detrend(tpf.time.value, core_flux, duration * 4, check_cadence=True, method="biweight")
-        halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
-        if len(np.argwhere(~np.isnan(halo_flux))) == 0:
-            halo_flux = core_flux
-        else:
-            halo_flux, _ = LcbuilderHelper.detrend(tpf.time.value, halo_flux, duration * 4, check_cadence=True, method="biweight")
+        if len(core_flux) > 0:
+            core_flux, _ = LcbuilderHelper.detrend(tpf.time.value, core_flux, duration * 4, check_cadence=True, method="biweight")
+            halo_flux = halo_flux / len(np.argwhere(halo_aperture == True))
+            if len(np.argwhere(~np.isnan(halo_flux))) == 0:
+                halo_flux = core_flux
+            else:
+                halo_flux, _ = LcbuilderHelper.detrend(tpf.time.value, halo_flux, duration * 4, check_cadence=True, method="biweight")
         return (tpf.time.value, core_flux, halo_flux)
 
     @staticmethod
