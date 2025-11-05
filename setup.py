@@ -26,7 +26,7 @@ setuptools.setup(
                         "bokeh==3.7.3", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "extension-helpers==0.1",
-                        "exoml==1.2.6",
+                        "exoml==1.3.1",
                         "imageio==2.9.0",
                         "openai==1.30.1",
                         'pdf2image==1.16.2', #Triceratops
