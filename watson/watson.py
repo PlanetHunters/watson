@@ -219,7 +219,7 @@ class Watson:
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, depth_err, rp_rstar, a_rstar,
                                                                  cpus, lc_file, lc_data_file, tpfs_dir,
                                                                  apertures_file, create_fov_plots, cadence_fov, ra,
-                                                                 dec, transits_list, transits_mask,
+                                                                 dec, transits_list, transits_mask, sectors,
                                                                  star_file=star_file, iatson_enabled=iatson_enabled,
                                                                  iatson_inputs_save=iatson_inputs_save,
                                                                  gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
@@ -429,7 +429,7 @@ class Watson:
                 valid_apertures[sector] = aperture
                 target.plot_field(save=True, fname=save_dir + "/field_S" + str(sector), sector=sector,
                                   ap_pixels=aperture)
-        valid_apertures = np.array([aperture for sector, aperture in valid_apertures.items()], dtype=object)
+        valid_apertures = np.array([aperture for sector, aperture in valid_apertures.items() if len(aperture) > 0], dtype=object)
         logging.info("Calculating validation closest stars depths")
         target.calc_depths(depth, valid_apertures)
         target.stars.to_csv(save_dir + "/stars.csv", index=False)
@@ -699,7 +699,7 @@ class Watson:
 
     def __process(self, id, period, t0, duration, depth, depth_err, rp_rstar, a_rstar, cpus, lc_file, lc_data_file, tpfs_dir,
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
-                  transits_list=None, transits_mask=None, star_file=None, iatson_enabled=False,
+                  transits_list=None, transits_mask=None, sectors=None, star_file=None, iatson_enabled=False,
                   iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None, only_summary=False,
                   bootstrap_scenarios=100):
         """
@@ -736,12 +736,12 @@ class Watson:
                                                           transits_mask=transits_mask)
         star_df = pd.read_csv(star_file)
         apertures = None
-        sectors = None
         if os.path.exists(apertures_file):
             with open(apertures_file) as apertures_io:
                 apertures = yaml.load(apertures_io, yaml.SafeLoader)
             apertures = apertures["sectors"]
-            sectors = [sector for sector in apertures.keys()]
+            if sectors is None:
+                sectors = [sector for sector in apertures.keys()]
             mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
             if create_fov_plots:
                 if cadence_fov is None:
@@ -1172,11 +1172,12 @@ class Watson:
                     else:
                         author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
                         aperture = Watson.get_aperture_for_sector(single_transit_process_input.apertures, sector, author, cadence)
-                        aperture_mask = ApertureExtractor.from_pixels_to_boolean_mask(
-                            aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
-                        eroded_aperture_mask = ndimage.binary_erosion(aperture_mask)
-                        chosen_aperture_lc = tpf.to_lightcurve(aperture_mask=aperture_mask)
-                    if True in eroded_aperture_mask:
+                        if len(aperture) > 0:
+                            aperture_mask = ApertureExtractor.from_pixels_to_boolean_mask(
+                                aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
+                            eroded_aperture_mask = ndimage.binary_erosion(aperture_mask)
+                            chosen_aperture_lc = tpf.to_lightcurve(aperture_mask=aperture_mask)
+                    if eroded_aperture_mask is not None and True in eroded_aperture_mask:
                         smaller_aperture_lc = tpf.to_lightcurve(aperture_mask=eroded_aperture_mask)
                     break
             single_transit_file = single_transit_process_input.data_dir + "/single_transit_" + \
@@ -1593,6 +1594,8 @@ class Watson:
         sector = sector[0]
         if apertures is not None:
             aperture = Watson.get_aperture_for_sector(apertures, sector, author, cadence)
+            if len(aperture) == 0:
+                return None, None, None, None
             aperture = \
                 ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
         else:
@@ -1954,7 +1957,15 @@ class Watson:
              'ra_err': [offset_ra_err], 'dec_err': [offset_dec_err]}, orient='columns')],
                               ignore_index=True)
         offsets_df.to_csv(file_dir + '/source_offsets.csv')
-        tpf = tpfs[0]
+        for tpf in tpfs:
+            sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
+            sector = sector[0]
+            author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
+            aperture = Watson.get_aperture_for_sector(apertures, sector, author=author, cadence=cadence)
+            if len(aperture) > 0:
+                break
+        aperture = ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2],
+                                                                 tpf.shape[1])
         hdu = tpf.hdu[2].header
         wcs = WCS(hdu)
         offset_px = wcs.all_world2pix(offset_ra, offset_dec, 0)
@@ -1965,11 +1976,6 @@ class Watson:
         c2 = SkyCoord(ra=offset_ra * u.degree, dec=offset_dec * u.degree, frame='icrs')
         distance_sub_arcs = c1.separation(c2).value * 60 * 60
         target_pixels = wcs.all_world2pix(ra, dec, 0)
-        sector_name, sector = LcbuilderHelper.mission_lightkurve_sector_extraction(mission, tpf)
-        sector = sector[0]
-        author, cadence = Watson.get_author_cadence_from_tpf_name(tpf)
-        aperture = Watson.get_aperture_for_sector(apertures, sector, author=author, cadence=cadence)
-        aperture = ApertureExtractor.from_pixels_to_boolean_mask(aperture, tpf.column, tpf.row, tpf.shape[2], tpf.shape[1])
         ax = tpf.plot(aperture_mask=aperture)
         ax.plot([tpf.column + target_pixels[0]], [tpf.row + target_pixels[1]], marker="*", markersize=14,
                 color="blue", label='target')
