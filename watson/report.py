@@ -275,6 +275,29 @@ class Report:
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {"metric": ["Triceratops_NFPP"], 'score': [mean_nfpp], 'passed': [passed]},
                 orient='columns')], ignore_index=True)
+        bayesian_file = self.data_dir + '/triceratops/bayesian_fpp.csv'
+        if os.path.exists(bayesian_file):
+            bayesian_df = pd.read_csv(bayesian_file)
+            combined_fpp = bayesian_df.loc[0, 'combined_fpp']
+            if combined_fpp <= 0.01:
+                passed = True
+            elif combined_fpp <= 0.5:
+                passed = np.nan
+            else:
+                passed = False
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["Bayesian_FPP"], 'score': [round(combined_fpp, 6)], 'passed': [passed]},
+                orient='columns')], ignore_index=True)
+            combined_nfpp = bayesian_df.loc[0, 'combined_nfpp']
+            if combined_nfpp <= 0.001:
+                passed = True
+            elif combined_nfpp <= 0.1:
+                passed = np.nan
+            else:
+                passed = False
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {"metric": ["Bayesian_NFPP"], 'score': [round(combined_nfpp, 6)], 'passed': [passed]},
+                orient='columns')], ignore_index=True)
         story.append(PageBreak())
         section = section + 1
         story.append(Paragraph("Section " + str(section) + ": Metrics summary", styles["Heading1"]))

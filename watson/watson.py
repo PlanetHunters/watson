@@ -225,6 +225,7 @@ class Watson:
                                                                  gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
                                                                          only_summary=only_summary,
                                                                          bootstrap_scenarios=bootstrap_scenarios)
+            Watson.compute_bayesian_fpp(self.data_dir)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir), only_summary=only_summary)
             if clean:
@@ -238,6 +239,92 @@ class Watson:
 
         except Exception as e:
             traceback.print_exc()
+
+    ON_TARGET_PLANET_SCENARIOS = {"TP", "PTP", "DTP"}
+    BAYESIAN_NFPP_SCENARIOS = {"NEB", "NEBx2P", "NTP"}
+
+    @staticmethod
+    def _apply_bayesian_update(nn_score: float, scenarios_df: pd.DataFrame,
+                               training_planet_fraction: float = 0.1) -> tuple:
+        """
+        Core Bayesian update: apply Watson-NET likelihood to TRICERATOPS scenario probabilities.
+
+        Watson-NET is a discriminative classifier whose output p_NN estimates the posterior
+        P(planet | data) under the training-set class distribution (π_train). To use p_NN
+        as a Bayes factor we must first remove the implicit training prior:
+
+          P(data | planet) ∝ p_NN / π_train
+          P(data | FP)     ∝ (1 - p_NN) / (1 - π_train)
+
+        Equivalently, the corrected Bayes factor is:
+          BF = [p_NN / (1 - p_NN)] × [(1 - π_train) / π_train]
+
+        Each TRICERATOPS scenario prior is then multiplied by the appropriate likelihood
+        and the full table is renormalized:
+          - On-target planet scenarios (TP, PTP, DTP): prob *= p_NN / π_train
+          - All other scenarios:                       prob *= (1 - p_NN) / (1 - π_train)
+
+        The neutral point (no update) is p_NN = π_train, not 0.5.
+
+        :param nn_score: Watson-NET calibrated probability in [0, 1] (will be clipped)
+        :param scenarios_df: DataFrame with columns 'scenario' and 'prob'
+        :param training_planet_fraction: fraction of planet examples in Watson-NET training set
+                                        (π_train). Default 0.1 (10% planets, 90% FPs).
+        :return: (combined_fpp, combined_nfpp, updated_scenarios_df)
+        """
+        nn_score = float(np.clip(nn_score, 1e-6, 1 - 1e-6))
+        pi = float(np.clip(training_planet_fraction, 1e-6, 1 - 1e-6))
+        planet_likelihood = nn_score / pi
+        fp_likelihood = (1.0 - nn_score) / (1.0 - pi)
+        df = scenarios_df.copy()
+        is_on_target_planet = df['scenario'].isin(Watson.ON_TARGET_PLANET_SCENARIOS)
+        df.loc[is_on_target_planet, 'prob'] = df.loc[is_on_target_planet, 'prob'] * planet_likelihood
+        df.loc[~is_on_target_planet, 'prob'] = df.loc[~is_on_target_planet, 'prob'] * fp_likelihood
+        prob_sum = df['prob'].sum()
+        if prob_sum > 0:
+            df['prob'] = df['prob'] / prob_sum
+        else:
+            df['prob'] = 1.0 / len(df)
+        combined_fpp = 1.0 - df.loc[is_on_target_planet, 'prob'].sum()
+        combined_nfpp = df.loc[df['scenario'].isin(Watson.BAYESIAN_NFPP_SCENARIOS), 'prob'].sum()
+        return combined_fpp, combined_nfpp, df
+
+    @staticmethod
+    def compute_bayesian_fpp(data_dir: str, training_planet_fraction: float = 0.1) -> None:
+        """
+        Combines Watson-NET NN score with TRICERATOPS scenario probabilities using Bayes theorem
+        and saves the result to {data_dir}/triceratops/bayesian_fpp.csv.
+
+        Reads:
+          - {data_dir}/iatson_averages.csv        (Watson-NET output)
+          - {data_dir}/triceratops/validation_scenarios.csv  (TRICERATOPS output)
+
+        Writes:
+          - {data_dir}/triceratops/bayesian_fpp.csv
+            columns: nn_score, training_planet_fraction, combined_fpp, combined_nfpp
+
+        Does nothing if either input file is missing.
+
+        :param data_dir: vetting output directory
+        :param training_planet_fraction: fraction of planet examples in Watson-NET training set.
+                                        Default 0.1 (10% planets, 90% FPs).
+        """
+        iatson_file = data_dir + '/iatson_averages.csv'
+        scenarios_file = data_dir + '/triceratops/validation_scenarios.csv'
+        if not os.path.exists(iatson_file) or not os.path.exists(scenarios_file):
+            return
+        nn_score = pd.read_csv(iatson_file).loc[0, 'prediction_value_cal_mean']
+        scenarios_df = pd.read_csv(scenarios_file)
+        combined_fpp, combined_nfpp, _ = Watson._apply_bayesian_update(
+            nn_score, scenarios_df, training_planet_fraction)
+        pd.DataFrame({
+            'nn_score': [float(np.clip(nn_score, 1e-6, 1 - 1e-6))],
+            'training_planet_fraction': [training_planet_fraction],
+            'combined_fpp': [combined_fpp],
+            'combined_nfpp': [combined_nfpp]
+        }).to_csv(data_dir + '/triceratops/bayesian_fpp.csv', index=False)
+        logging.info("Bayesian combined FPP: %.4f, NFPP: %.4f (nn_score=%.4f, pi_train=%.2f)",
+                     combined_fpp, combined_nfpp, nn_score, training_planet_fraction)
 
     def execute_triceratops(self, cpus, indir, object_id, sectors, lc_file, transit_depth, period, t0,
                             transit_duration, rp_rstar, a_rstar, bins, scenarios, sigma_mode, contrast_curve_file,
