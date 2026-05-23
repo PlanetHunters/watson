@@ -35,14 +35,13 @@ setuptools.setup(
                         "pillow==11.2.1",
                         'pytransit==2.6.14', #Triceratops
                         "reportlab==4.4.0",
-                        'setuptools>=41.0.0',
+                        'setuptools<71', # pytransit 2.6.14 imports pkg_resources at module load time; setuptools 71+ removed it
                         'triceratops==1.0.19'
     ],
     extras_require={
         'test': [
             'pytest',
             'pytest-xdist',
-            'setuptools',
         ],
     },
 )
