@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = "1.0.1"
+version = "1.1.0"
 setuptools.setup(
     name="dearwatson", # Replace with your own username
     version=version,
@@ -37,5 +37,12 @@ setuptools.setup(
                         "reportlab==4.4.0",
                         'setuptools>=41.0.0',
                         'triceratops==1.0.19'
-    ]
+    ],
+    extras_require={
+        'test': [
+            'pytest',
+            'pytest-xdist',
+            'setuptools',
+        ],
+    },
 )

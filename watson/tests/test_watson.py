@@ -2,10 +2,10 @@ import multiprocessing
 import os
 import shutil
 import unittest
+from importlib import resources
 
 import numpy
 import pandas as pd
-import pkg_resources
 import yaml
 from lcbuilder import constants
 from lcbuilder.star.starinfo import StarInfo
@@ -140,7 +140,7 @@ class TestsWatson(unittest.TestCase):
         :param path:
         :return: the real path of the test resource
         """
-        return pkg_resources.resource_filename(__name__, path)
+        return str(resources.files("watson.tests") / path)
 
 
 class TestsBayesianFpp(unittest.TestCase):
