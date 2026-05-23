@@ -834,7 +834,7 @@ class Watson:
                 if cadence_fov is None:
                     cadence_fov = LcbuilderHelper.compute_cadence(lc.time.value)
                 Watson.vetting_field_of_view(self.data_dir, mission, mission_int_id, cadence_fov, ra_fov, dec_fov,
-                                             list(apertures.keys()), "tpf", apertures, cpus)
+                                             list(apertures.keys()), "tpf", apertures, cpus, tpfs_dir)
         summary_t0s_indexes = None
         if transits_list is not None:
             transits_list_not_nan_indexes = \
@@ -2517,7 +2517,12 @@ class Watson:
         :param fov_process_input: wrapper for the sector data
         """
         try:
-            tpf = fov_process_input.tpf_source.download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
+            tpf = fov_process_input.tpf_source
+            try:
+                tpf = tpf.download(cutout_size=(CUTOUT_SIZE, CUTOUT_SIZE))
+                logging.info("Downloaded TPF for sector %.0f from MAST", tpf.sector)
+            except (AttributeError, TypeError):
+                logging.info("Using pre-loaded TPF for sector %.0f (no download needed)", tpf.sector)
             row = tpf.row
             column = tpf.column
             plt.close()
@@ -2531,11 +2536,11 @@ class Watson:
         except SystemExit:
             logging.exception("Field Of View generation tried to exit.")
         except Exception as e:
-            logging.exception("Exception found when generating Field Of View plots")
+            logging.exception("Exception found when generating Field Of View plots for sector")
 
     @staticmethod
     def vetting_field_of_view(indir, mission, tic, cadence, ra, dec, sectors, source, apertures,
-                              cpus=multiprocessing.cpu_count() - 1):
+                              cpus=multiprocessing.cpu_count() - 1, tpfs_dir=None):
         """
         Runs TPFPlotter to get field of view data.
         :param indir: the data source directory
@@ -2548,6 +2553,7 @@ class Watson:
         :param source: the source where the aperture was generated [tpf, tesscut]
         :param apertures: a dict mapping sectors to boolean apertures
         :param cpus: cores to be used
+        :param tpfs_dir: the directory containing local tpf files
         :return: the directory where resulting data is stored
         """
         cpus = 1
@@ -2558,20 +2564,36 @@ class Watson:
             if mission != "TESS":
                 return
             target_title = "TIC " + str(tic)
-            #TODO use retrieval method depending on source parameter
-            cadence = 121
-            if cadence > 120:
-                tpf_source = lightkurve.search_tesscut(target_title, sector=sectors_search)
-                if tpf_source is None or len(tpf_source) == 0:
-                    ra_str = str(ra)
-                    dec_str = "+" + str(dec) if dec >= 0 else str(dec)
-                    coords_str = ra_str + " " + dec_str
-                    tpf_source = lightkurve.search_tesscut(coords_str, sector=sectors_search)
-                    target_title = "RA={:.4f},DEC={:.4f}".format(ra, dec)
+            if source == "tpf" and tpfs_dir is not None and os.path.exists(tpfs_dir):
+                logging.info("Loading local target pixel files for field of view plots from %s", tpfs_dir)
+                tpf_source = []
+                for tpf_file in sorted(os.listdir(tpfs_dir)):
+                    if mission == lcbuilder.constants.MISSION_TESS:
+                        tpf = TessTargetPixelFile(tpfs_dir + "/" + tpf_file)
+                    else:
+                        tpf = KeplerTargetPixelFile(tpfs_dir + "/" + tpf_file)
+                    logging.info("Local TPF file %s has sector %.0f", tpf_file, tpf.sector)
+                    if tpf.sector in sectors:
+                        tpf_source.append(tpf)
+                logging.info("Loaded %.0f local TPFs matching requested sectors %s", len(tpf_source), str(sectors))
             else:
-                tpf_source = lightkurve.search_targetpixelfile(target_title, sector=sectors_search,
-                                                               author=lcbuilder.constants.SPOC_AUTHOR,
-                                                               cadence=cadence)
+                logging.info("Querying MAST for target pixel files: target=%s, sectors=%s, cadence=%.0f", target_title, str(sectors_search), cadence)
+                if cadence > 120:
+                    tpf_source = lightkurve.search_tesscut(target_title, sector=sectors_search)
+                    logging.info("MAST search_tesscut returned %.0f results for target %s", len(tpf_source) if tpf_source is not None else 0, target_title)
+                    if tpf_source is None or len(tpf_source) == 0:
+                        ra_str = str(ra)
+                        dec_str = "+" + str(dec) if dec >= 0 else str(dec)
+                        coords_str = ra_str + " " + dec_str
+                        logging.info("Retrying MAST search with coordinates %s", coords_str)
+                        tpf_source = lightkurve.search_tesscut(coords_str, sector=sectors_search)
+                        logging.info("MAST coordinate search returned %.0f results", len(tpf_source) if tpf_source is not None else 0)
+                        target_title = "RA={:.4f},DEC={:.4f}".format(ra, dec)
+                else:
+                    tpf_source = lightkurve.search_targetpixelfile(target_title, sector=sectors_search,
+                                                                   author=lcbuilder.constants.SPOC_AUTHOR,
+                                                                   cadence=cadence)
+                    logging.info("MAST search_targetpixelfile returned %.0f results for target %s", len(tpf_source) if tpf_source is not None else 0, target_title)
             save_dir = indir
             if not os.path.exists(save_dir):
                 os.makedirs(save_dir)
@@ -2579,8 +2601,10 @@ class Watson:
             for i in range(0, len(tpf_source)):
                 fov_process_inputs.append(FovProcessInput(save_dir, mission, tic, cadence, ra, dec, sectors, source,
                                                           apertures, tpf_source[i], target_title))
+            logging.info("Submitting %.0f FOV plot jobs to pool (cpus=%.0f)", len(fov_process_inputs), cpus)
             with multiprocessing.Pool(processes=cpus) as pool:
                 pool.map(Watson.vetting_field_of_view_single, fov_process_inputs)
+            logging.info("FOV plot jobs completed. Files in %s: %s", save_dir, str(os.listdir(save_dir)))
             return save_dir
         except SystemExit:
             logging.exception("Field Of View generation tried to exit.")

@@ -65,7 +65,7 @@ class TestsWatson(unittest.TestCase):
                 apertures = apertures["sectors"]
                 Watson(object_dir, vetting_dir).vetting_field_of_view(fov_dir, "TESS", "25155310", 120, 63.374706,
                                                                       -69.226593, [1, 2], "tpf", apertures,
-                                                                      1)
+                                                                      1, object_dir + "/tpfs")
                 files_in_dir = os.listdir(fov_dir)
                 self.assertEqual(len(files_in_dir), 4)
         finally:
