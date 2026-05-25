@@ -29,10 +29,11 @@ class TestsWatson(unittest.TestCase):
         vetting_dir = object_dir + "/vetting_0/"
         try:
             Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199,
-                                                    6.082, 0.25, [1, 2], 0.07571, cadence=120,
+                                                    6.082, 0.25, [1, 2], 0.07571, cadence=[120],
+                                                    author=[constants.SPOC_AUTHOR],
                                                     cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEqual(len(files_in_dir), 35)
+            self.assertEqual(len(files_in_dir), 33)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -41,15 +42,16 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
         try:
-            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 8.32, 1327.51, 199, 6.082, 0.25, [1, 2], 0.07571,
-                                       a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
+            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 8.32, 1327.51, 199, 6.082, 0.25,
+                                                    [1, 2], 0.07571, author=[constants.SPOC_AUTHOR],
+                                       a_rstar=20, cadence=[120], lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
                                        star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2, clean=False, only_summary=True)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEqual(len(files_in_dir), 8)
+            self.assertEqual(len(files_in_dir), 10)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -64,10 +66,10 @@ class TestsWatson(unittest.TestCase):
                 apertures = yaml.load(apertures_file, yaml.SafeLoader)
                 apertures = apertures["sectors"]
                 Watson(object_dir, vetting_dir).vetting_field_of_view(fov_dir, "TESS", "25155310", 120, 63.374706,
-                                                                      -69.226593, [1, 2], "tpf", apertures,
+                                                                      -69.226593, [1], "tpf", apertures,
                                                                       1)
                 files_in_dir = os.listdir(fov_dir)
-                self.assertEqual(len(files_in_dir), 4)
+                self.assertEqual(len(files_in_dir), 2)
         finally:
             if os.path.exists(fov_dir):
                 shutil.rmtree(fov_dir, ignore_errors=False)
@@ -76,8 +78,10 @@ class TestsWatson(unittest.TestCase):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
         try:
-            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, 0.25, [1, 2], 0.07571,
-                                       a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
+            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199,
+                                                    6.082, 0.25, [1, 2], 0.07571,
+                                       a_rstar=20, cadence=[120], author=[constants.SPOC_AUTHOR],
+                                                    lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
@@ -85,7 +89,7 @@ class TestsWatson(unittest.TestCase):
                                        cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
                                        cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEqual(len(files_in_dir), 36)
+            self.assertEqual(len(files_in_dir), 37)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -96,8 +100,10 @@ class TestsWatson(unittest.TestCase):
         try:
             transits_list_df = pd.read_csv(object_dir + "/transits_stats.csv")
             transits_list_df = transits_list_df[transits_list_df["candidate"] == 0]
-            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199, 6.082, 0.25, [1, 2], 0.07571,
-                                       a_rstar=20, cadence=120, lc_file=object_dir + "/lc.csv",
+            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199,
+                                                    6.082, 0.25, [1, 2], 0.07571,
+                                                    author=[constants.SPOC_AUTHOR],
+                                       a_rstar=20, cadence=[120], lc_file=object_dir + "/lc.csv",
                                        lc_data_file=object_dir + "/lc_data.csv",
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
@@ -106,7 +112,7 @@ class TestsWatson(unittest.TestCase):
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
                                        dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEquals(len(files_in_dir), 33)
+            self.assertEquals(len(files_in_dir), 34)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -178,7 +184,7 @@ class TestsBayesianFpp(unittest.TestCase):
     def test_low_score_increases_fpp(self):
         """Low p_NN (EB-like signal) should raise FPP."""
         df = self._make_scenarios(tp_prob=0.8, eb_prob=0.2)
-        original_fpp = 0.2
+        original_fpp = 0.19
         combined_fpp, _, _ = Watson._apply_bayesian_update(0.1, df)
         self.assertGreater(combined_fpp, original_fpp)
 

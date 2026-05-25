@@ -73,25 +73,35 @@ class TessDvrUrlBuilder(DvrUrlBuilder):
         :param str download_dir: the directory to store the resulting files
         :return List[str]: The DVR paths
         """
-        obsTable = Observations.query_criteria(provenance_name=[lcbuilder.constants.SPOC_AUTHOR,
-                                                                lcbuilder.constants.TESS_SPOC_AUTHOR],
-                                               target_name=[str(id)],
-                                               sequence_number=sectors)
-        data_products = Observations.get_product_list(obsTable)
-        data_products = data_products[data_products['productSubGroupDescription'] == 'DVR']
-        print(data_products['productFilename'])
-        download_manifest = Observations.download_products(data_products, download_dir=download_dir)
-        inner_download_dir = download_dir + '/mastDownload/TESS/'
-        result_files = []
-        for dir in sorted(os.listdir(inner_download_dir)):
-            report_inner_dir = inner_download_dir + '/' + dir
-            for file in sorted(os.listdir(report_inner_dir + '/')):
-                if file.endswith('.pdf'):
-                    result_path = download_dir + '/' + file
-                    shutil.move(report_inner_dir + '/' + file, result_path)
-                    result_files.append(result_path)
-        shutil.rmtree(download_dir + '/mastDownload')
-        return result_files
+        tries: int = 1
+        while tries < 4:
+            try:
+                obsTable = Observations.query_criteria(provenance_name=[lcbuilder.constants.SPOC_AUTHOR,
+                                                                         lcbuilder.constants.TESS_SPOC_AUTHOR],
+                                                        target_name=[str(id)],
+                                                        sequence_number=sectors)
+                data_products = Observations.get_product_list(obsTable)
+                data_products = data_products[data_products['productSubGroupDescription'] == 'DVR']
+                print(data_products['productFilename'])
+                download_manifest = Observations.download_products(data_products, download_dir=download_dir)
+                inner_download_dir = download_dir + '/mastDownload/TESS/'
+                result_files = []
+                for dir in sorted(os.listdir(inner_download_dir)):
+                    report_inner_dir = inner_download_dir + '/' + dir
+                    for file in sorted(os.listdir(report_inner_dir + '/')):
+                        if file.endswith('.pdf'):
+                            result_path = download_dir + '/' + file
+                            shutil.move(report_inner_dir + '/' + file, result_path)
+                            result_files.append(result_path)
+                shutil.rmtree(download_dir + '/mastDownload')
+                return result_files
+            except Exception:
+                logging.exception("Could not retrieve TESS DVR for %s, retry no. %s", id, tries)
+                time.sleep((tries + 1) ** 3)
+            finally:
+                tries = tries + 1
+        logging.warning("Giving up on TESS DVR for %s after %s retries", id, tries - 1)
+        return []
 
 
 class DvrPreparer:
@@ -115,6 +125,6 @@ class DvrPreparer:
             if url_builder is None:
                 logging.warning("There is no official DVR for mission %s", mission)
             return self.URL_BUILDERS[mission].prepare(id, sectors, destination)
-        except:
-            logging.exception("Some problem when generating official DVR")
+        except Exception as e:
+            logging.warning("Could not generate official DVR for %s: %s", target_id, e)
             return []

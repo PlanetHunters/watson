@@ -302,7 +302,11 @@ class Report:
         section = section + 1
         story.append(Paragraph("Section " + str(section) + ": Metrics summary", styles["Heading1"]))
         if os.path.exists(metrics_file):
-            metrics_df = pd.concat([metrics_df, pd.read_csv(metrics_file)], ignore_index=True)
+            metrics_file_df = pd.read_csv(metrics_file)
+            if metrics_df.empty:
+                metrics_df = metrics_file_df
+            else:
+                metrics_df = pd.concat([metrics_df, metrics_file_df], ignore_index=True)
             metrics_df['passed'] = metrics_df['passed'].replace({'True': 1, 'False': 0})
             metrics_df['passed'] = metrics_df['passed'].replace({True: 1, False: 0})
             metrics_df['passed'] = pd.to_numeric(metrics_df['passed'], errors='coerce')
@@ -376,20 +380,21 @@ class Report:
             figure = figure + 1
         if os.path.exists(triceratops_base_path):
             all_files = os.listdir(triceratops_base_path)
-            fov_file = triceratops_base_path + '/fov.png'
+            fov_file = triceratops_base_path + 'fov.png'
             for file in all_files:
                 if file.startswith('field_'):
-                    images = pdf2image.convert_from_path(triceratops_base_path + '/' + file)
+                    images = pdf2image.convert_from_path(triceratops_base_path + file)
                     for i in range(len(images)):
                         # Save pages as images in the pdf
                         images[i].save(fov_file, 'PNG')
                     break
-            story.append(Image(fov_file, width=16 * cm, height=7 * cm))
-            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(
-                figure) + ': </strong>Nearby stars for target and its aperture</font>'
-            story.append(Spacer(1, 5))
-            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
-            story.append(Spacer(1, 15))
+            if os.path.exists(fov_file):
+                story.append(Image(fov_file, width=16 * cm, height=7 * cm))
+                descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(
+                    figure) + ': </strong>Nearby stars for target and its aperture</font>'
+                story.append(Spacer(1, 5))
+                story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+                story.append(Spacer(1, 15))
         figure = figure + 1
         validation_file = triceratops_base_path + "/validation_scenarios.csv"
         if os.path.exists(validation_file):
