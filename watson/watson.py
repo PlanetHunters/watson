@@ -3,6 +3,7 @@ import base64
 import copy
 import logging
 import multiprocessing
+import pickle
 import shutil
 import traceback
 import requests
@@ -118,7 +119,8 @@ class Watson:
                 triceratops_curve_file=None, triceratops_contrast_curve_file=None,
                 triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
                 triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
-                triceratops_ignore_background_stars=False):
+                triceratops_ignore_background_stars=False,
+                main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -154,6 +156,9 @@ class Watson:
         :param gpt_api_key: gpt api key
         :param only_summary: whether only summary report should be created
         :param bootstrap_scenarios: number of bootstrap scenarios
+        :param main_fit_dir: directory containing allesfitter results for the main fit (all transits)
+        :param odd_fit_dir: directory containing allesfitter results for odd transits only
+        :param even_fit_dir: directory containing allesfitter results for even transits only
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -224,7 +229,10 @@ class Watson:
                                                                  iatson_inputs_save=iatson_inputs_save,
                                                                  gpt_enabled=gpt_enabled, gpt_api_key=gpt_api_key,
                                                                          only_summary=only_summary,
-                                                                         bootstrap_scenarios=bootstrap_scenarios)
+                                                                         bootstrap_scenarios=bootstrap_scenarios,
+                                                                         main_fit_dir=main_fit_dir,
+                                                                         odd_fit_dir=odd_fit_dir,
+                                                                         even_fit_dir=even_fit_dir)
             Watson.compute_bayesian_fpp(self.data_dir)
             self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
                         v, j, h, k, os.path.exists(tpfs_dir), only_summary=only_summary)
@@ -723,7 +731,8 @@ class Watson:
                           triceratops_contrast_curve_file=None,
                           triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
                           triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
-                          triceratops_ignore_background_stars=False, sectors=None):
+                          triceratops_ignore_background_stars=False, sectors=None,
+                          main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -738,6 +747,9 @@ class Watson:
         :param gpt_enabled: whether gpt analysis should be done
         :param gpt_api_key: gpt api key
         :param only_summary: whether only summary report should be created
+        :param main_fit_dir: directory containing allesfitter results for the main fit (all transits)
+        :param odd_fit_dir: directory containing allesfitter results for odd transits only
+        :param even_fit_dir: directory containing allesfitter results for even transits only
         """
         if transits_mask is None:
             transits_mask = []
@@ -780,7 +792,8 @@ class Watson:
                          triceratops_sigma_mode=triceratops_sigma_mode,
                          triceratops_ignore_ebs=triceratops_ignore_ebs,
                          triceratops_resolved_companion=triceratops_resolved_companion,
-                         triceratops_ignore_background_stars=triceratops_ignore_background_stars)
+                         triceratops_ignore_background_stars=triceratops_ignore_background_stars,
+                         main_fit_dir=main_fit_dir, odd_fit_dir=odd_fit_dir, even_fit_dir=even_fit_dir)
         except Exception as e:
             traceback.print_exc()
 
@@ -788,7 +801,7 @@ class Watson:
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
                   transits_list=None, transits_mask=None, sectors=None, star_file=None, iatson_enabled=False,
                   iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None, only_summary=False,
-                  bootstrap_scenarios=100):
+                  bootstrap_scenarios=100, main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -817,6 +830,9 @@ class Watson:
         :param gpt_api_key: gpt api key
         :param only_summary: whether only the summary report should be created
         :param bootstrap_scenarios: number of bootstrap scenarios
+        :param main_fit_dir: directory containing allesfitter results for the main fit (all transits)
+        :param odd_fit_dir: directory containing allesfitter results for odd transits only
+        :param even_fit_dir: directory containing allesfitter results for even transits only
         """
         logging.info("Running Transit Plots")
         lc, lc_data, lc_data_norm, tpfs = Watson.initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir,
@@ -866,6 +882,13 @@ class Watson:
         lc_df_secit = lc_df_secit.sort_values(by=['time_folded_sec'])
         sec_depth = 1 - lc_df_secit['flux'].dropna().median()
         sec_depth_err = lc_df_secit['flux'].dropna().std()
+        if main_fit_dir is not None:
+            try:
+                sec_depth, sec_depth_err = Watson._extract_allesfitter_occultation_depth(main_fit_dir)
+                sec_depth = sec_depth / 1000
+                sec_depth_err = sec_depth_err / 1000
+            except (FileNotFoundError, IndexError, KeyError) as e:
+                logging.info("Could not load occultation depth from allesfitter, using LC estimate: %s", e)
         primary_depth = depth / 1000
         primary_depth_err = depth_err / 1000
         if sec_depth <= 0:
@@ -920,8 +943,26 @@ class Watson:
             {'metric': ['snr'], 'score': [snr_p_t0], 'passed': [int(snr_p_t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
             {'metric': ['secondary_snr'], 'score': [secondary_snr], 'passed': [int(secondary_snr < 3)]}, orient='columns')], ignore_index=True)
-        metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
-            {'metric': ['odd_even_correlation'], 'score': [odd_even_correlation], 'passed': [1 if odd_even_correlation > 0.9 else (0 if odd_even_correlation < 0.8 else np.nan)]}, orient='columns')], ignore_index=True)
+        if odd_fit_dir is not None and even_fit_dir is not None:
+            odd_even_depth_diff, odd_even_depth_sigma = Watson._extract_bayesian_odd_even_metrics(odd_fit_dir, even_fit_dir)
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {'metric': ['odd_even_depth_diff'], 'score': [odd_even_depth_diff],
+                 'passed': [np.nan]}, orient='columns')], ignore_index=True)
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {'metric': ['odd_even_depth_sigma'], 'score': [odd_even_depth_sigma],
+                 'passed': [0 if odd_even_depth_sigma > 3 else (np.nan if odd_even_depth_sigma >= 1 else 1)]},
+                orient='columns')], ignore_index=True)
+            Watson._plot_odd_even_comparison(self.data_dir, main_fit_dir or odd_fit_dir, odd_fit_dir, even_fit_dir)
+            if main_fit_dir is not None:
+                try:
+                    Watson._plot_odd_even_posteriors(self.data_dir, main_fit_dir, odd_fit_dir, even_fit_dir)
+                except (FileNotFoundError, KeyError) as e:
+                    logging.warning("Could not generate posterior plot: %s", e)
+        else:
+            metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
+                {'metric': ['odd_even_correlation'], 'score': [odd_even_correlation],
+                 'passed': [1 if odd_even_correlation > 0.9 else (0 if odd_even_correlation < 0.8 else np.nan)]},
+                orient='columns')], ignore_index=True)
         if ra_fov is not None and dec_fov is not None:
             if tpfs is not None and len(tpfs) > 0:
                 offset_ra, offset_dec, offset_err, distance_sub_arcs, core_flux_snr, halo_flux_snr, og_score, \
@@ -1494,6 +1535,28 @@ class Watson:
         plt.savefig(file_dir + "/odd_even_folded_curves.png", dpi=200)
         fig.clf()
         plt.close(fig)
+        fig_oe, ax_oe = plt.subplots(1, 1, figsize=(10, 6), constrained_layout=True)
+        ax_oe.scatter(time_0, folded_y_0, 1, color="blue", alpha=0.25, label="Even transits")
+        ax_oe.scatter(time_1, folded_y_1, 1, color="red", alpha=0.25, label="Odd transits")
+        if bins is not None and len(folded_y_0) > bins:
+            ax_oe.scatter(bin_centers_0, bin_means_0, 10, marker='o', color='blue', alpha=1, zorder=5)
+            ax_oe.scatter(bin_centers_1, bin_means_1, 10, marker='o', color='red', alpha=1, zorder=5)
+            if len(bin_means_0) == len(bin_means_1):
+                bins_avg_oe = 1 - (bin_means_0 - bin_means_1)
+                bins_stds_avg_oe = (bin_stds_0 + bin_stds_1) / 2
+                ax_oe.errorbar(bin_centers_0, bins_avg_oe, yerr=bins_stds_avg_oe / 2,
+                               xerr=bin_width_0 / 2, marker='o', markersize=2,
+                               color='darkorange', alpha=1, linestyle='none', label="Diff (offset)")
+        ax_oe.axhline(y=1, color='black', ls='--', alpha=0.3)
+        ax_oe.set_xlabel("Phase")
+        ax_oe.set_ylabel("Flux norm.")
+        ax_oe.legend(loc='upper right')
+        ax_oe.set_title(f"Odd/Even Transit Shapes — {id}", fontsize=14)
+        if len(folded_y_0) > 0 and np.any(~np.isnan(folded_y_0)):
+            ax_oe.set_ylim(np.nanmin(folded_y_0), np.nanmax(folded_y_0))
+        plt.savefig(file_dir + "/odd_even_transit_shapes.png", dpi=200)
+        fig_oe.clf()
+        plt.close(fig_oe)
         correlation, p_value = pearsonr(bin_means_0, bin_means_1)
         return snr_p_t0, snr_p_2t0, correlation
 
@@ -2708,6 +2771,115 @@ class TriceratopsThreadValidator:
         input.target.plot_fits(save=True, fname=input.save_dir + "/scenario_" + str(input.run) + "_fits",
                                time=input.time, flux_0=input.flux, flux_err_0=input.sigma)
         return fpp, nfpp, fpp2, fpp3, fpp_system, fpp2_system, fpp3_system, probs, star_num, u1, u2, fluxratio_EB, fluxratio_comp
+
+    @staticmethod
+    def _extract_allesfitter_depth(results_dir):
+        csv_path = os.path.join(results_dir, "results", "ns_derived_table.csv")
+        df = pd.read_csv(csv_path)
+        depth_row = df[df["#property"].str.contains(r"depth \(dil.\)")].iloc[0]
+        depth = depth_row["value"]
+        depth_err_low = depth_row["lower_error"]
+        depth_err_up = depth_row["upper_error"]
+        depth_err = (depth_err_low + depth_err_up) / 2
+        return depth, depth_err
+
+    @staticmethod
+    def _extract_allesfitter_occultation_depth(results_dir):
+        csv_path = os.path.join(results_dir, "results", "ns_derived_table.csv")
+        df = pd.read_csv(csv_path)
+        occ_rows = df[df["#property"].str.contains(r"Occultation depth \(dil.\)")]
+        if len(occ_rows) == 0:
+            raise KeyError("Occultation depth not found in ns_derived_table.csv")
+        occ_row = occ_rows.iloc[0]
+        depth = occ_row["value"]
+        depth_err_low = occ_row["lower_error"]
+        depth_err_up = occ_row["upper_error"]
+        depth_err = (depth_err_low + depth_err_up) / 2
+        return depth, depth_err
+
+    @staticmethod
+    def _extract_bayesian_odd_even_metrics(odd_fit_dir, even_fit_dir):
+        D_odd, sigma_odd = Watson._extract_allesfitter_depth(odd_fit_dir)
+        D_even, sigma_even = Watson._extract_allesfitter_depth(even_fit_dir)
+        diff = abs(D_odd - D_even)
+        sigma = diff / np.sqrt(sigma_odd ** 2 + sigma_even ** 2)
+        return diff, sigma
+
+    @staticmethod
+    def _plot_odd_even_comparison(data_dir, main_fit_dir, odd_fit_dir, even_fit_dir):
+        D_main, s_main = Watson._extract_allesfitter_depth(main_fit_dir)
+        D_odd, s_odd = Watson._extract_allesfitter_depth(odd_fit_dir)
+        D_even, s_even = Watson._extract_allesfitter_depth(even_fit_dir)
+        diff = abs(D_odd - D_even)
+        s_diff = np.sqrt(s_odd ** 2 + s_even ** 2)
+        sigma = diff / s_diff
+        fig, ax = plt.subplots(1, 1, figsize=(8, 4), constrained_layout=True)
+        labels = ["Main", "Odd", "Even", "|Odd \u2212 Even|"]
+        depths = [D_main, D_odd, D_even, diff]
+        errors = [s_main, s_odd, s_even, s_diff]
+        sigma_color = "green" if sigma < 1 else ("orange" if sigma < 3 else "red")
+        colors = ["gray", "red", "blue", sigma_color]
+        y_positions = [3, 2, 1, 0]
+        for y, label, d, e, c in zip(y_positions, labels, depths, errors, colors):
+            ax.errorbar(d, y, xerr=e, fmt="o", color=c, capsize=5, markersize=8)
+            ax.text(d + e + (max(depths) - min(depths)) * 0.02, y,
+                    f"{d:.4f}\u00b1{e:.4f}", va="center", fontsize=8, color=c)
+        ax.axvline(0, color="black", alpha=0.2)
+        ax.set_yticks(y_positions)
+        ax.set_yticklabels(labels)
+        ax.set_xlabel("Transit depth (ppt)")
+        ax.invert_yaxis()
+        fig.suptitle(f"Odd/Even Depth Comparison (\u03c3 = {sigma:.2f})", fontsize=14)
+        fig.savefig(data_dir + "/odd_even_bayesian_comparison.png", dpi=150)
+        plt.close(fig)
+
+    @staticmethod
+    def _plot_odd_even_posteriors(data_dir, main_fit_dir, odd_fit_dir, even_fit_dir):
+        def _load_depth_samples(fit_dir):
+            with open(fit_dir + "/results/ns_derived_samples.pickle", "rb") as f:
+                samples = pickle.load(f)
+            depth_keys = [k for k in samples.keys() if "depth_tr_dil" in k]
+            return samples[depth_keys[0]]
+        D_main = _load_depth_samples(main_fit_dir)
+        D_odd = _load_depth_samples(odd_fit_dir)
+        D_even = _load_depth_samples(even_fit_dir)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), constrained_layout=True)
+        xmin = min(D_main.min(), D_odd.min(), D_even.min()) * 0.95
+        xmax = max(D_main.max(), D_odd.max(), D_even.max()) * 1.05
+        xs = np.linspace(xmin, xmax, 500)
+        for samples, color, label, ls in [
+            (D_main, "gray", "Main", "-"),
+            (D_odd, "red", "Odd", "--"),
+            (D_even, "blue", "Even", ":"),
+        ]:
+            kde = scipy.stats.gaussian_kde(samples)
+            ax1.plot(xs, kde(xs), color=color, ls=ls, lw=2)
+            ax1.fill_between(xs, kde(xs), alpha=0.08, color=color)
+            med = np.median(samples)
+            lo = np.percentile(samples, 15.865)
+            hi = np.percentile(samples, 84.135)
+            ax1.axvline(med, color=color, ls=ls, alpha=0.7, lw=1)
+            ax1.axvspan(lo, hi, color=color, alpha=0.08)
+            ax1.plot([], [], color=color, ls=ls, lw=2, label=label)
+        ax1.set_xlabel("Transit depth (ppt)")
+        ax1.set_ylabel("Posterior density")
+        ax1.legend()
+        D_diff = D_odd - D_even
+        ax2.hist(D_diff, bins=min(50, len(D_diff) // 10), density=True,
+                 color="purple", alpha=0.4)
+        kde_diff = scipy.stats.gaussian_kde(D_diff)
+        xs_diff = np.linspace(D_diff.min() * 1.3, D_diff.max() * 1.3, 500)
+        ax2.plot(xs_diff, kde_diff(xs_diff), color="purple", lw=2)
+        ax2.axvline(0, color="black", ls="--", alpha=0.5)
+        diff_sigma = np.abs(np.median(D_diff)) / np.std(D_diff)
+        ax2.text(0.95, 0.95, f"\u03c3 = {diff_sigma:.2f}",
+                 transform=ax2.transAxes, ha="right", va="top",
+                 fontsize=12, bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
+        ax2.set_xlabel("\u0394 depth (odd \u2212 even) [ppt]")
+        ax2.set_ylabel("Density")
+        fig.suptitle("Odd/Even Transit Depth \u2014 Bayesian Posteriors", fontsize=14)
+        fig.savefig(data_dir + "/odd_even_bayesian_posteriors.png", dpi=150)
+        plt.close(fig)
 
 
 class ValidatorInput:

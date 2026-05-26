@@ -516,6 +516,37 @@ class Report:
         story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
         story.append(Spacer(1, 15))
         figure = figure + 1
+        odd_even_comparison_file = self.data_dir + "/odd_even_bayesian_comparison.png"
+        if os.path.exists(odd_even_comparison_file):
+            story.append(Image(odd_even_comparison_file, width=14 * cm, height=7 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+                    'Point-estimate comparison of transit depths from Bayesian fits (main, odd, even). ' \
+                    'The bottom row shows the absolute difference with propagated uncertainty and sigma significance.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+        odd_even_posteriors_file = self.data_dir + "/odd_even_bayesian_posteriors.png"
+        if os.path.exists(odd_even_posteriors_file):
+            story.append(Image(odd_even_posteriors_file, width=14 * cm, height=11 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+                    'Posterior density distributions of odd and even transit depths from Bayesian fits. ' \
+                    'Top panel: KDEs of main (gray), odd (red), and even (blue) depth posteriors with 1-sigma credible intervals. ' \
+                    'Bottom panel: distribution of the depth difference (odd minus even) with sigma significance.</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
+        odd_even_shapes_file = self.data_dir + "/odd_even_transit_shapes.png"
+        if os.path.exists(odd_even_shapes_file):
+            story.append(Image(odd_even_shapes_file, width=14 * cm, height=8 * cm))
+            descripcion = '<font name="HELVETICA" size="9"><strong>Figure ' + str(figure) + ': </strong>' \
+                    'Odd (red) and even (blue) transit light curves overlaid on the same axes. ' \
+                    'Filled circles show binned data. The orange points show the binned difference (offset for visibility).</font>'
+            story.append(Spacer(1, 5))
+            story.append(Paragraph(descripcion, styles["ParagraphAlignCenter"]))
+            story.append(Spacer(1, 15))
+            figure = figure + 1
         source_offsets_file = self.data_dir + '/source_offsets.png'
         if os.path.exists(source_offsets_file):
             story.append(Image(source_offsets_file, width=14 * cm, height=21 * cm))
