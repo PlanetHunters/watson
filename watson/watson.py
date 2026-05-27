@@ -882,13 +882,25 @@ class Watson:
         lc_df_secit = lc_df_secit.sort_values(by=['time_folded_sec'])
         sec_depth = 1 - lc_df_secit['flux'].dropna().median()
         sec_depth_err = lc_df_secit['flux'].dropna().std()
+        sec_depth_ppt = None
+        sec_depth_err_ppt = None
+        odd_depth_ppt = None
+        odd_depth_err_ppt = None
+        even_depth_ppt = None
+        even_depth_err_ppt = None
         if main_fit_dir is not None:
             try:
-                sec_depth, sec_depth_err = Watson._extract_allesfitter_occultation_depth(main_fit_dir)
-                sec_depth = sec_depth / 1000
-                sec_depth_err = sec_depth_err / 1000
+                sec_depth_ppt, sec_depth_err_ppt = Watson._extract_allesfitter_occultation_depth(main_fit_dir)
+                sec_depth = sec_depth_ppt / 1000
+                sec_depth_err = sec_depth_err_ppt / 1000
             except (FileNotFoundError, IndexError, KeyError) as e:
                 logging.info("Could not load occultation depth from allesfitter, using LC estimate: %s", e)
+        if odd_fit_dir is not None and even_fit_dir is not None:
+            try:
+                odd_depth_ppt, odd_depth_err_ppt = Watson._extract_allesfitter_depth(odd_fit_dir)
+                even_depth_ppt, even_depth_err_ppt = Watson._extract_allesfitter_depth(even_fit_dir)
+            except (FileNotFoundError, IndexError, KeyError) as e:
+                logging.info("Could not load odd/even depths from allesfitter: %s", e)
         primary_depth = depth / 1000
         primary_depth_err = depth_err / 1000
         if sec_depth <= 0:
@@ -938,13 +950,16 @@ class Watson:
                     {'metric': [cadence + '_snr'], 'score': [snr], 'passed': [int(snr > 3)]},
                     orient='columns')], ignore_index=True)
         snr_p_t0, secondary_snr, odd_even_correlation = \
-            self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, primary_depth, rp_rstar, a_rstar)
+            self.plot_folded_curve(self.data_dir, id, lc, period, t0, duration, primary_depth, rp_rstar, a_rstar,
+                                   sec_depth=sec_depth_ppt, sec_depth_err=sec_depth_err_ppt,
+                                   odd_depth=odd_depth_ppt, even_depth=even_depth_ppt)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
             {'metric': ['snr'], 'score': [snr_p_t0], 'passed': [int(snr_p_t0 > 3)]}, orient='columns')], ignore_index=True)
         metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
             {'metric': ['secondary_snr'], 'score': [secondary_snr], 'passed': [int(secondary_snr < 3)]}, orient='columns')], ignore_index=True)
-        if odd_fit_dir is not None and even_fit_dir is not None:
-            odd_even_depth_diff, odd_even_depth_sigma = Watson._extract_bayesian_odd_even_metrics(odd_fit_dir, even_fit_dir)
+        if odd_depth_ppt is not None and even_depth_ppt is not None:
+            odd_even_depth_diff = abs(odd_depth_ppt - even_depth_ppt)
+            odd_even_depth_sigma = odd_even_depth_diff / np.sqrt(odd_depth_err_ppt ** 2 + even_depth_err_ppt ** 2)
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {'metric': ['odd_even_depth_diff'], 'score': [odd_even_depth_diff],
                  'passed': [np.nan]}, orient='columns')], ignore_index=True)
@@ -953,11 +968,6 @@ class Watson:
                  'passed': [0 if odd_even_depth_sigma > 3 else (np.nan if odd_even_depth_sigma >= 1 else 1)]},
                 orient='columns')], ignore_index=True)
             Watson._plot_odd_even_comparison(self.data_dir, main_fit_dir or odd_fit_dir, odd_fit_dir, even_fit_dir)
-            if main_fit_dir is not None:
-                try:
-                    Watson._plot_odd_even_posteriors(self.data_dir, main_fit_dir, odd_fit_dir, even_fit_dir)
-                except (FileNotFoundError, KeyError) as e:
-                    logging.warning("Could not generate posterior plot: %s", e)
         else:
             metrics_df = pd.concat([metrics_df, pd.DataFrame.from_dict(
                 {'metric': ['odd_even_correlation'], 'score': [odd_even_correlation],
@@ -1441,7 +1451,9 @@ class Watson:
             logging.info("Not plotting single transit for T0=%.2f as the data is empty", transit_time)
 
     @staticmethod
-    def plot_folded_curve(file_dir, id, lc, period, epoch, duration, depth, rp_rstar, a_rstar):
+    def plot_folded_curve(file_dir, id, lc, period, epoch, duration, depth, rp_rstar, a_rstar,
+                          sec_depth=None, sec_depth_err=None,
+                          odd_depth=None, even_depth=None):
         """
         Plots the phase-folded curve of the candidate for period, 2 * period and period / 2.
         @param file_dir: the directory to store the plot
@@ -1458,7 +1470,7 @@ class Watson:
         fig, axs = plt.subplots(rows, cols, figsize=figsize, constrained_layout=True)
         logging.info("Preparing folded light curves for target")
         #TODO bins = None for FFI
-        bins = 100
+        bins = 60
         plot_period = period
         result_axs, bin_centers, bin_means, bin_stds, snr_p_t0 = \
             Watson.compute_phased_values_and_fill_plot(id, axs[0], lc, plot_period, epoch, depth, duration, rp_rstar,
@@ -1474,16 +1486,29 @@ class Watson:
             axs[1].errorbar(bin_centers, bin_means, yerr=bin_stds / 2,
                             xerr=bin_width / 2, marker='o', markersize=2,
                             color='darkorange', alpha=1, linestyle='none')
-        bls = BoxLeastSquares(time_masked, flux_masked, flux_err_masked)
-        result = bls.power([period], np.linspace(duration / 2, duration * 1.5, 10))
-        model = np.ones(100)
-        if not np.isnan(result.depth) and result.depth > 0 and not np.isnan(result.duration):
-            snr_p_2t0 = Watson.compute_snr(lc.time.value, lc.flux.value, result.duration[0], period, epoch + period / 2)
+        if sec_depth is not None and sec_depth > 0:
+            sec_depth_frac = sec_depth / 1000
+            sec_depth_err_frac = sec_depth_err / 1000 if sec_depth_err is not None else sec_depth_frac * 0.1
+            snr_p_2t0 = Watson.compute_snr(lc.time.value, lc.flux.value, duration, period, epoch + period / 2)
+            model = np.ones(len(bin_centers))
             it_indexes = np.argwhere(
-                (bin_centers > 0.5 - result.duration[0] / 2) & (bin_centers < 0.5 + result.duration[0] / 2)).flatten()
-            model[it_indexes] = 1 - result.depth[0]
+                (bin_centers > 0.5 - duration / 2 / period) & (bin_centers < 0.5 + duration / 2 / period)).flatten()
+            model[it_indexes] = 1 - sec_depth_frac
+            axs[1].text(0.02, 0.02, f"allesfitter: {sec_depth:.4f}\u00b1{sec_depth_err:.4f} ppt",
+                        transform=axs[1].transAxes, fontsize=8, color="darkgreen",
+                        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8))
         else:
-            snr_p_2t0 = 0.001
+            bls = BoxLeastSquares(time_masked, flux_masked, flux_err_masked)
+            result = bls.power([period], np.linspace(duration / 2, duration * 1.5, 10))
+            model = np.ones(len(bin_centers))
+            if not np.isnan(result.depth) and result.depth > 0 and not np.isnan(result.duration):
+                snr_p_2t0 = Watson.compute_snr(lc.time.value, lc.flux.value, result.duration[0], period,
+                                                epoch + period / 2)
+                it_indexes = np.argwhere(
+                    (bin_centers > 0.5 - result.duration[0] / 2) & (bin_centers < 0.5 + result.duration[0] / 2)).flatten()
+                model[it_indexes] = 1 - result.depth[0]
+            else:
+                snr_p_2t0 = 0.001
         if len(bin_centers) == len(model):
             axs[1].plot(bin_centers, model, color="red")
         axs[1].set_xlabel("Time (d)")
@@ -1501,17 +1526,31 @@ class Watson:
         lc_masked_1 = TessLightCurve(time=time_masked, flux=flux_masked, flux_err=flux_err_masked)
         time_1, folded_y_1, folded_y_err_1, bin_centers_1, bin_means_1, bin_stds_1, bin_width_1, half_duration_phase_1 = (
             Watson.compute_phased_values(lc_masked_1, period, epoch, duration, bins=bins))
-        axs[2].scatter(time_0, folded_y_0, 2, color="blue", alpha=0.3)
-        axs[2].scatter(time_1, folded_y_1, 2, color="red", alpha=0.3)
+        # axs[2].scatter(time_0, folded_y_0, 2, color="blue", alpha=0.3)
+        # axs[2].scatter(time_1, folded_y_1, 2, color="red", alpha=0.3)
         if bins is not None and len(folded_y_0) > bins:
-            axs[2].scatter(bin_centers_0, bin_means_0, 8, marker='o', color='blue', alpha=1)
-            axs[2].scatter(bin_centers_1, bin_means_1, 8, marker='o', color='red', alpha=1)
+            axs[2].scatter(bin_centers_0, bin_means_0, 12, marker='o', color='blue', alpha=1)
+            axs[2].scatter(bin_centers_1, bin_means_1, 12, marker='o', color='red', alpha=1)
             if len(bin_means_0) == len(bin_means_1):
                 bins_avg = 1 - (bin_means_0 - bin_means_1)
                 bins_stds_avg = (bin_stds_0 + bin_stds_1) / 2
                 axs[2].errorbar(bin_centers_0, bins_avg, yerr=bins_stds_avg / 2,
                                 xerr=bin_width_0 / 2, marker='o', markersize=2,
                                 color='darkorange', alpha=1, linestyle='none')
+            if odd_depth is not None and even_depth is not None:
+                diff = abs(odd_depth - even_depth)
+                model_odd = np.ones(len(bin_centers_0))
+                model_even = np.ones(len(bin_centers_0))
+                half_phase = half_duration_phase_0
+                it_idx = np.argwhere((bin_centers_0 > 0.5 - half_phase) & (bin_centers_0 < 0.5 + half_phase)).flatten()
+                model_even[it_idx] = 1 - even_depth / 1000
+                model_odd[it_idx] = 1 - odd_depth / 1000
+                axs[2].plot(bin_centers_0, model_even, color='blue', ls='--', alpha=0.6, lw=1.5)
+                axs[2].plot(bin_centers_0, model_odd, color='red', ls='--', alpha=0.6, lw=1.5)
+                axs[2].text(0.02, 0.02,
+                            f"allesfitter: odd={odd_depth:.4f} even={even_depth:.4f} ppt, \u0394={diff:.4f} ppt",
+                            transform=axs[2].transAxes, fontsize=8, color="darkgreen",
+                            bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8))
         # bls = BoxLeastSquares(bin_centers_0, bins_avg, bins_stds_avg)
         # result = bls.power([1], np.linspace(duration / period / 2, duration / period * 1.5, 10))
         # model = np.ones(100)
@@ -1535,28 +1574,6 @@ class Watson:
         plt.savefig(file_dir + "/odd_even_folded_curves.png", dpi=200)
         fig.clf()
         plt.close(fig)
-        fig_oe, ax_oe = plt.subplots(1, 1, figsize=(10, 6), constrained_layout=True)
-        ax_oe.scatter(time_0, folded_y_0, 1, color="blue", alpha=0.25, label="Even transits")
-        ax_oe.scatter(time_1, folded_y_1, 1, color="red", alpha=0.25, label="Odd transits")
-        if bins is not None and len(folded_y_0) > bins:
-            ax_oe.scatter(bin_centers_0, bin_means_0, 10, marker='o', color='blue', alpha=1, zorder=5)
-            ax_oe.scatter(bin_centers_1, bin_means_1, 10, marker='o', color='red', alpha=1, zorder=5)
-            if len(bin_means_0) == len(bin_means_1):
-                bins_avg_oe = 1 - (bin_means_0 - bin_means_1)
-                bins_stds_avg_oe = (bin_stds_0 + bin_stds_1) / 2
-                ax_oe.errorbar(bin_centers_0, bins_avg_oe, yerr=bins_stds_avg_oe / 2,
-                               xerr=bin_width_0 / 2, marker='o', markersize=2,
-                               color='darkorange', alpha=1, linestyle='none', label="Diff (offset)")
-        ax_oe.axhline(y=1, color='black', ls='--', alpha=0.3)
-        ax_oe.set_xlabel("Phase")
-        ax_oe.set_ylabel("Flux norm.")
-        ax_oe.legend(loc='upper right')
-        ax_oe.set_title(f"Odd/Even Transit Shapes — {id}", fontsize=14)
-        if len(folded_y_0) > 0 and np.any(~np.isnan(folded_y_0)):
-            ax_oe.set_ylim(np.nanmin(folded_y_0), np.nanmax(folded_y_0))
-        plt.savefig(file_dir + "/odd_even_transit_shapes.png", dpi=200)
-        fig_oe.clf()
-        plt.close(fig_oe)
         correlation, p_value = pearsonr(bin_means_0, bin_means_1)
         return snr_p_t0, snr_p_2t0, correlation
 
@@ -2681,6 +2698,66 @@ class Watson:
         fap_bootstrap = np.sum(bootstrap_max_powers >= signal_power) / bootstrap_scenarios
         return fap_bootstrap
 
+    @staticmethod
+    def _extract_allesfitter_depth(results_dir):
+        csv_path = os.path.join(results_dir, "results", "ns_derived_table.csv")
+        df = pd.read_csv(csv_path)
+        depth_row = df[df["#property"].str.contains(r"depth \(dil.\)")].iloc[0]
+        depth = depth_row["value"]
+        depth_err_low = depth_row["lower_error"]
+        depth_err_up = depth_row["upper_error"]
+        depth_err = (depth_err_low + depth_err_up) / 2
+        return depth, depth_err
+
+    @staticmethod
+    def _extract_allesfitter_occultation_depth(results_dir):
+        csv_path = os.path.join(results_dir, "results", "ns_derived_table.csv")
+        df = pd.read_csv(csv_path)
+        occ_rows = df[df["#property"].str.contains(r"Occultation depth \(dil.\)")]
+        if len(occ_rows) == 0:
+            raise KeyError("Occultation depth not found in ns_derived_table.csv")
+        occ_row = occ_rows.iloc[0]
+        depth = occ_row["value"]
+        depth_err_low = occ_row["lower_error"]
+        depth_err_up = occ_row["upper_error"]
+        depth_err = (depth_err_low + depth_err_up) / 2
+        return depth, depth_err
+
+    @staticmethod
+    def _extract_bayesian_odd_even_metrics(odd_fit_dir, even_fit_dir):
+        D_odd, sigma_odd = Watson._extract_allesfitter_depth(odd_fit_dir)
+        D_even, sigma_even = Watson._extract_allesfitter_depth(even_fit_dir)
+        diff = abs(D_odd - D_even)
+        sigma = diff / np.sqrt(sigma_odd ** 2 + sigma_even ** 2)
+        return diff, sigma
+
+    @staticmethod
+    def _plot_odd_even_comparison(data_dir, main_fit_dir, odd_fit_dir, even_fit_dir):
+        D_main, s_main = Watson._extract_allesfitter_depth(main_fit_dir)
+        D_odd, s_odd = Watson._extract_allesfitter_depth(odd_fit_dir)
+        D_even, s_even = Watson._extract_allesfitter_depth(even_fit_dir)
+        diff = abs(D_odd - D_even)
+        s_diff = np.sqrt(s_odd ** 2 + s_even ** 2)
+        sigma = diff / s_diff
+        fig, ax = plt.subplots(1, 1, figsize=(5, 6), constrained_layout=True)
+        labels = ["Main", "Odd", "Even", "|Odd \u2212 Even|"]
+        depths = [D_main, D_odd, D_even, diff]
+        errors = [s_main, s_odd, s_even, s_diff]
+        sigma_color = "green" if sigma < 1 else ("orange" if sigma < 3 else "red")
+        colors = ["gray", "red", "blue", sigma_color]
+        x_positions = [0, 1, 2, 3]
+        for x, label, d, e, c in zip(x_positions, labels, depths, errors, colors):
+            ax.errorbar(x, d, yerr=e, fmt="o", color=c, capsize=5, markersize=8)
+        ax.axhline(y=0, color="black", alpha=0.2)
+        ax.set_xticks(x_positions)
+        ax.set_xticklabels(labels)
+        ax.set_ylabel("Transit depth (ppt)")
+        ax.set_xlabel("Fitted transit signal")
+        fig.suptitle(f"Odd/Even Depth Comparison (\u03c3 = {sigma:.2f})", fontsize=14)
+        fig.savefig(data_dir + "/odd_even_bayesian_comparison.png", dpi=150)
+        plt.close(fig)
+
+
 class TriceratopsThreadValidator:
     """
     Used to run a single scenario validation with TRICERATOPS
@@ -2771,115 +2848,6 @@ class TriceratopsThreadValidator:
         input.target.plot_fits(save=True, fname=input.save_dir + "/scenario_" + str(input.run) + "_fits",
                                time=input.time, flux_0=input.flux, flux_err_0=input.sigma)
         return fpp, nfpp, fpp2, fpp3, fpp_system, fpp2_system, fpp3_system, probs, star_num, u1, u2, fluxratio_EB, fluxratio_comp
-
-    @staticmethod
-    def _extract_allesfitter_depth(results_dir):
-        csv_path = os.path.join(results_dir, "results", "ns_derived_table.csv")
-        df = pd.read_csv(csv_path)
-        depth_row = df[df["#property"].str.contains(r"depth \(dil.\)")].iloc[0]
-        depth = depth_row["value"]
-        depth_err_low = depth_row["lower_error"]
-        depth_err_up = depth_row["upper_error"]
-        depth_err = (depth_err_low + depth_err_up) / 2
-        return depth, depth_err
-
-    @staticmethod
-    def _extract_allesfitter_occultation_depth(results_dir):
-        csv_path = os.path.join(results_dir, "results", "ns_derived_table.csv")
-        df = pd.read_csv(csv_path)
-        occ_rows = df[df["#property"].str.contains(r"Occultation depth \(dil.\)")]
-        if len(occ_rows) == 0:
-            raise KeyError("Occultation depth not found in ns_derived_table.csv")
-        occ_row = occ_rows.iloc[0]
-        depth = occ_row["value"]
-        depth_err_low = occ_row["lower_error"]
-        depth_err_up = occ_row["upper_error"]
-        depth_err = (depth_err_low + depth_err_up) / 2
-        return depth, depth_err
-
-    @staticmethod
-    def _extract_bayesian_odd_even_metrics(odd_fit_dir, even_fit_dir):
-        D_odd, sigma_odd = Watson._extract_allesfitter_depth(odd_fit_dir)
-        D_even, sigma_even = Watson._extract_allesfitter_depth(even_fit_dir)
-        diff = abs(D_odd - D_even)
-        sigma = diff / np.sqrt(sigma_odd ** 2 + sigma_even ** 2)
-        return diff, sigma
-
-    @staticmethod
-    def _plot_odd_even_comparison(data_dir, main_fit_dir, odd_fit_dir, even_fit_dir):
-        D_main, s_main = Watson._extract_allesfitter_depth(main_fit_dir)
-        D_odd, s_odd = Watson._extract_allesfitter_depth(odd_fit_dir)
-        D_even, s_even = Watson._extract_allesfitter_depth(even_fit_dir)
-        diff = abs(D_odd - D_even)
-        s_diff = np.sqrt(s_odd ** 2 + s_even ** 2)
-        sigma = diff / s_diff
-        fig, ax = plt.subplots(1, 1, figsize=(8, 4), constrained_layout=True)
-        labels = ["Main", "Odd", "Even", "|Odd \u2212 Even|"]
-        depths = [D_main, D_odd, D_even, diff]
-        errors = [s_main, s_odd, s_even, s_diff]
-        sigma_color = "green" if sigma < 1 else ("orange" if sigma < 3 else "red")
-        colors = ["gray", "red", "blue", sigma_color]
-        y_positions = [3, 2, 1, 0]
-        for y, label, d, e, c in zip(y_positions, labels, depths, errors, colors):
-            ax.errorbar(d, y, xerr=e, fmt="o", color=c, capsize=5, markersize=8)
-            ax.text(d + e + (max(depths) - min(depths)) * 0.02, y,
-                    f"{d:.4f}\u00b1{e:.4f}", va="center", fontsize=8, color=c)
-        ax.axvline(0, color="black", alpha=0.2)
-        ax.set_yticks(y_positions)
-        ax.set_yticklabels(labels)
-        ax.set_xlabel("Transit depth (ppt)")
-        ax.invert_yaxis()
-        fig.suptitle(f"Odd/Even Depth Comparison (\u03c3 = {sigma:.2f})", fontsize=14)
-        fig.savefig(data_dir + "/odd_even_bayesian_comparison.png", dpi=150)
-        plt.close(fig)
-
-    @staticmethod
-    def _plot_odd_even_posteriors(data_dir, main_fit_dir, odd_fit_dir, even_fit_dir):
-        def _load_depth_samples(fit_dir):
-            with open(fit_dir + "/results/ns_derived_samples.pickle", "rb") as f:
-                samples = pickle.load(f)
-            depth_keys = [k for k in samples.keys() if "depth_tr_dil" in k]
-            return samples[depth_keys[0]]
-        D_main = _load_depth_samples(main_fit_dir)
-        D_odd = _load_depth_samples(odd_fit_dir)
-        D_even = _load_depth_samples(even_fit_dir)
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8), constrained_layout=True)
-        xmin = min(D_main.min(), D_odd.min(), D_even.min()) * 0.95
-        xmax = max(D_main.max(), D_odd.max(), D_even.max()) * 1.05
-        xs = np.linspace(xmin, xmax, 500)
-        for samples, color, label, ls in [
-            (D_main, "gray", "Main", "-"),
-            (D_odd, "red", "Odd", "--"),
-            (D_even, "blue", "Even", ":"),
-        ]:
-            kde = scipy.stats.gaussian_kde(samples)
-            ax1.plot(xs, kde(xs), color=color, ls=ls, lw=2)
-            ax1.fill_between(xs, kde(xs), alpha=0.08, color=color)
-            med = np.median(samples)
-            lo = np.percentile(samples, 15.865)
-            hi = np.percentile(samples, 84.135)
-            ax1.axvline(med, color=color, ls=ls, alpha=0.7, lw=1)
-            ax1.axvspan(lo, hi, color=color, alpha=0.08)
-            ax1.plot([], [], color=color, ls=ls, lw=2, label=label)
-        ax1.set_xlabel("Transit depth (ppt)")
-        ax1.set_ylabel("Posterior density")
-        ax1.legend()
-        D_diff = D_odd - D_even
-        ax2.hist(D_diff, bins=min(50, len(D_diff) // 10), density=True,
-                 color="purple", alpha=0.4)
-        kde_diff = scipy.stats.gaussian_kde(D_diff)
-        xs_diff = np.linspace(D_diff.min() * 1.3, D_diff.max() * 1.3, 500)
-        ax2.plot(xs_diff, kde_diff(xs_diff), color="purple", lw=2)
-        ax2.axvline(0, color="black", ls="--", alpha=0.5)
-        diff_sigma = np.abs(np.median(D_diff)) / np.std(D_diff)
-        ax2.text(0.95, 0.95, f"\u03c3 = {diff_sigma:.2f}",
-                 transform=ax2.transAxes, ha="right", va="top",
-                 fontsize=12, bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
-        ax2.set_xlabel("\u0394 depth (odd \u2212 even) [ppt]")
-        ax2.set_ylabel("Density")
-        fig.suptitle("Odd/Even Transit Depth \u2014 Bayesian Posteriors", fontsize=14)
-        fig.savefig(data_dir + "/odd_even_bayesian_posteriors.png", dpi=150)
-        plt.close(fig)
 
 
 class ValidatorInput:
