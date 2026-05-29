@@ -66,8 +66,43 @@ from watson.report import Report
 
 
 class SingleTransitProcessInput:
+    """Input container for parallel single-transit folded TPF processing."""
+
     def __init__(self, data_dir, id, index, lc_file, lc_data_file, tpfs_dir, apertures,
                                          transit_times, depth, duration, period, rp_rstar, a_rstar, transits_mask):
+        """Initialize input parameters for single-transit processing.
+
+        Parameters
+        ----------
+        data_dir : str
+            Output directory for results.
+        id : str
+            Target identifier.
+        index : int
+            Index of the TPF in the sector list.
+        lc_file : str
+            Path to the light curve CSV file.
+        lc_data_file : str
+            Path to the light curve data CSV file.
+        tpfs_dir : str
+            Directory containing target pixel files.
+        apertures : dict
+            Aperture masks per sector.
+        transit_times : array-like
+            List of transit midpoint times.
+        depth : float
+            Transit depth in ppt.
+        duration : float
+            Transit duration in minutes.
+        period : float
+            Orbital period in days.
+        rp_rstar : float
+            Planet-to-star radius ratio.
+        a_rstar : float
+            Semi-major axis in stellar radii.
+        transits_mask : list
+            List of transit masks to apply.
+        """
         self.data_dir = data_dir
         self.id = id
         self.index = index
@@ -85,7 +120,36 @@ class SingleTransitProcessInput:
 
 
 class FovProcessInput:
+    """Input container for parallel field-of-view plot generation."""
+
     def __init__(self, save_dir, mission, tic, cadence, ra, dec, sectors, source, apertures, tpf_source, target_title):
+        """Initialize input parameters for FOV processing.
+
+        Parameters
+        ----------
+        save_dir : str
+            Directory to save output plots.
+        mission : str
+            Mission name (e.g. ``'TESS'``, ``'Kepler'``, ``'K2'``).
+        tic : int
+            Target identifier (TIC, KIC, or EPIC).
+        cadence : int
+            Cadence in seconds.
+        ra : float
+            Right ascension in degrees.
+        dec : float
+            Declination in degrees.
+        sectors : list of int
+            Sectors, quarters, or campaigns to process.
+        source : str
+            Data source (e.g. ``'tpf'`` or ``'tesscut'``).
+        apertures : dict
+            Aperture masks per sector.
+        tpf_source : object
+            TPF download source object.
+        target_title : str
+            Display title for the target.
+        """
         self.save_dir = save_dir
         self.mission = mission
         self.tic = tic
@@ -105,6 +169,15 @@ class Watson:
     curves inspection and more to give a deeper insight on the quality of the candidate signal.
     """
     def __init__(self, object_dir, output_dir):
+        """Initialize a Watson vetting instance.
+
+        Parameters
+        ----------
+        object_dir : str or None
+            Directory for object input data. Uses current working directory if None.
+        output_dir : str
+            Directory for output results and plots.
+        """
         self.object_dir = os.getcwd() if object_dir is None else object_dir
         self.data_dir = output_dir
         if not isinstance(logging.root, logging.RootLogger):
@@ -711,6 +784,41 @@ class Watson:
 
     def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k,
                with_tpfs=True, only_summary=False):
+        """Generate vetting validation PDF reports.
+
+        Parameters
+        ----------
+        id : str
+            Target identifier.
+        ra : float
+            Right ascension in degrees.
+        dec : float
+            Declination in degrees.
+        t0 : float
+            Mid-transit epoch.
+        period : float
+            Orbital period in days.
+        duration : float
+            Transit duration.
+        depth : float
+            Transit depth.
+        transits_list : list
+            List of individual transit data.
+        summary_list_t0s_indexes : list
+            Summary transit indices to highlight.
+        v : float or None
+            V-band magnitude.
+        j : float or None
+            J-band magnitude.
+        h : float or None
+            H-band magnitude.
+        k : float or None
+            K-band magnitude.
+        with_tpfs : bool
+            Whether to include TPF-based plots.
+        only_summary : bool
+            If True, generate only the summary report.
+        """
         if not only_summary:
             file_name = "transits_validation_report.pdf"
             logging.info("Creating complete report")
@@ -1051,10 +1159,34 @@ class Watson:
 
     @staticmethod
     def encode_image(image_path):
+        """Read an image file and return its base64 encoding.
+
+        Parameters
+        ----------
+        image_path : str
+            Path to the image file.
+
+        Returns
+        -------
+        str
+            Base64-encoded string of the image.
+        """
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     def run_gpt4o(self, api_key):
+        """Run GPT-4o classification on folded transit vetting plots.
+
+        Parameters
+        ----------
+        api_key : str
+            OpenAI API key.
+
+        Returns
+        -------
+        tuple of (str, str)
+            Binary classification result and full GPT response text.
+        """
         base64_image_cadences = Watson.encode_image(f'{self.data_dir}/folded_cadences.png')
         base64_image_odd_even = Watson.encode_image(f'{self.data_dir}/odd_even_folded_curves.png')
         base64_image_offset = Watson.encode_image(f'{self.data_dir}/source_offsets.png')
@@ -1103,6 +1235,38 @@ class Watson:
     @staticmethod
     def run_iatson(target_id, period, duration, epoch, depth_ppt, watson_dir, star_filename, lc_filename, transits_mask,
                    plot_inputs=False, batch_size=1):
+        """Run IATSON neural network vetting on a candidate.
+
+        Parameters
+        ----------
+        target_id : str
+            Target identifier.
+        period : float
+            Orbital period in days.
+        duration : float
+            Transit duration in minutes.
+        epoch : float
+            Mid-transit epoch.
+        depth_ppt : float
+            Transit depth in ppt.
+        watson_dir : str
+            Watson output data directory.
+        star_filename : str
+            Path to the star properties file.
+        lc_filename : str
+            Path to the light curve file.
+        transits_mask : list
+            List of transit masks to apply.
+        plot_inputs : bool
+            Whether to generate diagnostic plots.
+        batch_size : int
+            Batch size for IATSON inference.
+
+        Returns
+        -------
+        tuple
+            Predictions DataFrame, first-row summary, branch results, and value results DataFrames.
+        """
         home_path = f'{os.path.expanduser("~")}/.watson'
         if not os.path.exists(home_path):
             os.mkdir(home_path)
@@ -1152,6 +1316,26 @@ class Watson:
 
     @staticmethod
     def initialize_lc_and_tpfs(id, lc_file, lc_data_file, tpfs_dir, transits_mask=None):
+        """Load light curve and target pixel files from disk.
+
+        Parameters
+        ----------
+        id : str
+            Target identifier.
+        lc_file : str
+            Path to the light curve CSV file.
+        lc_data_file : str
+            Path to the light curve data CSV file (centroids, motion).
+        tpfs_dir : str
+            Directory containing target pixel files.
+        transits_mask : list or None
+            List of transit masks to apply.
+
+        Returns
+        -------
+        tuple of (TessLightCurve, DataFrame, DataFrame, list)
+            Light curve, raw lc data, normalized lc data, and list of TPFs.
+        """
         if transits_mask is None:
             transits_mask = []
         mission, mission_prefix, mission_int_id = LcBuilder().parse_object_info(id)
@@ -1186,6 +1370,19 @@ class Watson:
 
     @staticmethod
     def normalize_lc_data(lc_data):
+        """Center centroids and motion data by subtracting chunk medians.
+
+        Parameters
+        ----------
+        lc_data : DataFrame
+            Light curve data containing ``centroids_x``, ``centroids_y``,
+            ``motion_x``, and ``motion_y`` columns.
+
+        Returns
+        -------
+        DataFrame
+            Normalized copy of the input data.
+        """
         logging.info("Normalizing lc_data")
         lc_data_copy = lc_data.copy()
         time = lc_data_copy["time"].to_numpy()
@@ -1207,6 +1404,21 @@ class Watson:
 
     @staticmethod
     def plot_transits_statistics(data_dir, id, epoch, period, transits_list):
+        """Plot per-transit depth statistics with odd/even discrimination.
+
+        Parameters
+        ----------
+        data_dir : str
+            Directory to save the plot.
+        id : str
+            Target identifier.
+        epoch : float
+            Mid-transit epoch.
+        period : float
+            Orbital period in days.
+        transits_list : dict
+            Dictionary with ``t0``, ``depth``, and ``depth_err`` arrays.
+        """
         fig, axs = plt.subplots(1, 1, figsize=(12, 6), constrained_layout=True)
         fig.suptitle(str(id) + ' Transits depth analysis T0=' + str(round(epoch, 2)) + ' P=' + str(round(period, 2)) + 'd', size=18)
         transits_list_not_nan_t0s_indexes = np.argwhere(~np.isnan(transits_list["t0"])).flatten()
@@ -1580,6 +1792,44 @@ class Watson:
     @staticmethod
     def plot_all_folded_cadences(file_dir, mission_prefix, mission, id, lc, sectors, period, epoch, duration, depth, rp_rstar,
                                  a_rstar, transits_mask, cpus=os.cpu_count() - 1):
+        """Plot folded light curve for all cadences (fast, short, long).
+
+        Parameters
+        ----------
+        file_dir : str
+            Directory to save the output PNG.
+        mission_prefix : str
+            Mission prefix (e.g. ``'TIC'``, ``'KIC'``).
+        mission : str
+            Mission name.
+        id : str
+            Target identifier.
+        lc : LightCurve
+            Light curve object.
+        sectors : list of int
+            Sectors, quarters, or campaigns.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        duration : float
+            Transit duration in minutes.
+        depth : float
+            Transit depth in ppt.
+        rp_rstar : float
+            Planet-to-star radius ratio.
+        a_rstar : float
+            Semi-major axis in stellar radii.
+        transits_mask : list
+            List of transit masks to apply.
+        cpus : int
+            Number of CPU cores to use.
+
+        Returns
+        -------
+        dict
+            SNR values keyed by cadence name.
+        """
         bins = 100
         fig, axs = plt.subplots(3, 1, figsize=(10, 15))
         duration = duration / 60 / 24
@@ -1671,6 +1921,28 @@ class Watson:
 
     @staticmethod
     def compute_snr(time, flux, duration, period, epoch, oot_range=5):
+        """Compute the signal-to-noise ratio of a folded transit.
+
+        Parameters
+        ----------
+        time : array-like
+            Time array.
+        flux : array-like
+            Flux array.
+        duration : float
+            Transit duration in days.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        oot_range : float
+            Out-of-transit range multiplier.
+
+        Returns
+        -------
+        float
+            Signal-to-noise ratio.
+        """
         duration_to_period = duration / period
         lc_df = pd.DataFrame(columns=['time', 'time_folded', 'flux'])
         lc_df['time'] = time
@@ -1688,6 +1960,24 @@ class Watson:
 
     @staticmethod
     def get_aperture_for_sector(apertures, sector, author=None, cadence=None):
+        """Retrieve the aperture mask for a given sector, author, and cadence.
+
+        Parameters
+        ----------
+        apertures : dict
+            Aperture dictionary keyed by sector.
+        sector : int
+            Sector number.
+        author : str or None
+            Data author (e.g. ``'SPOC'``).
+        cadence : int or None
+            Cadence in seconds.
+
+        Returns
+        -------
+        ndarray
+            Boolean or numeric aperture mask array.
+        """
         aperture = apertures[sector]
         if isinstance(aperture, dict):
             if author is not None:
@@ -1705,6 +1995,26 @@ class Watson:
 
     @staticmethod
     def compute_snr_folded(folded_time, folded_flux, duration, period, oot_range=5):
+        """Compute SNR from already-folded time and flux arrays.
+
+        Parameters
+        ----------
+        folded_time : array-like
+            Folded time array (phase units).
+        folded_flux : array-like
+            Folded flux array.
+        duration : float
+            Transit duration in days.
+        period : float
+            Orbital period in days.
+        oot_range : float
+            Out-of-transit range multiplier.
+
+        Returns
+        -------
+        float
+            Signal-to-noise ratio.
+        """
         duration_to_period = duration / period
         lc_df = pd.DataFrame(columns=['time_folded', 'flux'])
         lc_df['time_folded'] = folded_time
@@ -1720,6 +2030,18 @@ class Watson:
 
     @staticmethod
     def get_author_cadence_from_tpf_name(tpf):
+        """Extract author and cadence from a TPF filename.
+
+        Parameters
+        ----------
+        tpf : TargetPixelFile
+            Target pixel file object with a ``path`` attribute.
+
+        Returns
+        -------
+        tuple of (str, str)
+            Author name and cadence string.
+        """
         tpf_file = os.path.basename(tpf.path)
         tpf_file = tpf_file.split('_')
         author = tpf_file[0]
@@ -1728,6 +2050,22 @@ class Watson:
 
     @staticmethod
     def plot_folded_tpf(fold_tpf_input):
+        """Process a single TPF: compute folded metrics and produce plots.
+
+        Parameters
+        ----------
+        fold_tpf_input : dict
+            Dictionary with keys ``ra``, ``dec``, ``apertures``, ``lc_file``,
+            ``lc_data_file``, ``tpfs_dir``, ``transits_mask``, ``period``,
+            ``epoch``, ``duration``, ``mission``, ``mission_prefix``,
+            ``file_dir``, ``index``, ``t0s_list``, and ``id``.
+
+        Returns
+        -------
+        tuple
+            Source offsets, centroid drifts, optical ghost data, folded SNR,
+            and odd-even depth parameters.
+        """
         pid = os.getpid()
         ra = fold_tpf_input['ra']
         dec = fold_tpf_input['dec']
@@ -1862,6 +2200,24 @@ class Watson:
 
     @staticmethod
     def compute_tpf_diff_image(tpf, period, epoch, duration):
+        """Compute a difference image from in-transit vs out-of-transit flux.
+
+        Parameters
+        ----------
+        tpf : TargetPixelFile
+            Target pixel file.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        duration : float
+            Transit duration in days.
+
+        Returns
+        -------
+        ndarray
+            2D difference image array.
+        """
         duration_to_period = duration / period
         tpf_sub = np.zeros((tpf.shape[1], tpf.shape[2]))
         for i in np.arange(0, tpf.shape[1]):
@@ -1894,6 +2250,26 @@ class Watson:
 
     @staticmethod
     def compute_optical_ghost_data(tpf, aperture, period, epoch, duration):
+        """Extract core and halo light curves for optical ghost diagnosis.
+
+        Parameters
+        ----------
+        tpf : TargetPixelFile
+            Target pixel file.
+        aperture : ndarray
+            Boolean aperture mask (core pixels).
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        duration : float
+            Transit duration in days.
+
+        Returns
+        -------
+        tuple of (ndarray, ndarray, ndarray)
+            Time array, core flux, and halo flux.
+        """
         halo_aperture = ndimage.binary_dilation(aperture)
         halo_aperture = np.logical_and(halo_aperture, np.logical_not(aperture))
         core_flux = np.zeros((tpf.shape[0]))
@@ -1923,6 +2299,32 @@ class Watson:
 
     @staticmethod
     def compute_centroids_for_tpf(ra, dec, lc_data, tpf, wcs, period, epoch, duration_to_period):
+        """Compute normalized centroid shifts in RA and Dec for a TPF.
+
+        Parameters
+        ----------
+        ra : float
+            Right ascension in degrees.
+        dec : float
+            Declination in degrees.
+        lc_data : DataFrame
+            Light curve data with centroids and motion columns.
+        tpf : TargetPixelFile
+            Target pixel file.
+        wcs : WCS
+            World coordinate system object.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        duration_to_period : float
+            Transit duration divided by orbital period.
+
+        Returns
+        -------
+        tuple of (ndarray, ndarray, ndarray)
+            Time array, RA shift, and Dec shift arrays.
+        """
         df = lc_data[(lc_data['time'] >= tpf.time.value[0]) & (lc_data['time'] <= tpf.time.value[-1])].dropna()
         time = df["time"].to_numpy()
         df['time_folded'] = foldedleastsquares.fold(time, period, epoch + period / 2)
@@ -1970,6 +2372,63 @@ class Watson:
     def plot_folded_tpfs(file_dir, mission_prefix, mission, id, ra, dec, lc, lc_data, tpfs, lc_file, lc_data_file,
                          tpfs_dir, sectors, period, epoch, duration, depth, rp_rstar, a_rstar, transits_mask, t0s_list,
                          apertures, cpus=os.cpu_count() - 1):
+        """Generate folded TPF plots including centroids, offsets, and optical ghost.
+
+        Parameters
+        ----------
+        file_dir : str
+            Directory to save output plots.
+        mission_prefix : str
+            Mission prefix (e.g. ``'TIC'``).
+        mission : str
+            Mission name.
+        id : str
+            Target identifier.
+        ra : float
+            Right ascension in degrees.
+        dec : float
+            Declination in degrees.
+        lc : LightCurve
+            Light curve object.
+        lc_data : DataFrame
+            Light curve data with centroids and motion.
+        tpfs : list
+            List of target pixel files.
+        lc_file : str
+            Path to light curve CSV.
+        lc_data_file : str
+            Path to light curve data CSV.
+        tpfs_dir : str
+            Directory containing TPFs.
+        sectors : list of int
+            Sectors to process.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        duration : float
+            Transit duration in minutes.
+        depth : float
+            Transit depth in ppt.
+        rp_rstar : float
+            Planet-to-star radius ratio.
+        a_rstar : float
+            Semi-major axis in stellar radii.
+        transits_mask : list
+            List of transit masks to apply.
+        t0s_list : list
+            Individual transit times.
+        apertures : dict
+            Aperture masks per sector.
+        cpus : int
+            Number of CPU cores to use.
+
+        Returns
+        -------
+        tuple
+            Offset RA, offset Dec, offset error, distance, core SNR, halo SNR,
+            optical ghost score, and centroid SNR arrays.
+        """
         duration = duration / 60 / 24
         duration_to_period = duration / period
         logging.info("Computing TPF centroids")
@@ -2180,6 +2639,22 @@ class Watson:
 
     @staticmethod
     def light_centroid(snr_map, pixel_values_i, pixel_values_j):
+        """Compute the light-weighted centroid from an SNR map.
+
+        Parameters
+        ----------
+        snr_map : ndarray
+            2D array of SNR values per pixel.
+        pixel_values_i : array-like
+            Row indices to consider.
+        pixel_values_j : array-like
+            Column indices to consider.
+
+        Returns
+        -------
+        tuple of (float, float)
+            Centroid row and column positions.
+        """
         snr_i_0 = 0
         snr_j_0 = 0
         snr_div = 0
@@ -2211,6 +2686,44 @@ class Watson:
             dry=False,
             **kwargs,
     ):
+        """Plot per-pixel light curves or periodograms in a TPF grid.
+
+        Parameters
+        ----------
+        tpf : TargetPixelFile
+            Target pixel file.
+        ax : matplotlib.axes.Axes or None
+            Matplotlib axes to plot on. Creates a new figure if None.
+        periodogram : bool
+            If True, plot periodograms instead of light curves.
+        aperture_mask : ndarray or None
+            Boolean aperture mask to highlight.
+        show_flux : bool
+            If True, color background by flux.
+        corrector_func : callable or None
+            Function to correct each pixel light curve.
+        style : str
+            Matplotlib style string.
+        title : str or None
+            Plot title.
+        markersize : float
+            Marker size for pixel curves.
+        period : float or None
+            Orbital period in days for BLS analysis.
+        epoch : float or None
+            Mid-transit epoch.
+        duration : float
+            Transit duration in days.
+        dry : bool
+            If True, skip actual plotting.
+        **kwargs : dict
+            Additional keyword arguments.
+
+        Returns
+        -------
+        tuple of (ndarray, matplotlib.axes.Axes)
+            SNR map and plot axes.
+        """
         if style == "lightkurve" or style is None:
             style = MPLSTYLE
         if corrector_func is None:
@@ -2404,6 +2917,29 @@ class Watson:
 
     @staticmethod
     def plot_nb_stars(file_dir, mission, id, lc, period, epoch, duration, depth, cores=os.cpu_count()):
+        """Plot folded light curves of neighbour stars in a grid.
+
+        Parameters
+        ----------
+        file_dir : str
+            Directory to save output plots.
+        mission : str
+            Mission name.
+        id : str
+            Target identifier.
+        lc : LightCurve
+            Light curve object for the target.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Mid-transit epoch.
+        duration : float
+            Transit duration in hours.
+        depth : float
+            Transit depth.
+        cores : int
+            Number of CPU cores to use.
+        """
         if mission == lcbuilder.constants.MISSION_TESS:
             pixel_size = 20.25
             star_catalog = TicStarCatalog()
@@ -2539,6 +3075,32 @@ class Watson:
     @staticmethod
     #TODO build model from selected transit_template
     def get_transit_model(duration, t0, start_end, depth, period, rp_to_rstar, a_to_rstar, model_len=10000):
+        """Generate a BATMAN transit model scaled to the given parameters.
+
+        Parameters
+        ----------
+        duration : float
+            Transit duration (units must match start_end).
+        t0 : float
+            Mid-transit time.
+        start_end : tuple of (float, float)
+            Start and end time for the model output range.
+        depth : float
+            Transit depth.
+        period : float
+            Orbital period in days.
+        rp_to_rstar : float
+            Planet-to-star radius ratio.
+        a_to_rstar : float
+            Semi-major axis in stellar radii.
+        model_len : int
+            Number of model time points.
+
+        Returns
+        -------
+        tuple of (ndarray, ndarray)
+            Model time array and model flux array.
+        """
         t = np.linspace(-6, 6, model_len)
         ma = batman.TransitParams()
         ma.t0 = 0  # time of inferior conjunction
@@ -2566,6 +3128,19 @@ class Watson:
 
     @staticmethod
     def plot_tpf(tpf, sector, aperture, dir):
+        """Plot TPF pixel image with aperture mask and save to file.
+
+        Parameters
+        ----------
+        tpf : TargetPixelFile
+            Target pixel file.
+        sector : int
+            Sector number for labeling.
+        aperture : ndarray
+            Boolean aperture mask.
+        dir : str
+            Output directory.
+        """
         logging.info("Plotting FOV curves for sector %.0f", sector)
         if not os.path.exists(dir):
             os.mkdir(dir)
@@ -2575,6 +3150,13 @@ class Watson:
 
     @staticmethod
     def compute_pixels_curves(tpf):
+        """Extract per-pixel light curves from a TPF.
+
+        Parameters
+        ----------
+        tpf : TargetPixelFile
+            Target pixel file.
+        """
         masks = np.zeros(
             (tpf.shape[1] * tpf.shape[2], tpf.shape[1], tpf.shape[2]),
             dtype="bool",
@@ -2669,6 +3251,30 @@ class Watson:
 
     @staticmethod
     def compute_bootstrap_fap(time, flux, period, duration, star_info, flux_err=None, bootstrap_scenarios=100):
+        """Compute bootstrap false alarm probability by resampling.
+
+        Parameters
+        ----------
+        time : array-like
+            Time array.
+        flux : array-like
+            Flux array.
+        period : float
+            Orbital period in days.
+        duration : float
+            Transit duration in days.
+        star_info : StarInfo
+            Stellar parameters object.
+        flux_err : array-like or None
+            Flux error array. Estimated from flux scatter if None.
+        bootstrap_scenarios : int
+            Number of bootstrap iterations.
+
+        Returns
+        -------
+        float
+            Bootstrap false alarm probability.
+        """
         logging.info("Computing bootstrap FAP")
         flux_err = flux_err if flux_err is not None else np.full(len(flux), np.nanstd(flux))
         period_grid, oversampling = LcbuilderHelper.calculate_period_grid(time, 5 * period / 6, period * 1.15, 1, star_info, 1)
@@ -2763,6 +3369,7 @@ class TriceratopsThreadValidator:
     Used to run a single scenario validation with TRICERATOPS
     """
     def __init__(self) -> None:
+        """Initialize a TRICERATOPS thread validator."""
         super().__init__()
 
     @staticmethod
@@ -2857,6 +3464,39 @@ class ValidatorInput:
     def __init__(self, save_dir, target, time, flux, sigma, period, depth, apertures, run, contrast_curve,
                  ignore_ebs=False, resolved_companion=None, ignore_background_stars=False,
                  bound_stars=[]):
+        """Initialize TRICERATOPS validator input.
+
+        Parameters
+        ----------
+        save_dir : str
+            Directory to save results.
+        target : triceratops.target
+            TRICERATOPS target object.
+        time : array-like
+            Time array.
+        flux : array-like
+            Flux array.
+        sigma : array-like
+            Flux error array.
+        period : float
+            Orbital period in days.
+        depth : float
+            Transit depth in ppt.
+        apertures : dict
+            Aperture masks per sector.
+        run : int
+            Run index for output file naming.
+        contrast_curve : str or None
+            Path to contrast curve file.
+        ignore_ebs : bool
+            If True, exclude EB scenarios.
+        resolved_companion : str or None
+            ``'yes'``, ``'no'``, or None.
+        ignore_background_stars : bool
+            If True, exclude background star scenarios.
+        bound_stars : list
+            List of bound star IDs.
+        """
         self.save_dir = save_dir
         self.target = target
         self.time = time

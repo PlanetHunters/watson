@@ -24,6 +24,7 @@ copyright = '2021, Martín Dévora-Pajares'
 author = ' Martín Dévora-Pajares & Francisco J. Pozuelos'
 
 sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../watson/'))
 
 # The full version, including alpha/beta/rc tags
 release = '0.26.0'
@@ -40,6 +41,10 @@ autosummary_mock_imports = [
     'watson.tests',
     'watson.regression_tests',
     'watson.tpfplotterSub'
+]
+autodoc_mock_imports = [
+    'cupy',
+    'openai',
 ]
 #autosummary_imported_members = True
 

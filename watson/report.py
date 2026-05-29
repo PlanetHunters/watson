@@ -23,10 +23,51 @@ resources_dir = path.join(path.dirname(__file__))
 
 
 class Report:
+    """Generate PDF vetting reports for transit candidates."""
+
     LOGO_IMAGE = resources_dir + "/resources/images/watson.png"
 
     def __init__(self, data_dir, file_name, object_id, ra, dec, t0, period, duration, depth, transit_t0s_list,
                  summary_list_t0s_indexes, v, j, h, k, with_tpfs=True, is_summary=False):
+        """Initialize the report generator.
+
+        Parameters
+        ----------
+        data_dir : str
+            Directory containing plot images and CSV data files.
+        file_name : str
+            Output PDF file name.
+        object_id : str
+            Target object identifier (e.g., ``"TIC 307210830"``).
+        ra : float or None
+            Right ascension in degrees.
+        dec : float or None
+            Declination in degrees.
+        t0 : float
+            Transit epoch in days.
+        period : float
+            Orbital period in days.
+        duration : float
+            Transit duration in minutes.
+        depth : float
+            Transit depth in ppt.
+        transit_t0s_list : list of float
+            List of individual transit mid-times.
+        summary_list_t0s_indexes : list of int or None
+            Indices of transits to include in summary report.
+        v : float or None
+            V-band magnitude.
+        j : float or None
+            J-band magnitude.
+        h : float or None
+            H-band magnitude.
+        k : float or None
+            K-band magnitude.
+        with_tpfs : bool, optional
+            Whether TPF plots are available. Default is ``True``.
+        is_summary : bool, optional
+            Whether this is a summary report. Default is ``False``.
+        """
         self.data_dir = data_dir
         self.file_name = file_name
         self.object_id = object_id
@@ -47,6 +88,15 @@ class Report:
 
     @staticmethod
     def row_colors(df, table_object):
+        """Apply alternating row background colors to a table.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame whose length determines the number of rows to color.
+        table_object : reportlab.platypus.Table
+            The table to style.
+        """
         data_len = len(df)
         for each in range(1, data_len + 1):
             if each % 2 == 1:
@@ -57,6 +107,19 @@ class Report:
 
     @staticmethod
     def metrics_row_colors(df, table_object):
+        """Color-code table rows by pass/fail/inconclusive status.
+
+        Green rows indicate passed metrics, red rows indicate failed
+        metrics, and yellow rows indicate inconclusive results.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame
+            DataFrame with a ``passed`` column containing boolean or
+            numeric values.
+        table_object : reportlab.platypus.Table
+            The table to style.
+        """
         for index, row in df.iterrows():
             if not isinstance(row['passed'], str):
                 if np.isnan(row['passed']):
@@ -72,6 +135,15 @@ class Report:
                                               ('BOTTOMPADDING', (0, table_index), (-1, table_index), 1)]))
 
     def create_header(self, canvas, doc):
+        """Draw the PDF page header with logo, title, and date.
+
+        Parameters
+        ----------
+        canvas : reportlab.pdfgen.canvas.Canvas
+            The PDF canvas to draw on.
+        doc : reportlab.platypus.BaseDocTemplate
+            The document template.
+        """
         canvas.saveState()
 
         # Logo:
@@ -97,6 +169,15 @@ class Report:
         canvas.restoreState()
 
     def create_footer(self, canvas, doc):
+        """Draw the PDF page footer with page number and attribution.
+
+        Parameters
+        ----------
+        canvas : reportlab.pdfgen.canvas.Canvas
+            The PDF canvas to draw on.
+        doc : reportlab.platypus.BaseDocTemplate
+            The document template.
+        """
         canvas.saveState()
 
         # if doc.page == 1:
@@ -132,6 +213,12 @@ class Report:
         canvas.restoreState()
 
     def create_report(self):
+        """Build and write the full PDF vetting report.
+
+        Assembles all sections including target parameters, metrics
+        summary, WATSON-Net predictions, TRICERATOPS validation results,
+        and single-transit vetting plots into a single PDF document.
+        """
         # Styles to be used
         styles = getSampleStyleSheet()
         styles.add(ParagraphStyle(name="ParagraphAlignCenter", alignment=TA_CENTER))

@@ -22,6 +22,19 @@ from lcbuilder.constants import LIGHTKURVE_CACHE_DIR, ELEANOR_CACHE_DIR, CUTOUT_
 
 
 def create_star_csv(create_star_input):
+    """Query the TIC catalog for the target star and its neighbours, and save to CSV.
+
+    Parameters
+    ----------
+    create_star_input : CreateStarCsvInput
+        Input object containing the target id, search radius, pixel size,
+        star catalog, and output directory.
+
+    Returns
+    -------
+    str
+        Path to the generated CSV file containing stellar parameters.
+    """
     tries = 0
     object_id = None
     mission_id = None
@@ -110,6 +123,20 @@ def create_star_csv(create_star_input):
 
 
 def get_neighbour_lc(neighbour_input):
+    """Download and phase-fold a neighbour star's light curve.
+
+    Parameters
+    ----------
+    neighbour_input : NeighbourInput
+        Input object containing the neighbour star id, mission, author,
+        period, epoch, and duration.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with ``folded_time`` and ``flux`` columns, clipped to
+        three transit durations around the mid-transit.
+    """
     lc_df = pd.DataFrame(columns=["folded_time", "flux"])
     lc = None
     if neighbour_input.mission == "TESS":
@@ -183,8 +210,28 @@ def get_neighbour_lc(neighbour_input):
     return lc_df
 
 class NeighbourInput:
+    """Input data container for neighbour light curve retrieval."""
 
     def __init__(self, index, mission, author, id, period, epoch, duration) -> None:
+        """Initialize neighbour input parameters.
+
+        Parameters
+        ----------
+        index : int
+            Neighbour star index.
+        mission : str
+            Mission name (e.g., ``"TESS"``, ``"K2"``).
+        author : str
+            Light curve pipeline author.
+        id : int
+            Target star TIC identifier.
+        period : float
+            Orbital period in days.
+        epoch : float
+            Transit epoch in days.
+        duration : float
+            Transit duration in days.
+        """
         self.index = index
         self.mission = mission
         self.author = author
@@ -317,7 +364,30 @@ def Gauss2D(x, y, mu_x, mu_y, sigma, A):
 
 
 class CreateStarCsvInput:
+    """Input data container for creating the star neighbourhood CSV."""
+
     def __init__(self, lc_file, mission, id, pixel_size, search_radius, lcs_regex, star_catalog, output_dir) -> None:
+        """Initialize star CSV creation input.
+
+        Parameters
+        ----------
+        lc_file : str
+            Path to the light curve file.
+        mission : str
+            Mission name (e.g., ``"TESS"``).
+        id : str
+            Target star identifier.
+        pixel_size : float
+            Pixel scale in arcseconds.
+        search_radius : float
+            Search radius in pixels around the target.
+        lcs_regex : str
+            Regular expression pattern for light curve files.
+        star_catalog : object
+            Star catalog object with a ``catalog_info`` method.
+        output_dir : str
+            Directory to write the output CSV.
+        """
         super().__init__()
         self.lc_file = lc_file
         self.mission = mission

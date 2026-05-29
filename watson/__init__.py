@@ -40,6 +40,23 @@ urllib3.util.ssl_.create_urllib3_context = _patched_create_urllib3_context
 _original_request = requests.Session.request
 # Overwrite to enforce verify=False by default
 def no_verify_request(self, *args, **kwargs):
+    """Monkey-patch to default SSL verification to False for all requests.
+
+    Parameters
+    ----------
+    self : requests.Session
+        The session object.
+    *args : tuple
+        Positional arguments forwarded to the original request method.
+    **kwargs : dict
+        Keyword arguments forwarded to the original request method.
+        If ``verify`` is not provided, it defaults to ``False``.
+
+    Returns
+    -------
+    requests.Response
+        The response from the original request method.
+    """
     kwargs.setdefault("verify", False)  # solo cambia si no se pasa ya 'verify'
     return _original_request(self, *args, **kwargs)
 # Apply patch
