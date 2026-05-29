@@ -44,3 +44,5 @@ def no_verify_request(self, *args, **kwargs):
     return _original_request(self, *args, **kwargs)
 # Apply patch
 requests.Session.request = no_verify_request
+
+from watson.watson.watson import Watson
