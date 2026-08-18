@@ -190,10 +190,11 @@ class Watson:
                 star_file=None, iatson_enabled=False, iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None,
                 only_summary=False, bootstrap_scenarios=100, triceratops_bins=100, triceratops_scenarios=5,
                 triceratops_curve_file=None, triceratops_contrast_curve_file=None,
-                triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
-                triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
-                triceratops_ignore_background_stars=False,
-                main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None):
+                 triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
+                 triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
+                 triceratops_ignore_background_stars=False,
+                 main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None,
+                 triceratops_external_lc_files=None, triceratops_filt_lcs=None):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -288,10 +289,12 @@ class Watson:
                                          period, t0, duration, rp_rstar, a_rstar, triceratops_bins,
                                          triceratops_scenarios, triceratops_sigma_mode,
                                          triceratops_contrast_curve_file, triceratops_additional_stars_file,
-                                         transits_mask=transits_mask,
-                                         star_file=star_file,
-                                         ignore_ebs=triceratops_ignore_ebs, resolved_companion=triceratops_resolved_companion,
-                                         ignore_background_stars=triceratops_ignore_background_stars)
+                                          transits_mask=transits_mask,
+                                          star_file=star_file,
+                                          ignore_ebs=triceratops_ignore_ebs, resolved_companion=triceratops_resolved_companion,
+                                          ignore_background_stars=triceratops_ignore_background_stars,
+                                          external_lc_files=triceratops_external_lc_files,
+                                          filt_lcs=triceratops_filt_lcs)
             except Exception as e:
                 traceback.print_exc()
             transits_list_t0s, summary_list_t0s_indexes = self.__process(id, period, t0, duration, depth, depth_err, rp_rstar, a_rstar,
@@ -328,35 +331,20 @@ class Watson:
     def _apply_bayesian_update(nn_score: float, scenarios_df: pd.DataFrame,
                                training_planet_fraction: float = 0.1) -> tuple:
         """
-        Core Bayesian update: apply Watson-NET likelihood to TRICERATOPS scenario probabilities.
+        Core Bayesian update: apply Watson-NET score as a direct boost
+        to TRICERATOPS scenario probabilities.
 
-        Watson-NET is a discriminative classifier whose output p_NN estimates the posterior
-        P(planet | data) under the training-set class distribution (π_train). To use p_NN
-        as a Bayes factor we must first remove the implicit training prior:
+        Uses the NN score directly — no training-set prior correction.
+        The score p_NN acts as a weight for planet scenarios and
+        (1 - p_NN) for false positive scenarios.
 
-          P(data | planet) ∝ p_NN / π_train
-          P(data | FP)     ∝ (1 - p_NN) / (1 - π_train)
-
-        Equivalently, the corrected Bayes factor is:
-          BF = [p_NN / (1 - p_NN)] × [(1 - π_train) / π_train]
-
-        Each TRICERATOPS scenario prior is then multiplied by the appropriate likelihood
-        and the full table is renormalized:
-          - On-target planet scenarios (TP, PTP, DTP): prob *= p_NN / π_train
-          - All other scenarios:                       prob *= (1 - p_NN) / (1 - π_train)
-
-        The neutral point (no update) is p_NN = π_train, not 0.5.
-
-        :param nn_score: Watson-NET calibrated probability in [0, 1] (will be clipped)
+        :param nn_score: Watson-NET calibrated probability in [0, 1]
         :param scenarios_df: DataFrame with columns 'scenario' and 'prob'
-        :param training_planet_fraction: fraction of planet examples in Watson-NET training set
-                                        (π_train). Default 0.1 (10% planets, 90% FPs).
         :return: (combined_fpp, combined_nfpp, updated_scenarios_df)
         """
         nn_score = float(np.clip(nn_score, 1e-6, 1 - 1e-6))
-        pi = float(np.clip(training_planet_fraction, 1e-6, 1 - 1e-6))
-        planet_likelihood = nn_score / pi
-        fp_likelihood = (1.0 - nn_score) / (1.0 - pi)
+        planet_likelihood = nn_score
+        fp_likelihood = 1.0 - nn_score
         df = scenarios_df.copy()
         is_on_target_planet = df['scenario'].isin(Watson.ON_TARGET_PLANET_SCENARIOS)
         df.loc[is_on_target_planet, 'prob'] = df.loc[is_on_target_planet, 'prob'] * planet_likelihood
@@ -371,9 +359,10 @@ class Watson:
         return combined_fpp, combined_nfpp, df
 
     @staticmethod
-    def compute_bayesian_fpp(data_dir: str, training_planet_fraction: float = 0.1) -> None:
+    def compute_bayesian_fpp(data_dir: str) -> None:
         """
-        Combines Watson-NET NN score with TRICERATOPS scenario probabilities using Bayes theorem
+        Combines Watson-NET NN score with TRICERATOPS scenario probabilities
+        using the score as a direct boost (no training-set prior correction)
         and saves the result to {data_dir}/triceratops/bayesian_fpp.csv.
 
         Reads:
@@ -382,13 +371,11 @@ class Watson:
 
         Writes:
           - {data_dir}/triceratops/bayesian_fpp.csv
-            columns: nn_score, training_planet_fraction, combined_fpp, combined_nfpp
+            columns: nn_score, combined_fpp, combined_nfpp
 
         Does nothing if either input file is missing.
 
         :param data_dir: vetting output directory
-        :param training_planet_fraction: fraction of planet examples in Watson-NET training set.
-                                        Default 0.1 (10% planets, 90% FPs).
         """
         iatson_file = data_dir + '/iatson_averages.csv'
         scenarios_file = data_dir + '/triceratops/validation_scenarios.csv'
@@ -397,20 +384,19 @@ class Watson:
         nn_score = pd.read_csv(iatson_file).loc[0, 'prediction_value_cal_mean']
         scenarios_df = pd.read_csv(scenarios_file)
         combined_fpp, combined_nfpp, _ = Watson._apply_bayesian_update(
-            nn_score, scenarios_df, training_planet_fraction)
+            nn_score, scenarios_df)
         pd.DataFrame({
             'nn_score': [float(np.clip(nn_score, 1e-6, 1 - 1e-6))],
-            'training_planet_fraction': [training_planet_fraction],
             'combined_fpp': [combined_fpp],
             'combined_nfpp': [combined_nfpp]
         }).to_csv(data_dir + '/triceratops/bayesian_fpp.csv', index=False)
-        logging.info("Bayesian combined FPP: %.4f, NFPP: %.4f (nn_score=%.4f, pi_train=%.2f)",
-                     combined_fpp, combined_nfpp, nn_score, training_planet_fraction)
+        logging.info("Bayesian combined FPP: %.4f, NFPP: %.4f (nn_score=%.4f)",
+                     combined_fpp, combined_nfpp, nn_score)
 
     def execute_triceratops(self, cpus, indir, object_id, sectors, lc_file, transit_depth, period, t0,
                             transit_duration, rp_rstar, a_rstar, bins, scenarios, sigma_mode, contrast_curve_file,
                             additional_stars_file, transits_mask, star_file, ignore_ebs, resolved_companion,
-                            ignore_background_stars):
+                            ignore_background_stars, external_lc_files=None, filt_lcs=None):
         """ Calculates probabilities of the signal being caused by any of the following astrophysical sources:
         TP No unresolved companion. Transiting planet with Porb around target star. (i, Rp)
         EB No unresolved companion. Eclipsing binary with Porb around target star. (i, qshort)
@@ -456,6 +442,8 @@ class Watson:
         :param ignore_ebs: whether EB scenarios should be ignored
         :param resolved_companion: whether a resolved companion can be ensured or discarded
         :param ignore_background_stars: whether background star scenarios should be ignored
+        :param external_lc_files: optional ground-based light-curve files for TRICERATOPS+
+        :param filt_lcs: optional filters corresponding to external_lc_files
         :return str: the directory where the results are stored
         """
         save_dir = indir + "/triceratops"
@@ -530,7 +518,7 @@ class Watson:
             axs, bin_centers, bin_means, bin_stds, snr = \
                 Watson.compute_phased_values_and_fill_plot(object_id, axs, lc, period, t0, depth, duration, rp_rstar,
                                                            a_rstar, bins=bins,
-                                                           bin_err_mode='bin' if sigma_mode == 'binning' else 'flux_err')
+                                                           bin_err_mode=sigma_mode)
 
             bin_centers = (bin_centers - 0.5) * period
         else:
@@ -613,7 +601,9 @@ class Watson:
                                         valid_apertures, value, contrast_curve_file, ignore_ebs=ignore_ebs,
                                         resolved_companion=resolved_companion,
                                         ignore_background_stars=ignore_background_stars,
-                                        bound_stars=bound_stars)
+                                        bound_stars=bound_stars,
+                                        external_lc_files=external_lc_files,
+                                        filt_lcs=filt_lcs)
                          for value in range(0, scenarios)]
         logging.info("Start validation processes")
         #TODO fix usage of cpus returning same value for all executions
@@ -837,10 +827,11 @@ class Watson:
                           gpt_api_key=None, only_summary=False, bootstrap_scenarios=100, triceratops_bins=100,
                           triceratops_scenarios=5, triceratops_curve_file=None,
                           triceratops_contrast_curve_file=None,
-                          triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
-                          triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
-                          triceratops_ignore_background_stars=False, sectors=None,
-                          main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None):
+                           triceratops_additional_stars_file=None, triceratops_sigma_mode='flux_err',
+                           triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
+                           triceratops_ignore_background_stars=False, sectors=None,
+                           main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None,
+                           triceratops_external_lc_files=None, triceratops_filt_lcs=None):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -899,9 +890,11 @@ class Watson:
                          triceratops_additional_stars_file=triceratops_additional_stars_file,
                          triceratops_sigma_mode=triceratops_sigma_mode,
                          triceratops_ignore_ebs=triceratops_ignore_ebs,
-                         triceratops_resolved_companion=triceratops_resolved_companion,
-                         triceratops_ignore_background_stars=triceratops_ignore_background_stars,
-                         main_fit_dir=main_fit_dir, odd_fit_dir=odd_fit_dir, even_fit_dir=even_fit_dir)
+                          triceratops_resolved_companion=triceratops_resolved_companion,
+                          triceratops_ignore_background_stars=triceratops_ignore_background_stars,
+                          triceratops_external_lc_files=triceratops_external_lc_files,
+                          triceratops_filt_lcs=triceratops_filt_lcs,
+                          main_fit_dir=main_fit_dir, odd_fit_dir=odd_fit_dir, even_fit_dir=even_fit_dir)
         except Exception as e:
             traceback.print_exc()
 
@@ -1457,7 +1450,8 @@ class Watson:
         return transits_list_not_nan_indexes
 
     @staticmethod
-    def plot_single_transit(single_transit_process_input):
+    def \
+            plot_single_transit(single_transit_process_input):
         """
         Plots the single transit info: single transit focused curve, drift and background plots, small vs used aperture
         photometry and tpf flux values around the transit.
@@ -3384,8 +3378,17 @@ class TriceratopsThreadValidator:
         """
         #input.target.calc_depths(tdepth=input.depth, all_ap_pixels=input.apertures)
         input.target.stars.loc[0, 'plx'] = 0
-        input.target.calc_probs(time=input.time, flux_0=input.flux, flux_err_0=input.sigma, P_orb=float(input.period),
-                                contrast_curve_file=input.contrast_curve, parallel=True)
+        calc_probs_kwargs = {
+            'time': input.time,
+            'flux_0': input.flux,
+            'flux_err_0': input.sigma,
+            'P_orb': float(input.period),
+            'contrast_curve_file': input.contrast_curve,
+            'parallel': True,
+        }
+        if input.external_lc_files is not None or input.filt_lcs is not None:
+            calc_probs_kwargs.update(external_lc_files=input.external_lc_files, filt_lcs=input.filt_lcs)
+        input.target.calc_probs(**calc_probs_kwargs)
         indexes = list(input.target.probs.index)
         if input.ignore_ebs:
             """ 
@@ -3462,8 +3465,8 @@ class ValidatorInput:
     Wrapper class for input arguments of TriceratopsThreadValidator.
     """
     def __init__(self, save_dir, target, time, flux, sigma, period, depth, apertures, run, contrast_curve,
-                 ignore_ebs=False, resolved_companion=None, ignore_background_stars=False,
-                 bound_stars=[]):
+                  ignore_ebs=False, resolved_companion=None, ignore_background_stars=False,
+                  bound_stars=[], external_lc_files=None, filt_lcs=None):
         """Initialize TRICERATOPS validator input.
 
         Parameters
@@ -3511,3 +3514,5 @@ class ValidatorInput:
         self.resolved_companion = resolved_companion
         self.ignore_background_stars = ignore_background_stars
         self.bound_stars = bound_stars
+        self.external_lc_files = external_lc_files
+        self.filt_lcs = filt_lcs
