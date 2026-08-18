@@ -1,54 +1,64 @@
 #!/bin/bash
 
-source ~/anaconda3/etc/profile.d/conda.sh
-conda activate base
-rm tests.log
-rm dist* -r
-rm -r .pytest_cache
-rm -r build
-rm -r watson-reqs
-conda remove -n watson-reqs --all -y
-rm -R *egg-info
-rm -R .tox
 set -e
-#tox > tests.log
-#tests_results=$(cat tests.log | grep "congratulations")
-#if ! [[ -z ${tests_results} ]]; then
-  echo "Building"
-  set +e
-  rm tests.log
-  rm dist* -r
-  rm -r .pytest_cache
-  rm -r build
-  rm -r watson-reqs
-  conda remove -n watson-reqs --all -y
-  set -e
-  conda create -n watson-reqs python=3.11 -y
-  conda activate watson-reqs
-  python3 -m pip install pip -U
-  python3 -m pip install numpy==2.1.1
-  git_tag=$1
-  sed -i '6s/.*/version = "'${git_tag}'"/' setup.py
-  sed -i '1s/.*/__version__ = "'${git_tag}'"/' watson/__init__.py
-  python3 -m pip install .
-  python3 -m pip list --format=freeze > requirements.txt
-  conda deactivate
-  git pull
-  git add setup.py
-  git add watson/__init__.py
-  git add requirements.txt
-  git commit -m "Preparing release ${git_tag}"
-  git tag ${git_tag} -m "New release"
-  git push && git push --tags
-#else
-#  echo "Failed tests"
-#fi
+
+run_tests=false
+git_tag=""
+for arg in "$@"; do
+  if [[ "${arg}" == "--tests" ]]; then
+    run_tests=true
+  elif [[ -z "${git_tag}" ]]; then
+    git_tag="${arg}"
+  else
+    echo "Unknown argument: ${arg}" >&2
+    exit 1
+  fi
+done
+if [[ -z "${git_tag}" ]]; then
+  echo "Usage: $0 VERSION [--tests]" >&2
+  exit 1
+fi
+
+CONDA_EXE="${CONDA_EXE:-$(command -v conda || true)}"
+if [[ -z "${CONDA_EXE}" ]]; then
+  echo "Could not find conda. Set CONDA_EXE before running this script." >&2
+  exit 1
+fi
+CONDA_BASE="$(${CONDA_EXE} info --base)"
+export CONDA_EXE
+export PATH="${CONDA_BASE}/condabin:${CONDA_BASE}/bin:${PATH}"
+
+rm -f tests.log
+rm -rf dist* .tox .pytest_cache build watson-reqs *egg-info
+"${CONDA_EXE}" env remove -n watson-reqs -y 2>/dev/null || true
+if [[ "${run_tests}" == true ]]; then
+  if python -m tox -r > tests.log; then
+    tests_results=$(grep "congratulations" tests.log || true)
+    if [[ -z "${tests_results}" ]]; then
+      echo "Tests failed; release aborted." >&2
+      exit 1
+    fi
+  else
+    echo "Tests failed; release aborted." >&2
+    exit 1
+  fi
+else
+  echo "Skipping tests (use --tests to run them)."
+fi
+
+"${CONDA_EXE}" create --override-channels -c conda-forge -n watson-reqs python=3.11 -y
+RELEASE_PYTHON="${CONDA_BASE}/envs/watson-reqs/bin/python"
+"${RELEASE_PYTHON}" -m pip install -U pip setuptools numpy==2.1.1
+sed -i '6s/.*/version = "'${git_tag}'"/' setup.py
+sed -i '1s/.*/__version__ = "'${git_tag}'"/' watson/__init__.py
+"${RELEASE_PYTHON}" -m pip install .
+"${RELEASE_PYTHON}" -m pip list --format=freeze > requirements.txt
+git pull
+git add setup.py watson/__init__.py requirements.txt
+git commit -m "Preparing release ${git_tag}"
+git tag "${git_tag}" -m "New release"
+git push
+git push --tags
 set +e
-rm -R watson-reqs
-rm dist* -r
-rm -r .pytest_cache
-rm -r build
-rm -R *egg-info
-rm -R .tox
-conda remove -n watson-reqs --all -y
-set -e
+rm -rf watson-reqs dist* .tox .pytest_cache build *egg-info
+"${CONDA_EXE}" env remove -n watson-reqs -y 2>/dev/null || true
