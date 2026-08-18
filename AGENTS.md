@@ -2,6 +2,10 @@
 
 > Agent-facing guide for the `watson` (dearwatson) project.
 
+## Before Making Changes
+
+Always understand the user's question or command fully before writing any code. If there is any ambiguity or doubt about what to change, ask clarifying questions. Only make edits when the action is clear and unambiguous. Do not assume intent — confirm it.
+
 ## Project Intent
 
 **WATSON** (Visual Vetting and Analysis of Transits from Space ObservatioNs) is a Python package for visually vetting transiting exoplanet candidates detected by space-based photometry missions (TESS, Kepler, K2). It automates many checks found in NASA SPOC Data Validation reports, including transit shape analysis, odd-even checks, weak secondary detection, centroid shifts, optical ghost diagnostics, FPP computation via TRICERATOPS, and optional AI analysis (WATSON-NET, GPT-4o).
