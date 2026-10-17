@@ -1,4 +1,3 @@
-import multiprocessing
 import os
 import shutil
 import tempfile
@@ -36,7 +35,7 @@ class TestsWatson(unittest.TestCase):
             Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199,
                                                     6.082, 0.25, [1, 2], 0.07571, cadence=[120],
                                                     author=[constants.SPOC_AUTHOR],
-                                                    cpus=multiprocessing.cpu_count() // 2, clean=False)
+                                                    cpus=1, clean=False)
             files_in_dir = os.listdir(vetting_dir)
             self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
                             .issubset(files_in_dir))
@@ -57,7 +56,7 @@ class TestsWatson(unittest.TestCase):
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
                                        star_file=object_dir + "params_star.csv",
-                                       cpus=multiprocessing.cpu_count() // 2, clean=False, only_summary=True)
+                                       cpus=1, clean=False, only_summary=True)
             files_in_dir = os.listdir(vetting_dir)
             self.assertTrue({"metrics.csv", "folded_cadences.png", "odd_even_folded_curves.png", "triceratops"}
                             .issubset(files_in_dir))
@@ -105,7 +104,7 @@ class TestsWatson(unittest.TestCase):
                                            tpfs_dir=object_dir + "/tpfs",
                                            apertures_file=object_dir + "/apertures.yaml",
                                            star_file=object_dir + "params_star.csv",
-                                           cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
+                                           cpus=1, create_fov_plots=True,
                                            cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
                 fov_mock.assert_called_once()
             files_in_dir = os.listdir(vetting_dir)
@@ -133,7 +132,7 @@ class TestsWatson(unittest.TestCase):
                                        tpfs_dir=object_dir + "/tpfs",
                                        apertures_file=object_dir + "/apertures.yaml",
                                        star_file=object_dir + "params_star.csv",
-                                       cpus=multiprocessing.cpu_count() // 2,
+                                       cpus=1,
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
                                         dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
