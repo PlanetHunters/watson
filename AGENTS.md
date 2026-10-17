@@ -156,6 +156,21 @@ watson.vetting(
 
 **Result:** `output_dir` will contain PNG plots, CSV metrics, TRICERATOPS results, and PDF reports (`*_transits_validation_report.pdf`, `_summary.pdf`).
 
+### Release testing requirement
+
+Watson releases must run both the deterministic unit tests and the marked
+integration tests. The integration tests exercise MAST/TRILEGAL/TPF downloads,
+TRICERATOPS, FOV generation, and PDF report creation, so the release host must
+have network access and the Poppler `pdfinfo`/`pdftoppm` tools installed.
+
+Use the mandatory command:
+
+```bash
+bash release.sh VERSION --tests --integration
+```
+
+The release script must abort if either test group fails.
+
 ### Use Case B: Run the example notebook
 
 ```bash

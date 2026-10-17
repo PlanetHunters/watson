@@ -1,16 +1,19 @@
 import multiprocessing
 import os
 import shutil
+import tempfile
 import unittest
+from unittest.mock import patch
 from importlib import resources
 
 import numpy
 import pandas as pd
+import pytest
 import yaml
 from lcbuilder import constants
 from lcbuilder.star.starinfo import StarInfo
 
-from watson.watson import Watson
+from watson.watson import TriceratopsThreadValidator, ValidatorInput, Watson
 
 
 class TestsWatson(unittest.TestCase):
@@ -24,6 +27,7 @@ class TestsWatson(unittest.TestCase):
         self.assertAlmostEqual(first_row_df['prediction_value_cal_mean'].iloc[0], 0.996926236152649, 3)
         self.assertAlmostEqual(first_row_df['prediction_value_cal_std'].iloc[0], 0.00540493406486552, 3)
 
+    @pytest.mark.integration
     def test_vetting_by_params(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
@@ -33,11 +37,14 @@ class TestsWatson(unittest.TestCase):
                                                     author=[constants.SPOC_AUTHOR],
                                                     cpus=multiprocessing.cpu_count() // 2, clean=False)
             files_in_dir = os.listdir(vetting_dir)
+            self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
+                            .issubset(files_in_dir))
             self.assertEqual(len(files_in_dir), 33)
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
+    @pytest.mark.integration
     def test_vetting_by_files(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
@@ -51,11 +58,13 @@ class TestsWatson(unittest.TestCase):
                                        star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2, clean=False, only_summary=True)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertEqual(len(files_in_dir), 10)
+            self.assertTrue({"metrics.csv", "folded_cadences.png", "odd_even_folded_curves.png", "triceratops"}
+                            .issubset(files_in_dir))
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
+    @pytest.mark.integration
     def test_fov_plots(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
@@ -76,26 +85,39 @@ class TestsWatson(unittest.TestCase):
             if os.path.exists(fov_dir):
                 shutil.rmtree(fov_dir, ignore_errors=False)
 
+    @pytest.mark.integration
     def test_vetting_by_files_with_fov(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
         try:
-            Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199,
-                                                    6.082, 0.25, [1, 2], 0.07571,
-                                       a_rstar=20, cadence=[120], author=[constants.SPOC_AUTHOR],
-                                                    lc_file=object_dir + "/lc.csv",
-                                       lc_data_file=object_dir + "/lc_data.csv",
-                                       tpfs_dir=object_dir + "/tpfs",
-                                       apertures_file=object_dir + "/apertures.yaml",
-                                       star_file=object_dir + "params_star.csv",
-                                       cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
-                                       cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
+            with patch.object(Watson, "vetting_field_of_view") as fov_mock:
+                def create_fov_outputs(indir, *args, **kwargs):
+                    open(indir + "/fov_Flux_pixels[1].png", "wb").close()
+                    open(indir + "/fov_sector_1.pdf", "wb").close()
+
+                fov_mock.side_effect = create_fov_outputs
+                Watson(object_dir, vetting_dir).vetting("TIC 25155310", 3.2899, 1327.51, 199,
+                                                        6.082, 0.25, [1, 2], 0.07571,
+                                           a_rstar=20, cadence=[120], author=[constants.SPOC_AUTHOR],
+                                                        lc_file=object_dir + "/lc.csv",
+                                           lc_data_file=object_dir + "/lc_data.csv",
+                                           tpfs_dir=object_dir + "/tpfs",
+                                           apertures_file=object_dir + "/apertures.yaml",
+                                           star_file=object_dir + "params_star.csv",
+                                           cpus=multiprocessing.cpu_count() // 2, create_fov_plots=True,
+                                           cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
+                fov_mock.assert_called_once()
             files_in_dir = os.listdir(vetting_dir)
-            self.assertGreaterEqual(len(files_in_dir), 35)
+            self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
+                            .issubset(files_in_dir))
+            self.assertTrue(any(file.startswith("fov_Flux_pixels[") and file.endswith(".png")
+                              for file in files_in_dir))
+            self.assertTrue(any(file.startswith("fov_sector_") for file in files_in_dir))
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
 
+    @pytest.mark.integration
     def test_vetting_by_files_with_transits_list(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = object_dir + "/vetting_0/"
@@ -112,9 +134,13 @@ class TestsWatson(unittest.TestCase):
                                        star_file=object_dir + "params_star.csv",
                                        cpus=multiprocessing.cpu_count() // 2,
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
-                                       dec=-69.226822697583, clean=False)
+                                        dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertGreaterEqual(len(files_in_dir), 34)
+            self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
+                            .issubset(files_in_dir))
+            self.assertTrue({"metrics.csv", "transit_depths.png", "triceratops"}.issubset(files_in_dir))
+            self.assertTrue(any(file.startswith("single_transit_") and file.endswith(".png")
+                               for file in files_in_dir))
         finally:
             if os.path.exists(vetting_dir):
                 shutil.rmtree(vetting_dir, ignore_errors=False)
@@ -167,13 +193,11 @@ class TestsBayesianFpp(unittest.TestCase):
         return pd.DataFrame(rows)
 
     def test_neutral_score(self):
-        """p_NN = pi_train should leave FPP unchanged (BF = 1, no information added)."""
+        """The calibrated score is applied directly to planet and FP scenarios."""
         df = self._make_scenarios(tp_prob=0.8, eb_prob=0.2)
-        original_fpp = 0.2  # EB fraction
-        pi_train = 0.1
-        # neutral point: p_NN == pi_train → planet_likelihood == fp_likelihood → no update
-        combined_fpp, combined_nfpp, updated_df = Watson._apply_bayesian_update(pi_train, df, pi_train)
-        self.assertAlmostEqual(combined_fpp, original_fpp, places=6)
+        combined_fpp, combined_nfpp, updated_df = Watson._apply_bayesian_update(0.1, df)
+        expected_fpp = (0.2 * 0.9) / (0.8 * 0.1 + 0.2 * 0.9)
+        self.assertAlmostEqual(combined_fpp, expected_fpp, places=6)
         self.assertAlmostEqual(combined_nfpp, 0.0, places=6)
 
     def test_high_score_reduces_fpp(self):
@@ -218,20 +242,91 @@ class TestsBayesianFpp(unittest.TestCase):
     def test_known_values(self):
         """Verify exact combined FPP against manually computed value.
 
-        Setup: TP=0.95, EB=0.05, p_NN=0.9, pi_train=0.1
-        planet_likelihood = 0.9 / 0.1 = 9.0
-        fp_likelihood     = 0.1 / 0.9 ≈ 0.1111
-        TP_unnorm = 0.95 * 9.0   = 8.55
-        EB_unnorm = 0.05 * 0.1111 ≈ 0.005556
-        Z = 8.55 + 0.005556 = 8.555556
-        combined_fpp = EB_unnorm / Z = 0.005556 / 8.555556
+        Setup: TP=0.95, EB=0.05, p_NN=0.9
+        TP_unnorm = 0.95 * 0.9 = 0.855
+        EB_unnorm = 0.05 * 0.1 = 0.005
+        Z = 0.855 + 0.005 = 0.86
+        combined_fpp = 0.005 / 0.86
         """
         df = self._make_scenarios(tp_prob=0.95, eb_prob=0.05)
-        combined_fpp, _, _ = Watson._apply_bayesian_update(0.9, df, training_planet_fraction=0.1)
-        tp_u = 0.95 * (0.9 / 0.1)
-        eb_u = 0.05 * (0.1 / 0.9)
+        combined_fpp, _, _ = Watson._apply_bayesian_update(0.9, df)
+        tp_u = 0.95 * 0.9
+        eb_u = 0.05 * 0.1
         expected = eb_u / (tp_u + eb_u)
         self.assertAlmostEqual(combined_fpp, expected, places=10)
+
+
+class TestsTriceratopsCapabilities(unittest.TestCase):
+    def test_validator_input_preserves_extended_triceratops_options(self):
+        validator_input = ValidatorInput(
+            "results",
+            object(),
+            [],
+            [],
+            0.001,
+            3.2,
+            0.004,
+            {},
+            0,
+            "contrast.csv",
+            ignore_ebs=True,
+            resolved_companion="yes",
+            ignore_background_stars=True,
+            bound_stars=[123],
+            external_lc_files=["ground_r.csv"],
+            filt_lcs=["r"],
+        )
+
+        self.assertTrue(validator_input.ignore_ebs)
+        self.assertEqual("yes", validator_input.resolved_companion)
+        self.assertTrue(validator_input.ignore_background_stars)
+        self.assertEqual([123], validator_input.bound_stars)
+        self.assertEqual(["ground_r.csv"], validator_input.external_lc_files)
+        self.assertEqual(["r"], validator_input.filt_lcs)
+
+    def test_validator_forwards_external_lightcurves_and_contrast_curve(self):
+        class FakeTarget:
+            def __init__(self):
+                self.stars = pd.DataFrame({"ID": ["1"], "plx": [1.0]})
+                self.probs = pd.DataFrame({
+                    "ID": [1],
+                    "scenario": ["TP"],
+                    "prob": [1.0],
+                })
+                self.star_num = numpy.zeros(1)
+                self.u1 = numpy.zeros(1)
+                self.u2 = numpy.zeros(1)
+                self.fluxratio_EB = numpy.zeros(1)
+                self.fluxratio_comp = numpy.zeros(1)
+                self.calc_probs_kwargs = None
+
+            def calc_probs(self, **kwargs):
+                self.calc_probs_kwargs = kwargs
+
+            def plot_fits(self, **kwargs):
+                return None
+
+        with tempfile.TemporaryDirectory() as output_dir:
+            fake_target = FakeTarget()
+            validator_input = ValidatorInput(
+                output_dir,
+                fake_target,
+                numpy.array([0.0, 1.0]),
+                numpy.array([1.0, 1.0]),
+                0.001,
+                3.2,
+                0.004,
+                {},
+                0,
+                "contrast.csv",
+                external_lc_files=["ground_r.csv"],
+                filt_lcs=["r"],
+            )
+            TriceratopsThreadValidator.validate(validator_input)
+
+        self.assertEqual("contrast.csv", fake_target.calc_probs_kwargs["contrast_curve_file"])
+        self.assertEqual(["ground_r.csv"], fake_target.calc_probs_kwargs["external_lc_files"])
+        self.assertEqual(["r"], fake_target.calc_probs_kwargs["filt_lcs"])
 
 
 if __name__ == '__main__':

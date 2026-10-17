@@ -26,7 +26,7 @@ setuptools.setup(
                         "bokeh==3.7.3", # TPFPlotter dependency
                         'configparser==5.0.1',
                         "extension-helpers==0.1",
-                        "exoml==1.3.3",
+                        "exoml==1.4.0",
                         "imageio==2.9.0",
                         "openai==1.30.1",
                         'pdf2image==1.16.2', #Triceratops
@@ -34,6 +34,7 @@ setuptools.setup(
                         "pyyaml==6.0.1",
                         "pillow==11.2.1",
                         'pytransit==2.6.14', #Triceratops
+                        'MeepMeep==0.8.0', # pytransit 2.6.14 compatibility
                         "reportlab==4.4.0",
                         'setuptools<71', # pytransit 2.6.14 imports pkg_resources at module load time; setuptools 71+ removed it
                         'triceratops==1.0.19'

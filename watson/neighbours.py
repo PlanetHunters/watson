@@ -1,13 +1,6 @@
 import os
 
-import lcbuilder.eleanor
-import sys
-
 from lcbuilder.objectinfo.preparer.mission_data_preparer import MissionDataPreparer
-
-sys.modules['eleanor'] = sys.modules['lcbuilder.eleanor']
-import eleanor
-from lcbuilder.eleanor.targetdata import TargetData
 
 import foldedleastsquares
 import lcbuilder
@@ -18,7 +11,7 @@ import numpy as np
 from astropy.coordinates import SkyCoord
 from astroquery.mast import Catalogs
 from astropy import units as u
-from lcbuilder.constants import LIGHTKURVE_CACHE_DIR, ELEANOR_CACHE_DIR, CUTOUT_SIZE
+from lcbuilder.constants import LIGHTKURVE_CACHE_DIR
 
 
 def create_star_csv(create_star_input):
@@ -148,19 +141,7 @@ def get_neighbour_lc(neighbour_input):
             cadence="long"
         ).download_all(download_dir=os.path.expanduser('~') + '/' + LIGHTKURVE_CACHE_DIR)
         if star_lcs is None:
-            star = eleanor.multi_sectors(tic=round(neighbour_input.id), sectors='all',
-                                         post_dir=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR,
-                                         metadata_path=os.path.expanduser('~') + '/' + ELEANOR_CACHE_DIR)
-            data = []
-            for s in star:
-                datum = TargetData(s, height=CUTOUT_SIZE, width=CUTOUT_SIZE, do_pca=True)
-                data.append(datum)
-            lc = data[0].to_lightkurve(data[0].pca_flux).remove_nans().flatten()
-            if len(data) > 1:
-                for datum in data[1:]:
-                    lc = lc.append(datum.to_lightkurve(datum.pca_flux).remove_nans().flatten())
-            lc = lc.remove_nans()
-            #return lc_df
+            return lc_df
         else:
             matching_objects = []
             for i in range(0, len(star_lcs.data)):

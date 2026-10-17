@@ -28,6 +28,22 @@ signals not complying with any of the thresholds.
 
 For more information check the docs: [https://dearwatson.readthedocs.io](https://dearwatson.readthedocs.io)
 
+## System dependencies
+
+WATSON's Python dependencies are installed with `pip`, but PDF processing also
+requires the Poppler command-line tools. On Ubuntu/Debian, install the system
+dependencies before installing WATSON:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential gcc gfortran poppler-utils libssl-dev
+```
+
+`pdf2image` uses Poppler's `pdfinfo` and `pdftoppm` commands to read the
+official mission Data Validation Report PDFs and include their pages in the
+generated WATSON reports. Poppler is therefore an operating-system dependency,
+not a Python package dependency.
+
 ## Code example
 Let's say that you found a new candidate in the TOI-175 with a period of 1.04 days (this is a known false positive
 from the TESS mission). You could run WATSON easily with the next code chunk:
