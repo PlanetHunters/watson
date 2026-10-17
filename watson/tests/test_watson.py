@@ -17,6 +17,7 @@ from watson.watson import TriceratopsThreadValidator, ValidatorInput, Watson
 
 
 class TestsWatson(unittest.TestCase):
+    @pytest.mark.integration
     def test_iatson(self):
         object_dir = TestsWatson.get_path("TIC25155310_[1,_2]")
         vetting_dir = TestsWatson.get_path("vetting_test")
