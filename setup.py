@@ -3,7 +3,7 @@ import setuptools
 with open("README.md", "r") as fh:
     long_description = fh.read()
 
-version = "1.1.0"
+version = "2.0.0"
 setuptools.setup(
     name="dearwatson", # Replace with your own username
     version=version,
