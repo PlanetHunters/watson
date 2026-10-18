@@ -37,7 +37,8 @@ class TestsWatson(unittest.TestCase):
                                                     author=[constants.SPOC_AUTHOR],
                                                     cpus=1, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
+            self.assertTrue({"TIC 25155310_transits_validation_report.pdf",
+                             "TIC 25155310_transits_validation_report_summary.pdf"}
                             .issubset(files_in_dir))
             self.assertEqual(len(files_in_dir), 33)
         finally:
@@ -108,7 +109,8 @@ class TestsWatson(unittest.TestCase):
                                            cadence_fov=120, ra=63.3739396231274, dec=-69.226822697583, clean=False)
                 fov_mock.assert_called_once()
             files_in_dir = os.listdir(vetting_dir)
-            self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
+            self.assertTrue({"TIC 25155310_transits_validation_report.pdf",
+                             "TIC 25155310_transits_validation_report_summary.pdf"}
                             .issubset(files_in_dir))
             self.assertTrue(any(file.startswith("fov_Flux_pixels[") and file.endswith(".png")
                               for file in files_in_dir))
@@ -136,7 +138,8 @@ class TestsWatson(unittest.TestCase):
                                        transits_list=transits_list_df.to_dict("list"), ra=63.3739396231274,
                                         dec=-69.226822697583, clean=False)
             files_in_dir = os.listdir(vetting_dir)
-            self.assertTrue({"transits_validation_report.pdf", "transits_validation_report_summary.pdf"}
+            self.assertTrue({"TIC 25155310_transits_validation_report.pdf",
+                             "TIC 25155310_transits_validation_report_summary.pdf"}
                             .issubset(files_in_dir))
             self.assertTrue({"metrics.csv", "transit_depths.png", "triceratops"}.issubset(files_in_dir))
             self.assertTrue(any(file.startswith("single_transit_") and file.endswith(".png")
