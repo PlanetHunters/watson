@@ -70,7 +70,7 @@ if [[ "${run_tests}" == true ]]; then
       exit 1
     fi
     if ! MPLBACKEND=Agg CUDA_VISIBLE_DEVICES=-1 \
-      "${PWD}/.tox/py311/bin/python" -m pytest -s -m integration -q watson/tests/ > integration-tests.log; then
+      "${PWD}/.tox/py311/bin/python" -m pytest -s --forked -n 1 -v -x -m integration watson/tests/ > integration-tests.log; then
       echo "Integration tests failed; release aborted." >&2
       exit 1
     fi
