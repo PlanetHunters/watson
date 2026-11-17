@@ -73,3 +73,15 @@ def make_landscape_dir(directory, n_transits=12, **kw):
     pd.DataFrame({"ID": [1, 2], "Tmag": [10.0, 12.0], "sep (arcsec)": [0.0, 30.0], "PA (E of N)": [0.0, 90.0]}) \
         .to_csv(f"{directory}/triceratops/stars.csv", index=False)
     return lc_file, transits
+
+
+def pdf_text(path):
+    """(pages, text, (width, height)) of a PDF. Skips the test when no PDF reader is installed."""
+    import unittest
+    try:
+        import pypdfium2 as pdfium
+    except ImportError:
+        raise unittest.SkipTest("pypdfium2 is not installed")
+    doc = pdfium.PdfDocument(path)
+    text = "\n".join(doc[i].get_textpage().get_text_range() for i in range(len(doc)))
+    return len(doc), text, doc[0].get_size()

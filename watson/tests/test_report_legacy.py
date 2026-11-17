@@ -4,17 +4,11 @@ import os
 import tempfile
 import unittest
 
-import pypdfium2 as pdfium
-
 from watson.report import Report
-from watson.tests.vetting_fixtures import make_vetting_dir, PERIOD, T0, DURATION_MIN, DEPTH_PPT
+from watson.tests.vetting_fixtures import make_vetting_dir, pdf_text, PERIOD, T0, DURATION_MIN, DEPTH_PPT
 
 
-def pdf_info(path):
-    doc = pdfium.PdfDocument(path)
-    text = "\n".join(doc[i].get_textpage().get_text_range() for i in range(len(doc)))
-    w, h = doc[0].get_size()
-    return len(doc), text, (w, h)
+pdf_info = pdf_text
 
 
 class LegacyReportTest(unittest.TestCase):

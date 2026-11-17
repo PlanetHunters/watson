@@ -7,20 +7,15 @@ from unittest import mock
 
 import numpy as np
 import pandas as pd
-import pypdfium2 as pdfium
 
 from watson import landscape_report as lr
-from watson.tests.vetting_fixtures import (make_landscape_dir, make_vetting_dir, PERIOD, T0, DURATION_MIN, DEPTH_PPT)
+from watson.tests.vetting_fixtures import (make_landscape_dir, make_vetting_dir, pdf_text, PERIOD, T0, DURATION_MIN,
+                                           DEPTH_PPT)
 
 
 def inputs_for(directory, lc_file=None, transits=None, **kw):
     return lr.ReportInputs(directory, "TIC 1", 63.37, -69.22, T0, PERIOD, DURATION_MIN, DEPTH_PPT, 12.8, 9.4, 8.8, 8.6,
                            lc_file=lc_file, transits=transits, **kw)
-
-
-def pdf_text(path):
-    doc = pdfium.PdfDocument(path)
-    return len(doc), "\n".join(doc[i].get_textpage().get_text_range() for i in range(len(doc))), doc[0].get_size()
 
 
 class NumericsTest(unittest.TestCase):

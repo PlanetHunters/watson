@@ -965,7 +965,7 @@ def write_landscape_report(inputs, path):
     """Write the report atomically (``.partial`` first) and return the number of pages."""
     pages = build_pages(inputs)
     partial = path + ".partial"
-    with PdfPages(partial) as pdf:
+    with matplotlib.rc_context({"pdf.fonttype": 42}), PdfPages(partial) as pdf:  # TrueType: searchable text
         for fig in pages:
             pdf.savefig(fig)
     os.replace(partial, path)

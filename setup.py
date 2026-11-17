@@ -43,6 +43,7 @@ setuptools.setup(
         'test': [
             'pytest',
             'pytest-xdist',
+            'pypdfium2',  # reads the generated PDFs in the report tests
         ],
     },
 )
