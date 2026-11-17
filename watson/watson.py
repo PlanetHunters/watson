@@ -194,7 +194,7 @@ class Watson:
                  triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
                  triceratops_ignore_background_stars=False,
                  main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None,
-                 triceratops_external_lc_files=None, triceratops_filt_lcs=None):
+                 triceratops_external_lc_files=None, triceratops_filt_lcs=None, legacy_report=False):
         """
         Launches the whole vetting procedure that ends up with a validation report
         :param id: the target star id
@@ -233,6 +233,8 @@ class Watson:
         :param main_fit_dir: directory containing allesfitter results for the main fit (all transits)
         :param odd_fit_dir: directory containing allesfitter results for odd transits only
         :param even_fit_dir: directory containing allesfitter results for even transits only
+        :param legacy_report: whether to build the old portrait report (one page per single transit, plus a summary
+        report) instead of the compact landscape one. The landscape report ignores ``only_summary``.
         """
         logging.info("------------------")
         logging.info("Candidate info")
@@ -308,10 +310,14 @@ class Watson:
                                                                          bootstrap_scenarios=bootstrap_scenarios,
                                                                          main_fit_dir=main_fit_dir,
                                                                          odd_fit_dir=odd_fit_dir,
-                                                                         even_fit_dir=even_fit_dir)
+                                                                         even_fit_dir=even_fit_dir,
+                                                                         legacy_report=legacy_report)
             Watson.compute_bayesian_fpp(self.data_dir)
-            self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
-                        v, j, h, k, os.path.exists(tpfs_dir), only_summary=only_summary)
+            if legacy_report or not self.__landscape_report(id, ra, dec, t0, period, duration, depth, transits_list,
+                                                            v, j, h, k, lc_file, lc_data_file, tpfs_dir,
+                                                            apertures_file, star_file, transits_mask):
+                self.report(id, ra, dec, t0, period, duration, depth, transits_list_t0s, summary_list_t0s_indexes,
+                            v, j, h, k, os.path.exists(tpfs_dir), only_summary=only_summary)
             if clean:
                 for filename in os.listdir(self.data_dir):
                     if not os.path.isdir(self.data_dir + '/' + filename) and not filename.endswith(".pdf") and not filename.endswith(".csv"):
@@ -772,6 +778,23 @@ class Watson:
         print("FPP: " + str(fpp) + "   FPP2: " + str(fpp2) + "   FPP3+: " + str(fpp3) + "   NFPP: " + str(nfpp))
         return fpp, nfpp, fpp2, fpp3, filtered_scenarios_df
 
+    def __landscape_report(self, id, ra, dec, t0, period, duration, depth, transits_list, v, j, h, k, lc_file,
+                           lc_data_file, tpfs_dir, apertures_file, star_file, transits_mask):
+        """Builds the compact landscape report. A convenience output: it never raises.
+
+        :return: True when the PDF was written, False when the caller should fall back to the legacy report
+        """
+        try:
+            from watson.landscape_report import ReportInputs, write_landscape_report
+            inputs = ReportInputs(self.data_dir, id, ra, dec, t0, period, duration, depth, v, j, h, k, lc_file,
+                                  lc_data_file, tpfs_dir, apertures_file, star_file, transits_list, transits_mask)
+            pages = write_landscape_report(inputs, f"{self.data_dir}/{id}_transits_validation_report.pdf")
+            logging.info("Landscape vetting report written with %s pages", pages)
+            return True
+        except (Exception, SystemExit):
+            logging.exception("The landscape vetting report failed, falling back to the legacy report")
+            return False
+
     def report(self, id, ra, dec, t0, period, duration, depth, transits_list, summary_list_t0s_indexes, v, j, h, k,
                with_tpfs=True, only_summary=False):
         """Generate vetting validation PDF reports.
@@ -831,7 +854,7 @@ class Watson:
                            triceratops_ignore_ebs=False, triceratops_resolved_companion=None,
                            triceratops_ignore_background_stars=False, sectors=None,
                            main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None,
-                           triceratops_external_lc_files=None, triceratops_filt_lcs=None):
+                           triceratops_external_lc_files=None, triceratops_filt_lcs=None, legacy_report=False):
         """
         Same than vetting but receiving a candidate dataframe and a star dataframe with one row each.
         :param candidate_df: the candidate dataframe containing id, period, t0, transits and sectors data.
@@ -894,7 +917,8 @@ class Watson:
                           triceratops_ignore_background_stars=triceratops_ignore_background_stars,
                           triceratops_external_lc_files=triceratops_external_lc_files,
                           triceratops_filt_lcs=triceratops_filt_lcs,
-                          main_fit_dir=main_fit_dir, odd_fit_dir=odd_fit_dir, even_fit_dir=even_fit_dir)
+                          main_fit_dir=main_fit_dir, odd_fit_dir=odd_fit_dir, even_fit_dir=even_fit_dir,
+                          legacy_report=legacy_report)
         except Exception as e:
             traceback.print_exc()
 
@@ -902,7 +926,8 @@ class Watson:
                   apertures_file, create_fov_plots=False, cadence_fov=None, ra_fov=None, dec_fov=None,
                   transits_list=None, transits_mask=None, sectors=None, star_file=None, iatson_enabled=False,
                   iatson_inputs_save=False, gpt_enabled=False, gpt_api_key=None, only_summary=False,
-                  bootstrap_scenarios=100, main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None):
+                  bootstrap_scenarios=100, main_fit_dir=None, odd_fit_dir=None, even_fit_dir=None,
+                  legacy_report=True):
         """
         Performs the analysis to generate PNGs and Transits Validation Report.
         :param id: the target star id
@@ -1118,7 +1143,7 @@ class Watson:
             orient='columns')], ignore_index=True)
         metrics_df.to_csv(self.data_dir + '/metrics.csv')
         #self.plot_nb_stars(self.data_dir, mission, id, lc, period, t0, duration, depth / 1000, cpus)
-        if not only_summary:
+        if legacy_report and not only_summary:
             plot_transits_inputs = []
             for index, transit_times in enumerate(transit_t0s_list):
                 plot_transits_inputs.append(SingleTransitProcessInput(self.data_dir, str(id), index, lc_file, lc_data_file,

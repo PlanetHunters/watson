@@ -1,0 +1,872 @@
+19:56:23 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:24 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:24 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:24 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:25 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:25 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:25 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:25 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:25 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:26 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:26 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:26 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:26 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:26 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:26 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:26 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:27 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:29 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:29 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:29 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:31 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:31 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:31 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:31 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:33 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:33 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:33 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1245
+19:56:33 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:33 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1245
+19:56:34 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:34 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:34 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1471 findfont: Matching sans\-serif:style=normal:variant=normal:weight=bold:stretch=normal:size=7.0.
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneralBolIta.ttf', name='STIXGeneral', style='italic', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmss10.ttf', name='cmss10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 0.33499999999999996
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmmi10.ttf', name='cmmi10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneralItalic.ttf', name='STIXGeneral', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUni.ttf', name='STIXNonUnicode', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerifDisplay.ttf', name='DejaVu Serif Display', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif-BoldItalic.ttf', name='DejaVu Serif', style='italic', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 0.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif-Bold.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizOneSymBol.ttf', name='STIXSizeOneSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneralBol.ttf', name='STIXGeneral', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif-Italic.ttf', name='DejaVu Serif', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-BoldOblique.ttf', name='DejaVu Sans', style='oblique', variant='normal', weight=700, stretch='normal', size='scalable')) = 1.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUniIta.ttf', name='STIXNonUnicode', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmr10.ttf', name='cmr10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono-Bold.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizOneSymReg.ttf', name='STIXSizeOneSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmtt10.ttf', name='cmtt10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizFourSymBol.ttf', name='STIXSizeFourSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXGeneral.ttf', name='STIXGeneral', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUniBolIta.ttf', name='STIXNonUnicode', style='italic', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmb10.ttf', name='cmb10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansDisplay.ttf', name='DejaVu Sans Display', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizTwoSymBol.ttf', name='STIXSizeTwoSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSerif.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizThreeSymBol.ttf', name='STIXSizeThreeSym', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizFiveSymReg.ttf', name='STIXSizeFiveSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizTwoSymReg.ttf', name='STIXSizeTwoSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Oblique.ttf', name='DejaVu Sans', style='oblique', variant='normal', weight=400, stretch='normal', size='scalable')) = 1.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizFourSymReg.ttf', name='STIXSizeFourSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXNonUniBol.ttf', name='STIXNonUnicode', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono-Oblique.ttf', name='DejaVu Sans Mono', style='oblique', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmex10.ttf', name='cmex10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/STIXSizThreeSymReg.ttf', name='STIXSizeThreeSym', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/cmsy10.ttf', name='cmsy10', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSansMono-BoldOblique.ttf', name='DejaVu Sans Mono', style='oblique', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuSans[wdth,wght].ttf', name='Ubuntu Sans', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu[wdth,wght].ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-M.ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuMono-Italic[wght].ttf', name='Ubuntu Mono', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf', name='Ubuntu Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-BI.ttf', name='Ubuntu', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-MI.ttf', name='Ubuntu', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 0.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-B.ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-C.ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-L.ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-RI.ttf', name='Ubuntu', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSansMono-BoldOblique.ttf', name='DejaVu Sans Mono', style='oblique', variant='normal', weight=700, stretch='normal', size='scalable')) = 11.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuSansMono-Italic[wght].ttf', name='Ubuntu Sans Mono', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuMono-BI.ttf', name='Ubuntu Mono', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuMono[wght].ttf', name='Ubuntu Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-Italic[wdth,wght].ttf', name='Ubuntu', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuSansMono[wght].ttf', name='Ubuntu Sans Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf', name='DejaVu Sans', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 0.33499999999999996
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-R.ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuMono-RI.ttf', name='Ubuntu Mono', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf', name='DejaVu Sans Mono', style='normal', variant='normal', weight=700, stretch='normal', size='scalable')) = 10.05
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-Th.ttf', name='Ubuntu', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/Ubuntu-LI.ttf', name='Ubuntu', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuSans-Italic[wdth,wght].ttf', name='Ubuntu Sans', style='italic', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Oblique.ttf', name='DejaVu Sans Mono', style='oblique', variant='normal', weight=400, stretch='normal', size='scalable')) = 11.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf', name='DejaVu Serif', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1483 findfont: score(FontEntry(fname='/usr/share/fonts/truetype/ubuntu/UbuntuMono-B.ttf', name='Ubuntu Mono', style='normal', variant='normal', weight=400, stretch='normal', size='scalable')) = 10.335
+19:56:34 [DEBUG   ] matplotlib.font_manager font_manager.py:1515 findfont: Matching sans\-serif:style=normal:variant=normal:weight=bold:stretch=normal:size=7.0 to DejaVu Sans ('/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf') with score of 0.050000.
+19:56:35 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:35 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:35 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:35 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:35 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:36 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:36 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:36 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:37 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:37 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:37 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:37 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:38 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:38 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:38 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:39 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:40 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:41 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:41 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:41 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:41 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:41 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:41 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:41 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:41 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:42 [ERROR   ] root landscape_report.py:946 The page 'Classifiers' of the vetting report failed
+Traceback (most recent call last):
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 944, in add
+    built = builder(len(pages) + 1)
+            ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 951, in <lambda>
+    add("Classifiers", lambda n: page_classifiers(inputs, metrics))
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/watson-report/watson/landscape_report.py", line 496, in page_classifiers
+    a.barh(range(len(b)), b.prediction_value_cal_mean, xerr=b.prediction_value_cal_std,
+                                                            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/pandas/core/generic.py", line 6299, in __getattr__
+    return object.__getattribute__(self, name)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DataFrame' object has no attribute 'prediction_value_cal_std'
+19:56:43 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F1 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf'
+19:56:43 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:917 Assigning font /F2 = '/home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf'
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([2.e-05, 3.e-05, 4.e-05, 5.e-05, 6.e-05, 7.e-05, 8.e-05, 9.e-05,
+       2.e-04, 3.e-04, 4.e-04, 5.e-04, 6.e-04, 7.e-04, 8.e-04, 9.e-04,
+       2.e-03, 3.e-03, 4.e-03, 5.e-03, 6.e-03, 7.e-03, 8.e-03, 9.e-03,
+       2.e-02, 3.e-02, 4.e-02, 5.e-02, 6.e-02, 7.e-02, 8.e-02, 9.e-02,
+       2.e-01, 3.e-01, 4.e-01, 5.e-01, 6.e-01, 7.e-01, 8.e-01, 9.e-01,
+       2.e+00, 3.e+00, 4.e+00, 5.e+00, 6.e+00, 7.e+00, 8.e+00, 9.e+00,
+       2.e+01, 3.e+01, 4.e+01, 5.e+01, 6.e+01, 7.e+01, 8.e+01, 9.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 0.0001 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-05, 1.e-04, 1.e-03, 1.e-02, 1.e-01, 1.e+00, 1.e+01])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2421 vmin 1e-12 vmax 1.0
+19:56:43 [DEBUG   ] matplotlib.ticker ticker.py:2470 ticklocs array([1.e-15, 1.e-12, 1.e-09, 1.e-06, 1.e-03, 1.e+00, 1.e+03])
+19:56:44 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans-Bold.ttf.
+19:56:44 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:44 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:963 Embedding font /home/tiene/miniconda3/envs/sherlock311/lib/python3.11/site-packages/matplotlib/mpl-data/fonts/ttf/DejaVuSans.ttf.
+19:56:44 [DEBUG   ] matplotlib.backends.backend_pdf backend_pdf.py:970 Writing TrueType font.
+19:56:44 [INFO    ] root watson.py:792 Landscape vetting report written with 6 pages
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'sRGB' 41 1
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'pHYs' 54 9
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'iTXt' 75 1147
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 1234 8192
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1231
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1853
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'sRGB' 41 1
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'pHYs' 54 9
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'iTXt' 75 1147
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 1234 8192
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1231
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1853
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'sRGB' 41 1
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'pHYs' 54 9
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'iTXt' 75 1147
+19:56:44 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 1234 8192
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1231
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1853
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [WARNING ] root report.py:664 The image /tmp/tmpfj4toyc7/single_transit_1_T0_1330.7999.png doesn't exist, skipping.
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'sRGB' 41 1
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'pHYs' 54 9
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'iTXt' 75 1147
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 1234 8192
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1231
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1853
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'sRGB' 41 1
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'pHYs' 54 9
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'iTXt' 75 1147
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 1234 8192
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1231
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1853
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'sRGB' 41 1
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'pHYs' 54 9
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'iTXt' 75 1147
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 1234 8192
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1231
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1853
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IHDR' 16 13
+19:56:45 [DEBUG   ] PIL.PngImagePlugin PngImagePlugin.py:200 STREAM b'IDAT' 41 1631

@@ -42,3 +42,34 @@ def make_vetting_dir(directory, n_transits=4, iatson=True, triceratops=True, met
     for i, t in enumerate(t0s):
         _png(f"{directory}/single_transit_{i}_T0_{t}.png", (680, 960 if tpfs else 400))
     return t0s
+
+
+def make_curve_and_transits(directory, n_transits=12, seed=1):
+    """A noisy light curve with a box transit, plus the per-transit depth table. Returns (lc_file, transits)."""
+    rng = np.random.default_rng(seed)
+    time = np.arange(T0 - 2, T0 + (n_transits + 1) * PERIOD, 2 / 60 / 24)
+    flux = 1 + rng.normal(0, 8e-4, time.size)
+    phase = ((time - T0 + PERIOD / 2) % PERIOD) - PERIOD / 2
+    flux[np.abs(phase) < DURATION_MIN / 60 / 24 / 2] -= DEPTH_PPT / 1000
+    lc_file = f"{directory}/lc.csv"
+    pd.DataFrame({"time": time, "flux": flux, "flux_err": 8e-4}).to_csv(lc_file, index=False)
+    depths = DEPTH_PPT + rng.normal(0, 0.3, n_transits)
+    depths[3] += 2.5  # a clear outlier
+    transits = {"t0": [T0 + i * PERIOD for i in range(n_transits)], "depth": depths.tolist(),
+                "depth_err": [0.3] * n_transits}
+    return lc_file, transits
+
+
+def make_landscape_dir(directory, n_transits=12, **kw):
+    """A vetting directory plus the curve and transits the landscape report reads."""
+    make_vetting_dir(directory, n_transits=n_transits, **kw)
+    pd.DataFrame({"time": [T0, T0 + PERIOD], "time_folded": [.5, .5], "centroids_ra": [0.0, 0.1],
+                  "centroids_dec": [0.0, 0.1]}).to_csv(f"{directory}/centroids.csv")
+    lc_file, transits = make_curve_and_transits(directory, n_transits)
+    pd.DataFrame({"time": [T0], "time_folded": [.5], "core_flux": [1.0], "halo_flux": [1.0], "og_flux": [0.0]}) \
+        .to_csv(f"{directory}/og_dg.csv")
+    pd.DataFrame({"name": ["diff_img", "mean"], "ra": [63.37, 63.37], "dec": [-69.22, -69.22], "ra_err": [.01, .01],
+                  "dec_err": [.01, .01]}).to_csv(f"{directory}/source_offsets.csv")
+    pd.DataFrame({"ID": [1, 2], "Tmag": [10.0, 12.0], "sep (arcsec)": [0.0, 30.0], "PA (E of N)": [0.0, 90.0]}) \
+        .to_csv(f"{directory}/triceratops/stars.csv", index=False)
+    return lc_file, transits
