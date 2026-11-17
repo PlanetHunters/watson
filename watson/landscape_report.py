@@ -35,6 +35,7 @@ OUTLIER_SIGMA = 2.5
 MAX_SHEETS = 12
 THUMBNAILS_MAX = 240
 TESS_PIXEL_ARCSEC = 21.0
+PIXEL_MAPS_FRACTION = 0.30  # bottom part of folded_tpf_*.png: differential image and per-pixel BLS SNR maps
 PLANET_SCENARIOS = ("TP", "PTP", "STP", "DTP", "BTP")
 RC = {"font.size": 7, "axes.edgecolor": MUTED, "axes.labelcolor": INK, "xtick.color": MUTED, "ytick.color": MUTED,
       "axes.spines.top": False, "axes.spines.right": False, "axes.titlesize": 8, "axes.titleweight": "bold"}
@@ -704,12 +705,14 @@ def page_on_target(inputs, metrics):
     images = sorted(glob.glob(f"{inputs.data_dir}/folded_tpf_*.png"))
     if images:
         from PIL import Image
-        fig.text(.03, .385, "PIXEL ANALYSIS BY SECTOR (per-pixel BLS SNR and differential image)", fontsize=6.5,
+        fig.text(.03, .385, "PIXEL ANALYSIS BY SECTOR (differential image SNR and per-pixel BLS SNR; the full pixel grid is in the data folder)", fontsize=6.5,
                  color=MUTED, fontweight="bold")
-        shown = images[:5]
+        shown = images[:6]
         for i, path in enumerate(shown):
-            ax = _axes(fig, .03 + i * .19, .05, .185, .31)
-            ax.imshow(_trim_white(Image.open(path)))
+            ax = _axes(fig, .03 + (i % 3) * .325, .21 - (i // 3) * .17, .30, .14)
+            image = _trim_white(Image.open(path))
+            image = image.crop((0, int(image.height * (1 - PIXEL_MAPS_FRACTION)), image.width, image.height))
+            ax.imshow(image)
             ax.axis("off")
             match = re.search(r"folded_tpf_(\d+)", os.path.basename(path))
             ax.set_title(f"sector {match.group(1)}" if match else "", loc="left", fontsize=7, pad=2)
