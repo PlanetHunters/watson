@@ -176,6 +176,19 @@ class WriteReportTest(unittest.TestCase):
         self.assertIn("Verdict and signal", text)
         self.assertIn("Single transits", text)
 
+    def test_pages_are_drawn_with_the_report_style_whatever_the_global_style(self):
+        seen = []
+        original = lr.PdfPages.savefig
+
+        def spy(pdf, fig, *args, **kwargs):
+            seen.append(lr.matplotlib.rcParams["font.size"])
+            return original(pdf, fig, *args, **kwargs)
+
+        with lr.matplotlib.rc_context({"font.size": 18}), mock.patch.object(lr.PdfPages, "savefig", spy):
+            self.build()
+        self.assertTrue(seen)
+        self.assertEqual(set(seen), {lr.RC["font.size"]})
+
     def test_the_report_is_far_smaller_than_the_old_one(self):
         self.build()
         self.assertLess(os.path.getsize(self.path), 5_000_000)

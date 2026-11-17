@@ -965,7 +965,10 @@ def write_landscape_report(inputs, path):
     """Write the report atomically (``.partial`` first) and return the number of pages."""
     pages = build_pages(inputs)
     partial = path + ".partial"
-    with matplotlib.rc_context({"pdf.fonttype": 42}), PdfPages(partial) as pdf:  # TrueType: searchable text
+    # Relative font sizes (tick labels, axis labels) are resolved when drawing, not when building, so the style
+    # has to be active here too or a global rcParams change made by another library alters the pages.
+    # fonttype 42 embeds TrueType fonts: searchable text.
+    with matplotlib.rc_context({**RC, "pdf.fonttype": 42}), PdfPages(partial) as pdf:
         for fig in pages:
             pdf.savefig(fig)
     os.replace(partial, path)
