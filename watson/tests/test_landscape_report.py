@@ -181,13 +181,25 @@ class WriteReportTest(unittest.TestCase):
         original = lr.PdfPages.savefig
 
         def spy(pdf, fig, *args, **kwargs):
-            seen.append(lr.matplotlib.rcParams["font.size"])
+            params = lr.matplotlib.rcParams
+            seen.append((params["font.size"], params["axes.labelsize"], params["xtick.labelsize"],
+                         params["ytick.labelsize"], params["legend.fontsize"]))
             return original(pdf, fig, *args, **kwargs)
 
-        with lr.matplotlib.rc_context({"font.size": 18}), mock.patch.object(lr.PdfPages, "savefig", spy):
+        # what seaborn does: absolute sizes that ignore font.size
+        hostile = {"font.size": 18, "axes.labelsize": 20, "xtick.labelsize": 16, "ytick.labelsize": 16,
+                   "legend.fontsize": 15}
+        with lr.matplotlib.rc_context(hostile), mock.patch.object(lr.PdfPages, "savefig", spy):
             self.build()
         self.assertTrue(seen)
-        self.assertEqual(set(seen), {lr.RC["font.size"]})
+        self.assertEqual(set(seen), {(lr.RC["font.size"], "medium", "medium", "medium", "medium")})
+
+    def test_the_report_style_does_not_depend_on_the_current_rcparams(self):
+        with lr.matplotlib.rc_context({"axes.labelsize": 30, "font.family": "serif"}):
+            style = lr.report_style()
+        self.assertEqual(style["axes.labelsize"], "medium")
+        self.assertEqual(style["font.size"], lr.RC["font.size"])
+        self.assertNotIn("backend", style)
 
     def test_the_report_is_far_smaller_than_the_old_one(self):
         self.build()

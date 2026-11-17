@@ -40,6 +40,17 @@ PLANET_SCENARIOS = ("TP", "PTP", "STP", "DTP", "BTP")
 RC = {"font.size": 7, "axes.edgecolor": MUTED, "axes.labelcolor": INK, "xtick.color": MUTED, "ytick.color": MUTED,
       "axes.spines.top": False, "axes.spines.right": False, "axes.titlesize": 8, "axes.titleweight": "bold"}
 
+
+def report_style():
+    """Matplotlib style of the report: the library defaults plus ``RC``.
+
+    Starting from the defaults (not from the current ``rcParams``) keeps the pages the same whatever another
+    library did to the global style: seaborn, for example, sets absolute tick and label sizes that ignore ``font.size``.
+    """
+    defaults = {k: v for k, v in matplotlib.rcParamsDefault.items() if k != "backend"}
+    return {**defaults, **RC}
+
+
 METRIC_GROUPS = [
     ("Signal", [("snr", "SNR"), ("fast_snr", "SNR fast"), ("short_snr", "SNR short"), ("long_snr", "SNR long"),
                 ("bootstrap_fap", "Bootstrap FAP")]),
@@ -373,7 +384,7 @@ def page_verdict(inputs, metrics):
         note = None
         if np.isfinite(groups[1][0]) and np.isfinite(groups[2][0]):
             note = f"Δ {groups[1][0] - groups[2][0]:.2f} ± {np.hypot(groups[1][1], groups[2][1]):.2f}"
-        _title(a, "Odd vs even depth", note)
+        _title(a, "Odd vs even", note)
     else:
         _unavailable(a, "single transits not available")
     _metrics_columns(fig, metrics)
@@ -943,7 +954,7 @@ def build_pages(inputs):
 
     def add(title, builder):
         try:
-            with matplotlib.rc_context(RC):
+            with matplotlib.rc_context(report_style()):
                 built = builder(len(pages) + 1)
         except Exception as error:
             logging.exception("The page '%s' of the vetting report failed", title)
@@ -968,7 +979,7 @@ def write_landscape_report(inputs, path):
     # Relative font sizes (tick labels, axis labels) are resolved when drawing, not when building, so the style
     # has to be active here too or a global rcParams change made by another library alters the pages.
     # fonttype 42 embeds TrueType fonts: searchable text.
-    with matplotlib.rc_context({**RC, "pdf.fonttype": 42}), PdfPages(partial) as pdf:
+    with matplotlib.rc_context({**report_style(), "pdf.fonttype": 42}), PdfPages(partial) as pdf:
         for fig in pages:
             pdf.savefig(fig)
     os.replace(partial, path)
